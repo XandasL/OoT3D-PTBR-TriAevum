@@ -1,0 +1,29 @@
+CRÉDITOS — TRADUÇÃO PT-BR
+The Legend of Zelda: Ocarina of Time 3D
+
+TRADUÇÃO PT-BR ORIGINAL
+Projeto Zelda Brasil – Heroes of Time
+Catatau Game Dev e Traduções
+Elite dos Quatro Traduções
+JumpManClub Brasil Traduções
+TRADU-ROMS
+
+ATENÇÃO:
+Antes da primeira distribuição pública, adicionar aqui os créditos individuais
+oficiais exatamente conforme o material fornecido pelos responsáveis pela tradução.
+
+PORT PARA TRIAEVUM
+XandasL — port para TriAevum, adaptação e empacotamento do instalador.
+
+AGRADECIMENTOS
+A todas as pessoas e equipes envolvidas na tradução brasileira original e aos
+desenvolvedores e colaboradores do TriAevum.
+
+AUTORIZAÇÃO
+O port e a distribuição da tradução completa são realizados com autorização do
+responsável pela tradução, condicionados à manutenção dos devidos créditos dentro
+e fora do jogo.
+
+Este projeto é um projeto de fãs e não possui afiliação oficial com a Nintendo.
+The Legend of Zelda e demais propriedades relacionadas pertencem aos seus
+respectivos detentores.
