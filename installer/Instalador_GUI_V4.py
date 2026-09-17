@@ -14,21 +14,17 @@ from tkinter import messagebox, scrolledtext
 
 TITLE = "Tradução PT-BR - Ocarina of Time 3D"
 
-# Onde estão os arquivos da GUI em desenvolvimento ou o EXE final.
 APP_DIR = (
     Path(sys.executable).resolve().parent
     if getattr(sys, "frozen", False)
     else Path(__file__).resolve().parent
 )
-
-# No PyInstaller --onefile, os recursos incorporados são extraídos em _MEIPASS.
 RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
 CORE_PATH = RESOURCE_DIR / "Instalador_Traducao_PTBR_OoT3D_V4.py"
 CREDITS_PATH = RESOURCE_DIR / "CREDITOS.txt"
 
 
 def looks_like_triaevum(path: Path) -> bool:
-    """Reconhece a raiz do TriAevum sem depender de um único arquivo."""
     return (
         path.is_dir()
         and (path / "data").is_dir()
@@ -40,19 +36,6 @@ def looks_like_triaevum(path: Path) -> bool:
 
 
 def find_triaevum_root() -> Path:
-    """
-    Modo final:
-        EXE colocado diretamente na raiz do TriAevum.
-
-    Modo desenvolvimento:
-        Windows/
-        ├─ data/
-        ├─ TriAevum.launch.json
-        └─ installer/
-           └─ Instalador_GUI_V4.py
-
-    Também aceita executar a GUI a partir de uma subpasta até 3 níveis abaixo.
-    """
     candidates = [APP_DIR]
     current = APP_DIR
     for _ in range(3):
@@ -73,7 +56,6 @@ def find_triaevum_root() -> Path:
 
 
 def find_translation_payload() -> Path:
-    """Localiza os arquivos da tradução no EXE ou na pasta de desenvolvimento."""
     candidates = [
         RESOURCE_DIR / "TraducaoCompleta" / "citra" / "romfs",
         APP_DIR / "TraducaoCompleta" / "citra" / "romfs",
@@ -101,11 +83,9 @@ def load_core():
     core = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(core)
 
-    # BASE sempre aponta para a raiz REAL do TriAevum.
     core.BASE = triaevum_root
     core.TRAD_ROOT = translation_root
 
-    # Em --onefile, nunca deixe o marcador dentro do _MEIPASS temporário.
     if hasattr(core, "MARKER"):
         core.MARKER = triaevum_root / "traducao_ptbr_v4_instalada.json"
 
@@ -186,15 +166,16 @@ class InstallerApp(tk.Tk):
         )
         self.log.pack(fill="both", expand=True, padx=24, pady=(0, 12))
 
-        footer = tk.Frame(self, padx=24, pady=(0, 18))
-        footer.pack(fill="x")
+        # Frame aceita apenas um valor numérico para pady. O espaçamento inferior
+        # assimétrico fica no pack(), que aceita a tupla (topo, baixo).
+        footer = tk.Frame(self, padx=24)
+        footer.pack(fill="x", pady=(0, 18))
         tk.Button(footer, text="Créditos", command=self.show_credits).pack(side="left")
         tk.Button(footer, text="Abrir pasta do TriAevum", command=self.open_folder).pack(
             side="left", padx=8
         )
         tk.Button(footer, text="Sair", command=self.destroy).pack(side="right")
 
-        # Mostra o ambiente detectado sem modificar nada.
         try:
             root = find_triaevum_root()
             self.state_label.configure(text=f"TriAevum detectado: {root}")
