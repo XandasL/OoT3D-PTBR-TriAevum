@@ -2,7 +2,7 @@
 
 Port da tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D** para execução através do **TriAevum**.
 
-> **Status: v1.0 concluída e validada.** O instalador final em `.exe` foi testado no ciclo completo de instalação, restauração e nova instalação, incluindo execução da tradução dentro do jogo.
+> **Status: v1.0.0 lançada e validada.** O instalador final foi testado no ciclo completo de instalação, restauração e nova instalação, incluindo execução da tradução dentro do jogo.
 
 ## 🇧🇷 Sobre o projeto
 
@@ -20,19 +20,26 @@ A tradução inclui:
 
 ## 📥 Download
 
-O instalador oficial da **v1.0** será disponibilizado na seção **Releases** deste repositório.
+### [⬇️ Baixar Tradução PT-BR v1.0.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip)
 
-O arquivo de distribuição é um executável único:
+A versão oficial também está disponível na página de [Releases](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/v1.0.0).
 
-`OoT3D_PTBR_TriAevum_v1.0.exe`
+O pacote contém:
+
+- `OoT3D_PTBR_TriAevum_v1.0.exe` — instalador da tradução;
+- `LEIA-ME.txt` — instruções, créditos e informações do projeto.
+
+**SHA-256 do ZIP:**
+
+`7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b`
 
 Não é necessário instalar Python nem copiar scripts ou pastas de desenvolvimento.
 
 ## 🛠️ Instalação
 
 1. Tenha uma instalação funcional e compatível do TriAevum para Ocarina of Time 3D.
-2. Baixe `OoT3D_PTBR_TriAevum_v1.0.exe` pela seção **Releases**.
-3. Coloque o executável na pasta principal do TriAevum, ao lado de `TriAevum.launch.json`.
+2. Baixe e extraia `OoT3D_PTBR_TriAevum_v1.0.zip`.
+3. Coloque `OoT3D_PTBR_TriAevum_v1.0.exe` na pasta principal do TriAevum, ao lado de `TriAevum.launch.json`.
 4. Feche o jogo e o TriAevum antes de modificar os arquivos.
 5. Abra o instalador e clique em **Verificar status**.
 6. Clique em **Instalar tradução** e aguarde a conclusão.
@@ -48,13 +55,13 @@ Abra o mesmo instalador e escolha **Restaurar original**. O instalador utiliza o
 
 ## 🎮 Compatibilidade
 
-A v1.0 foi validada com a estrutura do **TriAevum v0.6.0-alpha.2c para Windows x64** utilizada durante o desenvolvimento.
+A v1.0.0 foi validada com a estrutura do **TriAevum v0.6.0-alpha.2c para Windows x64** utilizada durante o desenvolvimento.
 
 O port leva em consideração a adaptação USA → EUR feita pelo runtime e possui correção específica para preservar o funcionamento de **TopScreen / Single Screen** com a interface traduzida.
 
 Outras versões do TriAevum podem exigir nova validação.
 
-## ✅ Validação da v1.0
+## ✅ Validação da v1.0.0
 
 Foram testados no executável final:
 
@@ -72,9 +79,17 @@ Foram testados no executável final:
 
 Este projeto é um **port para TriAevum de uma tradução PT-BR existente**. A tradução original não foi criada por este repositório.
 
-Os créditos da tradução e do port estão em [`CREDITOS.md`](CREDITOS.md) e também são mantidos no instalador.
+Créditos da tradução PT-BR original:
 
-O port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, condicionados à preservação dos devidos créditos dentro e fora do jogo.
+- **Projeto Zelda Brasil – Heroes of Time**
+- **Catatau Game Dev e Traduções**
+- **Elite dos Quatro Traduções**
+- **JumpManClub Brasil Traduções**
+- **TRADU-ROMS**
+
+Os créditos completos e informações adicionais estão em [`CREDITOS.md`](CREDITOS.md) e no `LEIA-ME.txt` incluído no download.
+
+O port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, mantendo os devidos créditos dentro e fora do jogo.
 
 ## ⚠️ Aviso
 
@@ -93,8 +108,8 @@ O usuário deve possuir separadamente os arquivos compatíveis necessários para
 - [x] Instalação, backup e restauração
 - [x] Interface gráfica
 - [x] Executável único para Windows
-- [x] Teste completo do executável v1.0
-- [ ] Publicação do binário na Release v1.0
+- [x] Teste completo do executável
+- [x] Release pública v1.0.0
 
 ## 🔧 Port e instalador
 
