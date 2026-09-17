@@ -8,15 +8,13 @@ A tradução original não foi criada por este repositório. O objetivo deste pr
 
 ## 🇧🇷 Tradução PT-BR original
 
-Créditos de grupos/equipes associados à tradução original:
+Conforme os créditos fornecidos para esta distribuição:
 
 - **Projeto Zelda Brasil – Heroes of Time**
 - **Catatau Game Dev e Traduções**
 - **Elite dos Quatro Traduções**
 - **JumpManClub Brasil Traduções**
 - **TRADU-ROMS**
-
-> **Créditos individuais:** esta seção será completada com os nomes e funções exatamente como aparecem nos créditos oficiais da tradução original. Nenhum crédito individual será presumido ou inventado.
 
 ## 🔧 Port para TriAevum
 
@@ -43,16 +41,10 @@ Agradecimentos também aos desenvolvedores e colaboradores do **TriAevum**, cujo
 
 O port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, condicionados à manutenção dos devidos créditos **dentro e fora do jogo**.
 
-Por esse motivo, este arquivo faz parte da distribuição do projeto e os créditos também devem permanecer acessíveis no instalador e nos demais locais aplicáveis.
+Por esse motivo, este arquivo faz parte da documentação do projeto e os créditos também devem permanecer acessíveis no instalador e nos demais locais aplicáveis.
 
 ## ⚠️ Direitos sobre o jogo
 
 Este projeto não reivindica propriedade sobre **The Legend of Zelda**, **Ocarina of Time 3D**, seus personagens, marcas ou recursos originais do jogo.
 
 The Legend of Zelda e demais propriedades relacionadas pertencem aos seus respectivos detentores. Este é um projeto de fãs, sem afiliação oficial com a Nintendo.
-
----
-
-### Nota para a versão pública
-
-Antes da primeira Release pública, os créditos individuais oficiais da tradução original devem ser conferidos e adicionados acima exatamente conforme o material fornecido pelos responsáveis pela tradução.
