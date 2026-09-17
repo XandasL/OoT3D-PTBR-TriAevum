@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-GUI de diagnóstico (status v2) para integração com:
-Instalador_Traducao_PTBR_OoT3D_V4.py
-
-Nesta versão:
-- apenas "Verificar status" chama o núcleo V4;
-- instalar/restaurar ficam desabilitados;
-- nenhum arquivo do jogo é modificado pela própria GUI.
+Instalador v1.0 da tradução PT-BR de Ocarina of Time 3D para TriAevum.
+Preparado para distribuição como executável único (PyInstaller one-file).
 """
 
 import contextlib
@@ -31,6 +26,13 @@ def app_dir() -> Path:
     """Pasta real do script/EXE."""
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent
+
+
+def bundled_dir() -> Path:
+    """Pasta dos recursos embutidos pelo PyInstaller."""
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS).resolve()
     return Path(__file__).resolve().parent
 
 
@@ -64,6 +66,7 @@ def detect_triaevum_root(start: Path) -> Path | None:
 
 def locate_core(gui_dir: Path, root: Path | None) -> Path | None:
     candidates = [
+        bundled_dir() / CORE_FILENAME,
         gui_dir / CORE_FILENAME,
     ]
     if root:
@@ -84,6 +87,7 @@ def locate_core(gui_dir: Path, root: Path | None) -> Path | None:
 
 def locate_payload(gui_dir: Path, root: Path | None) -> Path | None:
     candidates = [
+        bundled_dir() / PAYLOAD_RELATIVE,
         gui_dir / PAYLOAD_RELATIVE,
     ]
     if root:
@@ -200,6 +204,9 @@ class App(tk.Tk):
 
         ttk.Button(footer, text="Leia-me", command=self.open_credits).grid(
             row=0, column=0, padx=(0, 6)
+        )
+        ttk.Label(footer, text="v1.0").grid(
+            row=0, column=1
         )
         ttk.Button(footer, text="Sair", command=self.destroy).grid(
             row=0, column=2, padx=(6, 0)
@@ -329,7 +336,7 @@ class App(tk.Tk):
 
             self.write_log("")
             self.write_log("VERIFICAR STATUS — concluído sem exceção.")
-            self.status_var.set("status() executado. Consulte o log.")
+            self.status_var.set("Verificação concluída. Consulte o log para detalhes.")
 
         except Exception:
             self.status_var.set("Erro durante o diagnóstico. Consulte o log.")
@@ -374,8 +381,7 @@ class App(tk.Tk):
             "Instalar tradução PT-BR",
             "O instalador validará a base original, criará backups "
             "e aplicará a tradução PT-BR completa + compatibilidade TopScreen.\n\n"
-            "O processo pode levar algum tempo por causa das cópias e cálculos "
-            "de SHA-256 do RomFS.\n\n"
+            "A instalação pode levar alguns minutos. Aguarde até a conclusão.\n\n"
             "Deseja continuar?"
         ):
             self.write_log("Instalação cancelada pelo usuário.")
