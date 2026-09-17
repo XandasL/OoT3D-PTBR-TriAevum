@@ -41,11 +41,9 @@ def find_triaevum_root() -> Path:
     for _ in range(3):
         current = current.parent
         candidates.append(current)
-
     for candidate in candidates:
         if looks_like_triaevum(candidate):
             return candidate
-
     checked = "\n".join(f"- {p}" for p in candidates)
     raise RuntimeError(
         "Não foi possível localizar automaticamente a pasta do TriAevum.\n\n"
@@ -64,7 +62,6 @@ def find_translation_payload() -> Path:
     for candidate in candidates:
         if candidate.is_dir():
             return candidate
-
     checked = "\n".join(f"- {p}" for p in candidates)
     raise RuntimeError(
         "Payload TraducaoCompleta/citra/romfs não encontrado.\n\n"
@@ -75,32 +72,25 @@ def find_translation_payload() -> Path:
 def load_core():
     if not CORE_PATH.exists():
         raise RuntimeError(f"Núcleo V4 não encontrado:\n{CORE_PATH}")
-
     triaevum_root = find_triaevum_root()
     translation_root = find_translation_payload()
-
     spec = importlib.util.spec_from_file_location("oot3d_ptbr_v4_core", CORE_PATH)
     core = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(core)
-
     core.BASE = triaevum_root
     core.TRAD_ROOT = translation_root
-
     if hasattr(core, "MARKER"):
         core.MARKER = triaevum_root / "traducao_ptbr_v4_instalada.json"
-
     return core
 
 
 class QueueWriter(io.TextIOBase):
     def __init__(self, q):
         self.q = q
-
     def write(self, text):
         if text:
             self.q.put(("log", text))
         return len(text)
-
     def flush(self):
         pass
 
@@ -117,43 +107,15 @@ class InstallerApp(tk.Tk):
 
         header = tk.Frame(self, padx=24, pady=20)
         header.pack(fill="x")
-        tk.Label(
-            header,
-            text="The Legend of Zelda: Ocarina of Time 3D",
-            font=("Segoe UI", 17, "bold"),
-        ).pack(anchor="w")
-        tk.Label(
-            header,
-            text="Tradução PT-BR • Instalador V4",
-            font=("Segoe UI", 11),
-        ).pack(anchor="w", pady=(3, 0))
-        tk.Label(
-            header,
-            text="TriAevum • compatibilidade TopScreen / Single Screen",
-            font=("Segoe UI", 9),
-        ).pack(anchor="w", pady=(7, 0))
+        tk.Label(header, text="The Legend of Zelda: Ocarina of Time 3D", font=("Segoe UI", 17, "bold")).pack(anchor="w")
+        tk.Label(header, text="Tradução PT-BR • Instalador V4", font=("Segoe UI", 11)).pack(anchor="w", pady=(3, 0))
+        tk.Label(header, text="TriAevum • compatibilidade TopScreen / Single Screen", font=("Segoe UI", 9)).pack(anchor="w", pady=(7, 0))
 
         buttons = tk.Frame(self, padx=24)
         buttons.pack(fill="x")
-        self.install_button = tk.Button(
-            buttons,
-            text="Instalar tradução",
-            height=2,
-            font=("Segoe UI", 10, "bold"),
-            command=lambda: self.start("install"),
-        )
-        self.restore_button = tk.Button(
-            buttons,
-            text="Restaurar original",
-            height=2,
-            command=lambda: self.start("restore"),
-        )
-        self.status_button = tk.Button(
-            buttons,
-            text="Verificar status",
-            height=2,
-            command=lambda: self.start("status"),
-        )
+        self.install_button = tk.Button(buttons, text="Instalar tradução", height=2, font=("Segoe UI", 10, "bold"), command=lambda: self.start("install"))
+        self.restore_button = tk.Button(buttons, text="Restaurar original", height=2, command=lambda: self.start("restore"))
+        self.status_button = tk.Button(buttons, text="Verificar status", height=2, command=lambda: self.start("status"))
         self.install_button.pack(side="left", fill="x", expand=True, padx=(0, 6))
         self.restore_button.pack(side="left", fill="x", expand=True, padx=6)
         self.status_button.pack(side="left", fill="x", expand=True, padx=(6, 0))
@@ -161,29 +123,44 @@ class InstallerApp(tk.Tk):
         self.state_label = tk.Label(self, text="Pronto.", anchor="w", padx=24, pady=12)
         self.state_label.pack(fill="x")
 
-        self.log = scrolledtext.ScrolledText(
-            self, font=("Consolas", 9), wrap="word", state="disabled"
-        )
-        self.log.pack(fill="both", expand=True, padx=24, pady=(0, 12))
+        # A barra inferior é empacotada ANTES do log e fica reservada no rodapé.
+        # Isso impede o ScrolledText expansível de comprimir os botões.
+        footer = tk.Frame(self, padx=24, pady=8, height=64)
+        footer.pack(fill="x", side="bottom")
+        footer.pack_propagate(False)
 
-        # Frame aceita apenas um valor numérico para pady. O espaçamento inferior
-        # assimétrico fica no pack(), que aceita a tupla (topo, baixo).
-        footer = tk.Frame(self, padx=24)
-        footer.pack(fill="x", pady=(0, 18))
-        tk.Button(footer, text="Créditos", command=self.show_credits).pack(side="left")
-        tk.Button(footer, text="Abrir pasta do TriAevum", command=self.open_folder).pack(
-            side="left", padx=8
-        )
-        tk.Button(footer, text="Sair", command=self.destroy).pack(side="right")
+        tk.Button(
+            footer,
+            text="Créditos",
+            width=12,
+            height=2,
+            command=self.show_credits,
+        ).pack(side="left")
+
+        tk.Button(
+            footer,
+            text="Abrir pasta do TriAevum",
+            width=24,
+            height=2,
+            command=self.open_folder,
+        ).pack(side="left", padx=10)
+
+        tk.Button(
+            footer,
+            text="Sair",
+            width=10,
+            height=2,
+            command=self.destroy,
+        ).pack(side="right")
+
+        self.log = scrolledtext.ScrolledText(self, font=("Consolas", 9), wrap="word", state="disabled")
+        self.log.pack(fill="both", expand=True, padx=24, pady=(0, 12))
 
         try:
             root = find_triaevum_root()
             self.state_label.configure(text=f"TriAevum detectado: {root}")
         except Exception:
-            self.state_label.configure(
-                text="TriAevum ainda não detectado. A instalação não será modificada."
-            )
-
+            self.state_label.configure(text="TriAevum ainda não detectado. A instalação não será modificada.")
         self.after(80, self.poll)
 
     def append_log(self, text):
@@ -195,33 +172,20 @@ class InstallerApp(tk.Tk):
     def set_busy(self, value):
         self.busy = value
         state = "disabled" if value else "normal"
-        for button in (
-            self.install_button,
-            self.restore_button,
-            self.status_button,
-        ):
+        for button in (self.install_button, self.restore_button, self.status_button):
             button.configure(state=state)
 
     def start(self, action):
         if self.busy:
             return
-
         if action == "install":
-            ok = messagebox.askyesno(
-                TITLE,
-                "Instalar a Tradução PT-BR V4?\n\n"
-                "A instalação será validada e backups serão criados antes das alterações.",
-            )
+            ok = messagebox.askyesno(TITLE, "Instalar a Tradução PT-BR V4?\n\nA instalação será validada e backups serão criados antes das alterações.")
             if not ok:
                 return
         elif action == "restore":
-            ok = messagebox.askyesno(
-                TITLE,
-                "Restaurar os arquivos originais salvos pela V4?",
-            )
+            ok = messagebox.askyesno(TITLE, "Restaurar os arquivos originais salvos pela V4?")
             if not ok:
                 return
-
         self.set_busy(True)
         self.state_label.configure(text="Processando…")
         self.append_log("\n" + "=" * 65 + "\n")
@@ -232,16 +196,9 @@ class InstallerApp(tk.Tk):
         try:
             if self.core is None:
                 self.core = load_core()
-
-            function = {
-                "install": self.core.install,
-                "restore": self.core.restore,
-                "status": self.core.status,
-            }[action]
-
+            function = {"install": self.core.install, "restore": self.core.restore, "status": self.core.status}[action]
             with contextlib.redirect_stdout(writer), contextlib.redirect_stderr(writer):
                 function()
-
             self.q.put(("done", action))
         except Exception as exc:
             self.q.put(("error", str(exc)))
@@ -260,10 +217,7 @@ class InstallerApp(tk.Tk):
                     except Exception:
                         self.state_label.configure(text="Concluído.")
                     if data == "install":
-                        messagebox.showinfo(
-                            TITLE,
-                            "Tradução PT-BR V4 instalada com sucesso.",
-                        )
+                        messagebox.showinfo(TITLE, "Tradução PT-BR V4 instalada com sucesso.")
                     elif data == "restore":
                         messagebox.showinfo(TITLE, "Arquivos originais restaurados.")
                 elif kind == "error":
@@ -273,7 +227,6 @@ class InstallerApp(tk.Tk):
                     messagebox.showerror(TITLE, data)
         except queue.Empty:
             pass
-
         self.after(80, self.poll)
 
     def show_credits(self):
@@ -281,7 +234,6 @@ class InstallerApp(tk.Tk):
             text = CREDITS_PATH.read_text(encoding="utf-8-sig")
         else:
             text = "CREDITOS.txt não encontrado."
-
         window = tk.Toplevel(self)
         window.title("Créditos")
         window.geometry("640x460")
