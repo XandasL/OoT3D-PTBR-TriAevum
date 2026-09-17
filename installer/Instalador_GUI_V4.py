@@ -14,39 +14,100 @@ from tkinter import messagebox, scrolledtext
 
 TITLE = "Tradução PT-BR - Ocarina of Time 3D"
 
+# Onde estão os arquivos da GUI em desenvolvimento ou o EXE final.
 APP_DIR = (
     Path(sys.executable).resolve().parent
     if getattr(sys, "frozen", False)
     else Path(__file__).resolve().parent
 )
+
+# No PyInstaller --onefile, os recursos incorporados são extraídos em _MEIPASS.
 RESOURCE_DIR = Path(getattr(sys, "_MEIPASS", APP_DIR))
 CORE_PATH = RESOURCE_DIR / "Instalador_Traducao_PTBR_OoT3D_V4.py"
 CREDITS_PATH = RESOURCE_DIR / "CREDITOS.txt"
+
+
+def looks_like_triaevum(path: Path) -> bool:
+    """Reconhece a raiz do TriAevum sem depender de um único arquivo."""
+    return (
+        path.is_dir()
+        and (path / "data").is_dir()
+        and (
+            (path / "TriAevum.launch.json").is_file()
+            or any(path.glob("TriAevum*.exe"))
+        )
+    )
+
+
+def find_triaevum_root() -> Path:
+    """
+    Modo final:
+        EXE colocado diretamente na raiz do TriAevum.
+
+    Modo desenvolvimento:
+        Windows/
+        ├─ data/
+        ├─ TriAevum.launch.json
+        └─ installer/
+           └─ Instalador_GUI_V4.py
+
+    Também aceita executar a GUI a partir de uma subpasta até 3 níveis abaixo.
+    """
+    candidates = [APP_DIR]
+    current = APP_DIR
+    for _ in range(3):
+        current = current.parent
+        candidates.append(current)
+
+    for candidate in candidates:
+        if looks_like_triaevum(candidate):
+            return candidate
+
+    checked = "\n".join(f"- {p}" for p in candidates)
+    raise RuntimeError(
+        "Não foi possível localizar automaticamente a pasta do TriAevum.\n\n"
+        "Para o teste em Python, deixe a pasta 'installer' dentro da raiz do "
+        "TriAevum. Na versão final, coloque o EXE diretamente na raiz.\n\n"
+        f"Locais verificados:\n{checked}"
+    )
+
+
+def find_translation_payload() -> Path:
+    """Localiza os arquivos da tradução no EXE ou na pasta de desenvolvimento."""
+    candidates = [
+        RESOURCE_DIR / "TraducaoCompleta" / "citra" / "romfs",
+        APP_DIR / "TraducaoCompleta" / "citra" / "romfs",
+        APP_DIR.parent / "TraducaoCompleta" / "citra" / "romfs",
+    ]
+    for candidate in candidates:
+        if candidate.is_dir():
+            return candidate
+
+    checked = "\n".join(f"- {p}" for p in candidates)
+    raise RuntimeError(
+        "Payload TraducaoCompleta/citra/romfs não encontrado.\n\n"
+        f"Locais verificados:\n{checked}"
+    )
 
 
 def load_core():
     if not CORE_PATH.exists():
         raise RuntimeError(f"Núcleo V4 não encontrado:\n{CORE_PATH}")
 
+    triaevum_root = find_triaevum_root()
+    translation_root = find_translation_payload()
+
     spec = importlib.util.spec_from_file_location("oot3d_ptbr_v4_core", CORE_PATH)
     core = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(core)
 
-    # O núcleo precisa procurar o TriAevum ao lado do EXE/script real.
-    core.BASE = APP_DIR
+    # BASE sempre aponta para a raiz REAL do TriAevum.
+    core.BASE = triaevum_root
+    core.TRAD_ROOT = translation_root
 
-    embedded = RESOURCE_DIR / "TraducaoCompleta" / "citra" / "romfs"
-    external = APP_DIR / "TraducaoCompleta" / "citra" / "romfs"
-    if embedded.exists():
-        core.TRAD_ROOT = embedded
-    elif external.exists():
-        core.TRAD_ROOT = external
-    else:
-        raise RuntimeError("Payload TraducaoCompleta/citra/romfs não encontrado.")
-
-    # Em --onefile, não deixe o marcador dentro do diretório temporário _MEIPASS.
+    # Em --onefile, nunca deixe o marcador dentro do _MEIPASS temporário.
     if hasattr(core, "MARKER"):
-        core.MARKER = APP_DIR / "traducao_ptbr_v4_instalada.json"
+        core.MARKER = triaevum_root / "traducao_ptbr_v4_instalada.json"
 
     return core
 
@@ -128,10 +189,19 @@ class InstallerApp(tk.Tk):
         footer = tk.Frame(self, padx=24, pady=(0, 18))
         footer.pack(fill="x")
         tk.Button(footer, text="Créditos", command=self.show_credits).pack(side="left")
-        tk.Button(footer, text="Abrir pasta", command=self.open_folder).pack(
+        tk.Button(footer, text="Abrir pasta do TriAevum", command=self.open_folder).pack(
             side="left", padx=8
         )
         tk.Button(footer, text="Sair", command=self.destroy).pack(side="right")
+
+        # Mostra o ambiente detectado sem modificar nada.
+        try:
+            root = find_triaevum_root()
+            self.state_label.configure(text=f"TriAevum detectado: {root}")
+        except Exception:
+            self.state_label.configure(
+                text="TriAevum ainda não detectado. A instalação não será modificada."
+            )
 
         self.after(80, self.poll)
 
@@ -203,7 +273,11 @@ class InstallerApp(tk.Tk):
                     self.append_log(data)
                 elif kind == "done":
                     self.set_busy(False)
-                    self.state_label.configure(text="Concluído.")
+                    try:
+                        root = find_triaevum_root()
+                        self.state_label.configure(text=f"Concluído • TriAevum: {root}")
+                    except Exception:
+                        self.state_label.configure(text="Concluído.")
                     if data == "install":
                         messagebox.showinfo(
                             TITLE,
@@ -237,7 +311,8 @@ class InstallerApp(tk.Tk):
 
     def open_folder(self):
         try:
-            os.startfile(APP_DIR)
+            root = find_triaevum_root()
+            os.startfile(root)
         except Exception as exc:
             messagebox.showerror(TITLE, str(exc))
 
