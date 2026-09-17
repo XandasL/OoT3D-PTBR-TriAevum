@@ -2,98 +2,100 @@
 
 Port da tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D** para execução através do **TriAevum**.
 
-O objetivo deste projeto é disponibilizar a tradução completa em PT-BR no port nativo, preservando os textos, menus, interface e recursos gráficos traduzidos, além da compatibilidade com as modificações de interface utilizadas pelo TriAevum.
+> **Status: v1.0 concluída e validada.** O instalador final em `.exe` foi testado no ciclo completo de instalação, restauração e nova instalação, incluindo execução da tradução dentro do jogo.
 
-> **Status:** tradução completa funcionando e instalador V4 validado em uma instalação limpa compatível do TriAevum.
+## 🇧🇷 Sobre o projeto
 
-## 🇧🇷 O que está traduzido
+Este projeto adapta uma tradução PT-BR já existente para a estrutura utilizada pelo TriAevum. O port preserva textos, menus, interface e recursos gráficos traduzidos e inclui os ajustes necessários para o runtime do TriAevum.
 
-- Diálogos e textos do jogo em PT-BR
-- Nomes de locais, mensagens e placas
-- Menus e interface
-- Texturas e elementos gráficos com texto
-- Tela de título e recursos da tradução original
-- Interface do slot europeu utilizada pelo runtime
-- Compatibilidade com TopScreen / Single Screen
+A tradução inclui:
+
+- diálogos e textos em PT-BR;
+- nomes de locais, mensagens e placas;
+- menus e interface;
+- texturas e elementos gráficos traduzidos;
+- tela de título e demais recursos da tradução original;
+- adaptação do slot USA para o layout EUR utilizado pelo runtime;
+- compatibilidade com **TopScreen / Single Screen**.
 
 ## 📥 Download
 
-A versão pública do instalador será disponibilizada na seção **Releases** deste repositório.
+O instalador oficial da **v1.0** será disponibilizado na seção **Releases** deste repositório.
 
-> O instalador final ainda está sendo preparado para distribuição. Evite baixar builds ou arquivos de desenvolvimento como se fossem uma versão final.
+O arquivo de distribuição é um executável único:
+
+`OoT3D_PTBR_TriAevum_v1.0.exe`
+
+Não é necessário instalar Python nem copiar scripts ou pastas de desenvolvimento.
 
 ## 🛠️ Instalação
 
-Quando a primeira versão pública estiver disponível:
-
 1. Tenha uma instalação funcional e compatível do TriAevum para Ocarina of Time 3D.
-2. Baixe o instalador mais recente na seção **Releases**.
-3. Coloque o instalador na pasta principal do TriAevum.
-4. Execute o instalador.
-5. Escolha **Instalar tradução**.
-6. Após a conclusão, inicie o jogo normalmente pelo TriAevum.
+2. Baixe `OoT3D_PTBR_TriAevum_v1.0.exe` pela seção **Releases**.
+3. Coloque o executável na pasta principal do TriAevum, ao lado de `TriAevum.launch.json`.
+4. Feche o jogo e o TriAevum antes de modificar os arquivos.
+5. Abra o instalador e clique em **Verificar status**.
+6. Clique em **Instalar tradução** e aguarde a conclusão.
+7. Inicie o jogo normalmente pelo TriAevum.
 
-O instalador verifica a instalação antes de aplicar o port e mantém backups dos arquivos necessários para permitir restauração.
+O instalador valida a instalação antes de aplicar o port e cria backups dos arquivos necessários.
 
-## 🔄 Restauração
+## 🔄 Restaurar o jogo original
 
-O instalador possui uma opção para restaurar os arquivos originais salvos antes da instalação da tradução.
+Abra o mesmo instalador e escolha **Restaurar original**. O instalador utiliza os backups criados durante a instalação para desfazer as alterações.
 
-Recomendamos não apagar manualmente os arquivos de backup criados pelo instalador enquanto desejar manter essa possibilidade.
+**Não apague os backups criados pelo instalador enquanto desejar manter a opção de restauração.**
 
 ## 🎮 Compatibilidade
 
-Este port foi desenvolvido especificamente para a estrutura utilizada pelo **TriAevum** e leva em consideração a adaptação de recursos USA → EUR realizada pelo runtime.
+A v1.0 foi validada com a estrutura do **TriAevum v0.6.0-alpha.2c para Windows x64** utilizada durante o desenvolvimento.
 
-Também foi ajustado para preservar o funcionamento do **TopScreen / Single Screen**, incluindo os recursos de interface que dependem do sistema de substituição de texturas do TriAevum.
+O port leva em consideração a adaptação USA → EUR feita pelo runtime e possui correção específica para preservar o funcionamento de **TopScreen / Single Screen** com a interface traduzida.
 
-Mais informações sobre versões testadas e limitações serão adicionadas em `docs/compatibilidade.md`.
+Outras versões do TriAevum podem exigir nova validação.
 
-## 📷 Screenshots
+## ✅ Validação da v1.0
 
-Screenshots da tradução rodando no TriAevum serão adicionadas aqui antes do lançamento público.
+Foram testados no executável final:
 
-## ❤️ Créditos
+- detecção da instalação do TriAevum;
+- verificação do estado do RomFS;
+- instalação completa da tradução;
+- textos, menus, HUD e recursos gráficos dentro do jogo;
+- TopScreen / Single Screen;
+- criação e utilização dos backups;
+- restauração para o RomFS original;
+- nova instalação após restauração;
+- execução independente das antigas pastas de desenvolvimento.
+
+## ❤️ Créditos e autorização
 
 Este projeto é um **port para TriAevum de uma tradução PT-BR existente**. A tradução original não foi criada por este repositório.
 
-Os créditos completos da tradução original e do trabalho de port serão mantidos em [`CREDITOS.md`](CREDITOS.md), no instalador e nos locais exigidos pela autorização concedida para distribuição.
+Os créditos da tradução e do port estão em [`CREDITOS.md`](CREDITOS.md) e também são mantidos no instalador.
 
-## ⚠️ Aviso importante
+O port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, condicionados à preservação dos devidos créditos dentro e fora do jogo.
+
+## ⚠️ Aviso
 
 Este repositório **não distribui ROM, dump ou cópia de The Legend of Zelda: Ocarina of Time 3D**.
 
-O usuário precisa possuir separadamente os arquivos compatíveis e necessários para executar o jogo. O projeto distribui apenas os componentes do port/tradução cuja distribuição esteja autorizada.
+O usuário deve possuir separadamente os arquivos compatíveis necessários para executar o jogo. O projeto distribui somente os componentes do port/tradução cuja distribuição foi autorizada.
 
-**The Legend of Zelda** e demais marcas relacionadas pertencem aos seus respectivos detentores. Este é um projeto de fãs e não possui afiliação oficial com a Nintendo.
+**The Legend of Zelda** e demais propriedades relacionadas pertencem aos seus respectivos detentores. Este é um projeto de fãs, sem afiliação oficial com a Nintendo.
 
-## 🧪 Estado do projeto
+## 📌 Estado do projeto
 
 - [x] Port dos textos PT-BR
-- [x] Port dos recursos gráficos da tradução
+- [x] Port dos recursos gráficos
 - [x] Menus PT-BR no runtime EUR
 - [x] Compatibilidade com TopScreen / Single Screen
-- [x] Instalação completa validada
-- [x] Backup e restauração
-- [ ] Interface gráfica do instalador
-- [ ] Pacote `.exe` para distribuição
-- [ ] Documentação final
-- [ ] Release pública v1.0.0
+- [x] Instalação, backup e restauração
+- [x] Interface gráfica
+- [x] Executável único para Windows
+- [x] Teste completo do executável v1.0
+- [ ] Publicação do binário na Release v1.0
 
-## 📄 Estrutura planejada
+## 🔧 Port e instalador
 
-```text
-OoT3D-PTBR-TriAevum/
-├── README.md
-├── CREDITOS.md
-├── installer/
-└── docs/
-    ├── instalacao.md
-    └── compatibilidade.md
-```
-
----
-
-### Sobre o projeto
-
-O port nasceu da necessidade de adaptar uma tradução originalmente preparada para a estrutura de mods do Citra à forma como o TriAevum organiza e carrega os recursos de Ocarina of Time 3D. O processo incluiu adaptação dos arquivos de mensagem, recursos de interface e compatibilidade com as modificações gráficas do runtime.
+**XandasL** — port para TriAevum, adaptação técnica e empacotamento do instalador.
