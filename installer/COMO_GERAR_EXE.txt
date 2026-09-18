@@ -1,9 +1,10 @@
 PACOTE DE BUILD — OoT3D PT-BR TriAevum v1.0
+COMPATIBILIDADE VALIDADA — TriAevum v0.6.0-alpha.2c Windows x64
 
 1. Em um Windows com Python 3 instalado, execute GERAR_EXE_WINDOWS.bat.
 2. Aguarde a instalação do PyInstaller e a compilação.
 3. O executável será criado em: dist\OoT3D_PTBR_TriAevum_v1.0.exe
-4. Para testar, copie SOMENTE o EXE para a pasta raiz do TriAevum, junto de TriAevum.launch.json.
+4. Para testar, copie SOMENTE o EXE para a pasta raiz do TriAevum v0.6.0-alpha.2c, junto de TriAevum.launch.json.
 
 O EXE incorpora o núcleo V4 e os 112 arquivos utilizados da tradução.
 A pasta scene\fazer do pacote original não é incluída.
