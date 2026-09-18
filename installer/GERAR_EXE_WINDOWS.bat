@@ -4,6 +4,7 @@ cd /d "%~dp0"
 
 echo ===============================================
 echo OoT3D PT-BR TriAevum v1.0 - Gerar EXE
+echo Alvo validado: TriAevum v0.6.0-alpha.2c Windows x64
 echo ===============================================
 echo.
 
