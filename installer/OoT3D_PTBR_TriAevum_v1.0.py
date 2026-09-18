@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Instalador v1.0 da tradução PT-BR de Ocarina of Time 3D para TriAevum.
+Compatibilidade validada: TriAevum v0.6.0-alpha.2c Windows x64.
 Preparado para distribuição como executável único (PyInstaller one-file).
 """
 
@@ -17,7 +18,7 @@ from tkinter import ttk, messagebox
 from tkinter.scrolledtext import ScrolledText
 
 
-APP_TITLE = "Tradução PT-BR - Ocarina of Time 3D / TriAevum"
+APP_TITLE = "Tradução PT-BR - Ocarina of Time 3D / TriAevum v0.6.0-alpha.2c"
 CORE_FILENAME = "Instalador_Traducao_PTBR_OoT3D_V4.py"
 PAYLOAD_RELATIVE = Path("TraducaoCompleta") / "citra" / "romfs"
 
@@ -151,7 +152,7 @@ class App(tk.Tk):
 
         ttk.Label(
             header,
-            text="Tradução PT-BR • Ocarina of Time 3D • TriAevum",
+            text="Tradução PT-BR • Ocarina of Time 3D • TriAevum v0.6.0-alpha.2c",
         ).grid(row=1, column=0, sticky="w", pady=(4, 0))
 
         buttons = ttk.Frame(self, padding=(18, 8))
@@ -205,7 +206,7 @@ class App(tk.Tk):
         ttk.Button(footer, text="Leia-me", command=self.open_credits).grid(
             row=0, column=0, padx=(0, 6)
         )
-        ttk.Label(footer, text="v1.0").grid(
+        ttk.Label(footer, text="v1.0 • TriAevum v0.6.0-alpha.2c").grid(
             row=0, column=1
         )
         ttk.Button(footer, text="Sair", command=self.destroy).grid(
@@ -565,7 +566,7 @@ class App(tk.Tk):
 
     def open_credits(self):
         """Abre um LEIA-ME resumido em uma janela interna."""
-        readme_text = 'LEIA-ME — Tradução PT-BR para Ocarina of Time 3D\n\nSOBRE\nAdaptação da tradução brasileira de The Legend of Zelda: Ocarina of Time 3D para o TriAevum.\nEste projeto não distribui o jogo ou ROM.\n\nCOMO INSTALAR\n1. Coloque o instalador na pasta raiz do TriAevum, junto de TriAevum.launch.json.\n2. Feche o jogo e o TriAevum.\n3. Clique em “Verificar status”.\n4. Clique em “Instalar tradução” e aguarde a conclusão.\n5. Abra o jogo e confira a tradução.\n\nCOMO RESTAURAR\n1. Abra o instalador.\n2. Clique em “Restaurar original”.\n3. Confirme e aguarde a restauração dos backups.\n\nIMPORTANTE\n• Não apague os backups criados pelo instalador enquanto a tradução estiver instalada.\n• Se a validação falhar, não force a instalação.\n• Recomenda-se testar a tradução antes de instalar outros mods.\n\nCRÉDITOS — TRADUÇÃO PT-BR ORIGINAL\nProjeto Zelda Brasil – Heroes of Time\nCatatau Game Dev e Traduções\nElite dos Quatro Traduções\nJumpManClub Brasil Traduções\nTRADU-ROMS\n\nPORT PARA TRIAEVUM\nXandasL — port, adaptação e empacotamento do instalador.\n\nAUTORIZAÇÃO\nO port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, mantendo os devidos créditos dentro e fora do jogo.\n\nAVISO\nProjeto feito por fãs, sem afiliação oficial com a Nintendo.\nThe Legend of Zelda e demais propriedades relacionadas pertencem aos seus respectivos detentores.\n'
+        readme_text = 'LEIA-ME — Tradução PT-BR para Ocarina of Time 3D\n\nSOBRE\nAdaptação da tradução brasileira de The Legend of Zelda: Ocarina of Time 3D para o TriAevum.\nCOMPATIBILIDADE VALIDADA\nTriAevum v0.6.0-alpha.2c Windows x64. Outras versões exigem nova validação.\n\nEste projeto não distribui o jogo ou ROM.\n\nCOMO INSTALAR\n1. Coloque o instalador na pasta raiz do TriAevum, junto de TriAevum.launch.json.\n2. Feche o jogo e o TriAevum.\n3. Clique em “Verificar status”.\n4. Clique em “Instalar tradução” e aguarde a conclusão.\n5. Abra o jogo e confira a tradução.\n\nCOMO RESTAURAR\n1. Abra o instalador.\n2. Clique em “Restaurar original”.\n3. Confirme e aguarde a restauração dos backups.\n\nIMPORTANTE\n• Não apague os backups criados pelo instalador enquanto a tradução estiver instalada.\n• Se a validação falhar, não force a instalação.\n• Recomenda-se testar a tradução antes de instalar outros mods.\n\nCRÉDITOS — TRADUÇÃO PT-BR ORIGINAL\nProjeto Zelda Brasil – Heroes of Time\nCatatau Game Dev e Traduções\nElite dos Quatro Traduções\nJumpManClub Brasil Traduções\nTRADU-ROMS\n\nPORT PARA TRIAEVUM\nXandasL — port, adaptação e empacotamento do instalador.\n\nAUTORIZAÇÃO\nO port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, mantendo os devidos créditos dentro e fora do jogo.\n\nAVISO\nProjeto feito por fãs, sem afiliação oficial com a Nintendo.\nThe Legend of Zelda e demais propriedades relacionadas pertencem aos seus respectivos detentores.\n'
 
         window = tk.Toplevel(self)
         window.title("LEIA-ME - Tradução PT-BR Ocarina of Time 3D")
