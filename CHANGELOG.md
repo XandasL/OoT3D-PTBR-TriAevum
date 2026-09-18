@@ -2,7 +2,7 @@
 
 ## v1.0 — 2026-09-17
 
-Primeira versão pública preparada do port PT-BR de **The Legend of Zelda: Ocarina of Time 3D** para TriAevum.
+Primeira versão pública preparada do port PT-BR de **The Legend of Zelda: Ocarina of Time 3D** para **TriAevum v0.6.0-alpha.2c**.
 
 ### Tradução
 
