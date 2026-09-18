@@ -2,7 +2,7 @@
 
 Port da tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D** para execução através do **TriAevum**.
 
-> **Status: v1.0.0 lançada e validada.** O instalador final foi testado no ciclo completo de instalação, restauração e nova instalação, incluindo execução da tradução dentro do jogo.
+> **Status: v1.0.0 lançada e validada para TriAevum v0.6.0-alpha.2c.** O instalador final foi testado no ciclo completo de instalação, restauração e nova instalação, incluindo execução da tradução dentro do jogo.
 
 ## 🇧🇷 Sobre o projeto
 
@@ -59,7 +59,7 @@ A v1.0.0 foi validada com a estrutura do **TriAevum v0.6.0-alpha.2c para Windows
 
 O port leva em consideração a adaptação USA → EUR feita pelo runtime e possui correção específica para preservar o funcionamento de **TopScreen / Single Screen** com a interface traduzida.
 
-Outras versões do TriAevum podem exigir nova validação.
+**Versão suportada/validada:** TriAevum **v0.6.0-alpha.2c**. Outras versões do TriAevum podem exigir nova validação e não devem ser presumidas como compatíveis.
 
 ## ✅ Validação da v1.0.0
 
@@ -109,7 +109,7 @@ O usuário deve possuir separadamente os arquivos compatíveis necessários para
 - [x] Interface gráfica
 - [x] Executável único para Windows
 - [x] Teste completo do executável
-- [x] Release pública v1.0.0
+- [x] Release pública v1.0.0 (TriAevum v0.6.0-alpha.2c Windows x64)
 
 ## 🔧 Port e instalador
 
