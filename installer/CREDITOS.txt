@@ -8,10 +8,6 @@ Elite dos Quatro Traduções
 JumpManClub Brasil Traduções
 TRADU-ROMS
 
-ATENÇÃO:
-Antes da primeira distribuição pública, adicionar aqui os créditos individuais
-oficiais exatamente conforme o material fornecido pelos responsáveis pela tradução.
-
 PORT PARA TRIAEVUM
 XandasL — port para TriAevum, adaptação e empacotamento do instalador.
 
