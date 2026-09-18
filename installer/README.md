@@ -1,11 +1,14 @@
 # Fontes do instalador
 
-Esta pasta preserva o código e os arquivos de build do instalador da tradução PT-BR para TriAevum.
+Esta pasta preserva o código e os arquivos de build do instalador da tradução PT-BR para **TriAevum v0.6.0-alpha.2c**.
+
+**Compatibilidade validada:** TriAevum **v0.6.0-alpha.2c Windows x64**. O protótipo Linux desta pasta também tem como alvo a **v0.6.0-alpha.2c distribuída via Flatpak**.
 
 ## Componentes
 
 - `Instalador_Traducao_PTBR_OoT3D_V4.py` — núcleo validado do instalador: validação do RomFS, aplicação dos 112 recursos, adaptação USA → EUR, 14 espelhos de menu, ajuste TopScreen, backups, restauração e status.
-- `OoT3D_PTBR_TriAevum_v1.0.py` — interface gráfica final preparada para execução em modo PyInstaller one-file.
+- `OoT3D_PTBR_TriAevum_v1.0.py` — interface gráfica final para Windows, validada com TriAevum v0.6.0-alpha.2c e preparada para execução em modo PyInstaller one-file.
+- `OoT3D_PTBR_TriAevum_v1.0_Linux.py` — protótipo Linux/Flatpak direcionado especificamente ao TriAevum v0.6.0-alpha.2c; ainda requer validação Linux.
 - `OoT3D_PTBR_TriAevum_v1.0.spec` — configuração PyInstaller usada para incorporar o núcleo e o payload `TraducaoCompleta`.
 - `GERAR_EXE_WINDOWS.bat` — script de compilação no Windows.
 - `COMO_GERAR_EXE.txt` — instruções rápidas de build.
