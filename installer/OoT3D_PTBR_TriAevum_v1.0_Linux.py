@@ -7,6 +7,10 @@ Ela detecta a área persistente do Flatpak, localiza com cautela o perfil
 TriAevum preparado e então configura o núcleo V4 já validado.
 
 IMPORTANTE:
+- Este protótipo destina-se especificamente ao TriAevum v0.6.0-alpha.2c,
+  cuja distribuição Linux oficial utiliza Flatpak.
+- Releases posteriores podem usar outro formato de empacotamento e NÃO devem
+  ser tratadas automaticamente como compatíveis com esta versão do instalador.
 - Esta versão ainda precisa de validação em uma instalação Linux real.
 - Se a detecção for ambígua, a instalação é bloqueada.
 """
@@ -25,7 +29,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.scrolledtext import ScrolledText
 
-APP_TITLE = "Tradução PT-BR - Ocarina of Time 3D / TriAevum (Linux)"
+APP_TITLE = "Tradução PT-BR - Ocarina of Time 3D / TriAevum v0.6.0-alpha.2c (Linux Flatpak)"
 APP_ID = "io.github.coccofresco.TriAevum"
 CORE_FILENAME = "Instalador_Traducao_PTBR_OoT3D_V4.py"
 PAYLOAD_RELATIVE = Path("TraducaoCompleta") / "citra" / "romfs"
@@ -196,7 +200,7 @@ class App(tk.Tk):
         header.columnconfigure(0, weight=1)
         ttk.Label(header, text="Tradução PT-BR — Ocarina of Time 3D",
                   font=("Sans", 17, "bold")).grid(row=0, column=0, sticky="w")
-        ttk.Label(header, text="TriAevum • Linux / Flatpak • protótipo para validação").grid(
+        ttk.Label(header, text="TriAevum v0.6.0-alpha.2c • Linux / Flatpak • protótipo para validação").grid(
             row=1, column=0, sticky="w", pady=(4, 0))
 
         buttons = ttk.Frame(self, padding=(18, 8))
@@ -226,7 +230,7 @@ class App(tk.Tk):
         footer = ttk.Frame(self, padding=(18, 6, 18, 14))
         footer.grid(row=4, column=0, sticky="ew")
         footer.columnconfigure(0, weight=1)
-        ttk.Label(footer, text="Linux v1.0 — pré-validação").grid(row=0, column=0)
+        ttk.Label(footer, text="Linux v1.0 • alvo: TriAevum v0.6.0-alpha.2c Flatpak • pré-validação").grid(row=0, column=0)
         ttk.Button(footer, text="Sair", command=self.destroy).grid(row=0, column=1)
 
     def write_log(self, text=""):
@@ -261,6 +265,8 @@ class App(tk.Tk):
 
     def initial_detection(self):
         self.write_log("=== TRADUÇÃO PT-BR / TRIAEVUM LINUX ===")
+        self.write_log("Alvo desta edição: TriAevum v0.6.0-alpha.2c para Linux/Flatpak.")
+        self.write_log("Não presuma compatibilidade com releases posteriores ou outros formatos de pacote.")
         self.write_log("Esta edição ainda requer validação em Linux real.")
         self.write_log("")
         self.refresh_paths(True)
