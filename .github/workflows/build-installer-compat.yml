@@ -89,12 +89,11 @@ jobs:
           test "$(find release-assets -maxdepth 1 -name '*.sha256' | wc -l)" -eq 3
           for file in release-assets/*.zip release-assets/*.sha256; do
             name=$(basename "$file")
-            old_id=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq ".[] | select(.name == \\"$name\\") | .id" | head -n 1)
+            old_id=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq ".[] | select(.name == \"$name\") | .id" | head -n 1)
             if [ -n "$old_id" ]; then
               gh api -X DELETE "repos/$GH_REPO/releases/assets/$old_id"
             fi
-            gh api -X POST -H "Content-Type: application/octet-stream" --input "$file" \\
-              "https://uploads.github.com/repos/$GH_REPO/releases/$RELEASE_ID/assets?name=$name" >/dev/null
+            gh api -X POST -H "Content-Type: application/octet-stream" --input "$file" "https://uploads.github.com/repos/$GH_REPO/releases/$RELEASE_ID/assets?name=$name" >/dev/null
             echo "Anexado: $name"
           done
           echo "Draft atualizado; publicacao permanece manual."
