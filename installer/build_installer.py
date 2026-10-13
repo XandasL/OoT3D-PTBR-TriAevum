@@ -110,14 +110,27 @@ def main():
     subprocess.run([str(binary), '--self-test-report', str(report)], check=True, timeout=120)
     if not json.loads(report.read_text(encoding='utf-8')).get('ok'):
         raise RuntimeError('Autoteste do executável falhou.')
-    archive = output/(name+'.zip')
-    with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
-        z.write(binary,binary.name)
-        z.write(ROOT/'installer/LEIA-ME_v1.1.txt','LEIA-ME.txt')
-    digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-    (output/(archive.name+'.sha256')).write_text(digest+'  '+archive.name+'\n',encoding='utf-8')
-    print('Pacote:',archive)
-    print('SHA-256:',digest)
+    variants = [('Windows-x64', '')] if sys.platform == 'win32' else [
+        ('Linux-x86_64-AppImage', 'AppImage'),
+        ('Linux-x86_64-Flatpak', 'Flatpak'),
+    ]
+    for variant, runtime in variants:
+        package_name = f'OoT3D_PTBR_TriAevum_v{VERSION}_{variant}'
+        archive = output/(package_name+'.zip')
+        with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
+            z.write(binary,binary.name)
+            readme = (ROOT/'installer/LEIA-ME_v1.1.txt').read_text(encoding='utf-8')
+            if runtime:
+                readme = ('PACOTE LINUX: '+runtime+'\\n'
+                          'O executavel do instalador e o mesmo nas duas variantes; '
+                          'selecione a pasta de dados preparada pelo Forge.\\n'
+                          'LINUX: VALIDACAO FUNCIONAL PENDENTE.\\n\\n') + readme
+            z.writestr('LEIA-ME.txt',readme)
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (output/(archive.name+'.sha256')).write_text(
+            digest+'  '+archive.name+'\\n',encoding='utf-8')
+        print('Pacote:',archive)
+        print('SHA-256:',digest)
 
 
 if __name__ == '__main__':
