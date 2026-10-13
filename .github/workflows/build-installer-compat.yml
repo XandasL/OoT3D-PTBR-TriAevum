@@ -42,13 +42,27 @@ jobs:
       - name: Build Linux e autoteste de Tk sem monitor
         if: runner.os == 'Linux'
         run: xvfb-run -a python installer/build_installer.py
-      - uses: actions/upload-artifact@v4
+      - name: Upload Windows
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
         with:
-          name: OoT3D-PTBR-v1.1.0-${{ matrix.label }}
-          path: artifacts/*
+          name: OoT3D-PTBR-v1.1.0-Windows-x64
+          path: artifacts/*Windows-x64*
           if-no-files-found: error
-          retention-days: 30
-
+      - name: Upload Linux AppImage
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: OoT3D-PTBR-v1.1.0-Linux-x86_64-AppImage
+          path: artifacts/*Linux-x86_64-AppImage*
+          if-no-files-found: error
+      - name: Upload Linux Flatpak
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: OoT3D-PTBR-v1.1.0-Linux-x86_64-Flatpak
+          path: artifacts/*Linux-x86_64-Flatpak*
+          if-no-files-found: error
   attach-draft:
     name: Anexar pacotes ao draft existente (sem publicar)
     needs: build
@@ -69,8 +83,18 @@ jobs:
         run: |
           set -euo pipefail
           TAG="1.1.0"
-          RELEASE=$(gh api "repos/$GH_REPO/releases/tags/$TAG")
-          echo "$RELEASE" | jq -e '.draft == true and .prerelease == true' >/dev/null
+          RELEASE_ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.tag_name == "1.1.0" and .draft == true and .prerelease == true) | .id' | head -n 1)
+          test -n "$RELEASE_ID" || { echo "Draft 1.1.0 nao encontrado"; exit 1; }
           test "$(find release-assets -maxdepth 1 -name '*.zip' | wc -l)" -eq 3
-          gh release upload "$TAG" release-assets/*.zip release-assets/*.sha256 --clobber
-          echo "Arquivos anexados ao draft $TAG. Publicacao permanece manual."
+          test "$(find release-assets -maxdepth 1 -name '*.sha256' | wc -l)" -eq 3
+          for file in release-assets/*.zip release-assets/*.sha256; do
+            name=$(basename "$file")
+            old_id=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq ".[] | select(.name == \\"$name\\") | .id" | head -n 1)
+            if [ -n "$old_id" ]; then
+              gh api -X DELETE "repos/$GH_REPO/releases/assets/$old_id"
+            fi
+            gh api -X POST -H "Content-Type: application/octet-stream" --input "$file" \\
+              "https://uploads.github.com/repos/$GH_REPO/releases/$RELEASE_ID/assets?name=$name" >/dev/null
+            echo "Anexado: $name"
+          done
+          echo "Draft atualizado; publicacao permanece manual."
