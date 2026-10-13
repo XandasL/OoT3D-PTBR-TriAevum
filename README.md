@@ -2,7 +2,7 @@
 
 Port da tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D** para execução através do **TriAevum**.
 
-> **Status: v1.0.0 lançada e validada para TriAevum v0.6.0-alpha.2c.** O instalador final foi testado no ciclo completo de instalação, restauração e nova instalação, incluindo execução da tradução dentro do jogo.
+> **Versão atual: v1.1.0 para TriAevum v0.8.0-beta.1.** Windows x64 testado no jogo. Linux x86_64 (TriAevum AppImage/Flatpak) disponível em caráter experimental, com validação funcional pendente. A versão v1.0.0 continua disponível para TriAevum v0.6.0-alpha.2c.
 
 ## 🇧🇷 Sobre o projeto
 
@@ -18,34 +18,34 @@ A tradução inclui:
 - adaptação do slot USA para o layout EUR utilizado pelo runtime;
 - compatibilidade com **TopScreen / Single Screen**.
 
-## 📥 Download
+## 📥 Downloads — v1.1.0 (TriAevum v0.8.0-beta.1)
 
-### [⬇️ Baixar Tradução PT-BR v1.0.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip)
+**Versão atual:** [Notas e downloads da v1.1.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.1.0).
 
-A versão oficial também está disponível na página de [Releases](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/v1.0.0).
+| Plataforma / instalação do TriAevum | Download |
+| --- | --- |
+| Windows x64 — testado | [Baixar instalador Windows](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.1.0/OoT3D_PTBR_TriAevum_v1.1.0_Windows-x64.zip) |
+| Linux x86_64 — TriAevum AppImage (experimental) | [Baixar instalador para AppImage](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.1.0/OoT3D_PTBR_TriAevum_v1.1.0_Linux-x86_64-AppImage.zip) |
+| Linux x86_64 — TriAevum Flatpak (experimental) | [Baixar instalador para Flatpak](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.1.0/OoT3D_PTBR_TriAevum_v1.1.0_Linux-x86_64-Flatpak.zip) |
 
-O pacote contém:
+> **Linux:** os pacotes foram compilados e passaram pelos autotestes, mas ainda **não foram validados funcionalmente dentro do jogo**. Os ZIPs Linux contêm o instalador executável para Linux e instruções específicas de localização dos dados; **não** são pacotes nativos .AppImage ou .flatpak.
 
-- `OoT3D_PTBR_TriAevum_v1.0.exe` — instalador da tradução;
-- `LEIA-ME.txt` — instruções, créditos e informações do projeto.
+### Versão anterior — v1.0.0
 
-**SHA-256 do ZIP:**
+Para **TriAevum v0.6.0-alpha.2c (Windows x64)**, utilize a versão validada anteriormente:
 
-`7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b`
+[Baixar v1.0.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip) · [Notas da versão](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/v1.0.0)
 
-Não é necessário instalar Python nem copiar scripts ou pastas de desenvolvimento.
+### Instalação da v1.1.0
 
-## 🛠️ Instalação
+1. Prepare o jogo normalmente pelo **TriAevum Forge v0.8.0-beta.1**.
+2. Feche o jogo e o Forge.
+3. Baixe o ZIP correspondente ao sistema e extraia seu conteúdo.
+4. Execute o instalador. No Linux, conceda permissão de execução se necessário e selecione a pasta de dados preparada pelo Forge.
+5. Clique em **Verificar status**. Se a instalação for reconhecida como compatível, clique em **Instalar tradução**.
+6. Inicie o jogo normalmente.
 
-1. Tenha uma instalação funcional e compatível do TriAevum para Ocarina of Time 3D.
-2. Baixe e extraia `OoT3D_PTBR_TriAevum_v1.0.zip`.
-3. Coloque `OoT3D_PTBR_TriAevum_v1.0.exe` na pasta principal do TriAevum, ao lado de `TriAevum.launch.json`.
-4. Feche o jogo e o TriAevum antes de modificar os arquivos.
-5. Abra o instalador e clique em **Verificar status**.
-6. Clique em **Instalar tradução** e aguarde a conclusão.
-7. Inicie o jogo normalmente pelo TriAevum.
-
-O instalador valida a instalação antes de aplicar o port e cria backups dos arquivos necessários.
+O instalador verifica a compatibilidade antes de alterar os arquivos e mantém backups para restauração. **Não apague os backups** enquanto desejar poder restaurar o original. Consulte o `LEIA-ME.txt` incluído no pacote.
 
 ## 🔄 Restaurar o jogo original
 
@@ -55,13 +55,13 @@ Abra o mesmo instalador e escolha **Restaurar original**. O instalador utiliza o
 
 ## 🎮 Compatibilidade
 
-A v1.0.0 foi validada com a estrutura do **TriAevum v0.6.0-alpha.2c para Windows x64** utilizada durante o desenvolvimento.
+A versão anterior v1.0.0 foi validada com a estrutura do **TriAevum v0.6.0-alpha.2c para Windows x64** utilizada durante o desenvolvimento.
 
 O port leva em consideração a adaptação USA → EUR feita pelo runtime e possui correção específica para preservar o funcionamento de **TopScreen / Single Screen** com a interface traduzida.
 
-**Versão suportada/validada:** TriAevum **v0.6.0-alpha.2c**. Outras versões do TriAevum podem exigir nova validação e não devem ser presumidas como compatíveis.
+**v1.1.0:** TriAevum **v0.8.0-beta.1**, com Windows x64 testado e Linux x86_64 ainda experimental. **v1.0.0:** TriAevum **v0.6.0-alpha.2c** no Windows x64. Não presuma compatibilidade com outras versões.
 
-### Base testada / hashes de referência
+### Base histórica testada na v1.0.0 / hashes de referência
 
 A instalação utilizada no desenvolvimento e na validação da tradução foi criada a partir de uma cópia **USA (En/Fr/Es)** de *The Legend of Zelda: Ocarina of Time 3D*. Estas hashes servem apenas para conferência de uma cópia obtida legalmente pelo próprio usuário; este repositório não fornece nem aponta downloads do jogo.
 
@@ -77,9 +77,9 @@ A instalação utilizada no desenvolvimento e na validação da tradução foi c
 
 O instalador v1.0.0 valida o RomFS compatível antes de aplicar a tradução.
 
-## ✅ Validação da v1.0.0
+## ✅ Histórico de validação da v1.0.0
 
-Foram testados no executável final:
+Na versão anterior v1.0.0, foram testados no executável final:
 
 - detecção da instalação do TriAevum;
 - verificação do estado do RomFS;
@@ -126,6 +126,9 @@ O usuário deve possuir separadamente os arquivos compatíveis necessários para
 - [x] Executável único para Windows
 - [x] Teste completo do executável
 - [x] Release pública v1.0.0 (TriAevum v0.6.0-alpha.2c Windows x64)
+- [x] Release pública v1.1.0 (TriAevum v0.8.0-beta.1; Windows x64 testado)
+- [x] Builds Linux x86_64 separadas por instalação AppImage / Flatpak
+- [ ] Validação funcional no Linux
 
 ## 🔧 Port e instalador
 
