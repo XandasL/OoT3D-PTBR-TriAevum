@@ -1,0 +1,10 @@
+__pycache__/
+test-input/
+test-installation/
+public-v1.0.0-reference.zip
+github-releases.json
+.venv-build/
+build/
+dist/
+artifacts/
+triaevum-release-reference.json
