@@ -1,4 +1,4 @@
-name: Build instalador PT-BR 0.8 (artefatos de teste)
+name: Build instalador PT-BR 0.8 e anexar ao draft
 on:
   workflow_dispatch:
   push:
@@ -48,3 +48,29 @@ jobs:
           path: artifacts/*
           if-no-files-found: error
           retention-days: 30
+
+  attach-draft:
+    name: Anexar pacotes ao draft existente (sem publicar)
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: OoT3D-PTBR-v1.1.0-*
+          merge-multiple: true
+          path: release-assets
+      - name: Confirmar draft e anexar ZIPs e checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="1.1.0"
+          RELEASE=$(gh api "repos/$GH_REPO/releases/tags/$TAG")
+          echo "$RELEASE" | jq -e '.draft == true and .prerelease == true' >/dev/null
+          test "$(find release-assets -maxdepth 1 -name '*.zip' | wc -l)" -eq 3
+          gh release upload "$TAG" release-assets/*.zip release-assets/*.sha256 --clobber
+          echo "Arquivos anexados ao draft $TAG. Publicacao permanece manual."
