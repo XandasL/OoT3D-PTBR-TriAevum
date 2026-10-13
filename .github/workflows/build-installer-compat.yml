@@ -47,21 +47,21 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: OoT3D-PTBR-v1.1.0-Windows-x64
-          path: artifacts/*Windows-x64*
+          path: artifacts/*Windows-x64.zip
           if-no-files-found: error
       - name: Upload Linux AppImage
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: OoT3D-PTBR-v1.1.0-Linux-x86_64-AppImage
-          path: artifacts/*Linux-x86_64-AppImage*
+          path: artifacts/*Linux-x86_64-AppImage.zip
           if-no-files-found: error
       - name: Upload Linux Flatpak
         if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: OoT3D-PTBR-v1.1.0-Linux-x86_64-Flatpak
-          path: artifacts/*Linux-x86_64-Flatpak*
+          path: artifacts/*Linux-x86_64-Flatpak.zip
           if-no-files-found: error
   attach-draft:
     name: Anexar pacotes ao draft existente (sem publicar)
@@ -75,7 +75,7 @@ jobs:
           pattern: OoT3D-PTBR-v1.1.0-*
           merge-multiple: true
           path: release-assets
-      - name: Confirmar draft e anexar ZIPs e checksums
+      - name: Anexar somente os tres ZIPs finais e limpar anexos extras
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -86,8 +86,11 @@ jobs:
           RELEASE_ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.tag_name == "1.1.0" and .draft == true and .prerelease == true) | .id' | head -n 1)
           test -n "$RELEASE_ID" || { echo "Draft 1.1.0 nao encontrado"; exit 1; }
           test "$(find release-assets -maxdepth 1 -name '*.zip' | wc -l)" -eq 3
-          test "$(find release-assets -maxdepth 1 -name '*.sha256' | wc -l)" -eq 3
-          for file in release-assets/*.zip release-assets/*.sha256; do
+          # Remove anexos de diagnostico e checksums antigos do draft.
+          for asset_id in $(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq '.[] | select(.name | endswith(".sha256") or endswith(".json")) | .id'); do
+            gh api -X DELETE "repos/$GH_REPO/releases/assets/$asset_id"
+          done
+          for file in release-assets/*.zip; do
             name=$(basename "$file")
             old_id=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq ".[] | select(.name == \"$name\") | .id" | head -n 1)
             if [ -n "$old_id" ]; then
