@@ -191,6 +191,51 @@ class HDIntegration(unittest.TestCase):
         with self.assertRaises(RuntimeError): hd.bounded(self.root, '../outside.bin')
 
 
+    def enable_navi_fixture(self):
+        actual = hd.read_json(hd.HERE / 'hd-recipe.json')['navi_repair']
+        self.rules['navi_repair'] = dict(actual, source='original.png', translated='ptbr.png',
+                                        image_size=[8, 8], box=[2, 2, 4, 4])
+
+    def test_navi_upgrade_restores_preexisting_alias(self):
+        self.enable_navi_fixture()
+        target = self.pack / 'UI/PTBR_HASHES/ptbr.png'
+        self.write(self.pack, 'UI/PTBR_HASHES/ptbr.png', png())
+        self.install()
+        self.assertNotEqual(target.read_bytes(), png())
+        hd.restore(self.root)
+        self.assertEqual(target.read_bytes(), png())
+
+    def test_navi_upgrade_rolls_back_after_later_failure(self):
+        self.enable_navi_fixture()
+        target = self.pack / 'UI/PTBR_HASHES/ptbr.png'
+        self.write(self.pack, 'UI/PTBR_HASHES/ptbr.png', png())
+        original_write = hd.atomic_write
+        def fail_profile(path, data):
+            if path.name == hd.PROFILE:
+                raise OSError('simulated profile write failure')
+            return original_write(path, data)
+        with patch.object(hd, 'atomic_write', side_effect=fail_profile):
+            with self.assertRaises(OSError): self.install()
+        self.assertEqual(target.read_bytes(), png())
+        self.assertFalse((self.root / hd.EXE).exists())
+
+    def test_navi_changes_only_its_slot(self):
+        self.enable_navi_fixture()
+        from PIL import Image, ImageChops
+        import io
+        before = Image.open(io.BytesIO(png())).convert('RGBA')
+        after = Image.open(io.BytesIO(hd.repair_navi_hud(png(), self.rules))).convert('RGBA')
+        changed = ImageChops.difference(before, after).getbbox()
+        self.assertIsNotNone(changed)
+        self.assertTrue(2 <= changed[0] < changed[2] <= 4 and 2 <= changed[1] < changed[3] <= 4)
+
+    def test_navi_does_not_overwrite_unknown_alias(self):
+        self.enable_navi_fixture()
+        self.write(self.pack, 'UI/PTBR_HASHES/ptbr.png', png() + b'unknown edit')
+        with self.assertRaises(RuntimeError): self.install()
+        self.assertFalse((self.root / hd.EXE).exists())
+
+
 if __name__ == '__main__':
     unittest.main()
 

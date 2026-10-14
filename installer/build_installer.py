@@ -148,6 +148,9 @@ def main():
             z.writestr('LEIA-ME.txt', readme)
             z.write(ROOT/'installer/CREDITOS.txt', 'CREDITOS.txt')
             z.write(ROOT/'installer/TEXTURAS_CREDITOS.md', 'TEXTURAS-CREDITOS.md')
+            for path in sorted((ROOT/'installer/PILLOW-LICENSES').rglob('*')):
+                if path.is_file():
+                    z.write(path, 'Licencas/Pillow/' + path.relative_to(ROOT/'installer/PILLOW-LICENSES').as_posix())
             if args.hd_runtime:
                 z.write(ROOT/'installer/HD_INTEGRACAO.md', 'TEXTURAS-HD.md')
                 z.write(args.hd_runtime/'LICENSE', 'Licencas/LICENSE-TriAevum.txt')

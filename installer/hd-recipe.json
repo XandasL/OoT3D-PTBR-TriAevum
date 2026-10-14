@@ -734,5 +734,21 @@
     "UI/tex1_256x64_9BE407A9B8C85B22_5_mip0.png": "d83312eadef94a4b308fe23ba9ff0bd531d20c7314dd48e10d3b236b8a6a5172",
     "UI/tex1_256x64_50D6E6DCFB27ADC0_5_mip0.png": "10c7f18f66ab0c5d2aacbf9321d94068a9b5bc1aaf4964b129a19a404929f02f",
     "UI/tex1_256x64_CB033AC905E48BBA_5_mip0.png": "f0b2db5c87ffbebd3def3967869cb5de147751f6e4b1564c5faddaab2bf325d4"
+  },
+  "navi_repair": {
+    "source": "tex1_256x256_B643C054F4538362_4_mip0.png",
+    "translated": "tex1_256x256_C3671FFD3DD0F4A7_4_mip0.png",
+    "overlay": "navi-hud-overlay.png",
+    "overlay_sha256": "9c7ddd54ac099628e288e227b0452e1196bd071a18c2195125833f89b6c2deb7",
+    "image_size": [
+      4096,
+      4096
+    ],
+    "box": [
+      1024,
+      1792,
+      2048,
+      2048
+    ]
   }
 }

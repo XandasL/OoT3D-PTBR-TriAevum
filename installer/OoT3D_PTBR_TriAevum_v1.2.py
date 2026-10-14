@@ -741,6 +741,21 @@ def bundle_self_test(report):
               "qm_sha256": hashlib.sha256(converted).hexdigest()}
     module = hd_module()
     result["hd_recipe_aliases"] = len(module.recipe()["aliases"])
+    from PIL import Image, ImageChops
+    import copy
+    rules = module.recipe()
+    small_rules = copy.deepcopy(rules)
+    small_rules['navi_repair']['image_size'] = [256, 256]
+    small_rules['navi_repair']['box'] = [64, 112, 128, 128]
+    original = Image.new('RGBA', (256, 256))
+    source = io.BytesIO()
+    original.save(source, format='PNG')
+    corrected = Image.open(io.BytesIO(module.repair_navi_hud(source.getvalue(), small_rules))).convert('RGBA')
+    changed = ImageChops.difference(original, corrected).getbbox()
+    if not changed or not (64 <= changed[0] < changed[2] <= 128 and 112 <= changed[1] < changed[3] <= 128):
+        raise RuntimeError('Correção Navi fora do retângulo esperado.')
+    result['navi_overlay_verified'] = True
+
     result["hd_runtime_included"] = hd_bundle() is not None
     if hd_bundle():
         module.validate_bundle(hd_bundle())

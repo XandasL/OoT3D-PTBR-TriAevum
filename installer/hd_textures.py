@@ -140,6 +140,35 @@ def locate_pack(selected):
     return pack
 
 
+def repair_navi_hud(data, rules):
+    """Compose only the missing Navi slot; never change the external source PNG."""
+    from PIL import Image
+    repair = rules['navi_repair']
+    overlay_data = bounded(HERE, repair['overlay']).read_bytes()
+    if digest(overlay_data) != repair['overlay_sha256']:
+        raise RuntimeError('Recurso de correção da Navi alterado.')
+    with Image.open(io.BytesIO(data)) as decoded:
+        if list(decoded.size) != repair['image_size']:
+            raise RuntimeError('Dimensões inesperadas no HUD da Navi.')
+        image = decoded.convert('RGBA')
+    x0, y0, x1, y1 = repair['box']
+    if not (0 <= x0 < x1 <= image.width and 0 <= y0 < y1 <= image.height):
+        raise RuntimeError('Retângulo de correção da Navi inválido.')
+    with Image.open(io.BytesIO(overlay_data)) as decoded:
+        overlay = decoded.convert('RGBA')
+    if overlay.size != (x1-x0, y1-y0):
+        overlay = overlay.resize((x1-x0, y1-y0), Image.Resampling.LANCZOS)
+    image.paste(overlay, (x0, y0))
+    out = io.BytesIO()
+    image.save(out, format='PNG')
+    return out.getvalue()
+
+
+def navi_backup_key(rules):
+    repair = rules.get('navi_repair')
+    return ('pack', 'UI/PTBR_HASHES/' + repair['translated']) if repair else None
+
+
 def plan_install(root, selected_pack, bundle):
     root = canonical(root)
     rules = recipe()
@@ -157,7 +186,11 @@ def plan_install(root, selected_pack, bundle):
         if target.exists() and before is None:
             raise RuntimeError(f'O destino não é um arquivo: {target}')
         if before is not None and before != data and relative != CONFIG:
-            raise RuntimeError(f'Arquivo existente difere; nada será sobrescrito: {target}')
+            repair = rules.get('navi_repair')
+            known_navi = ((scope, relative) == navi_backup_key(rules) and
+                          digest(before) == rules['pack_files']['UI/' + repair['source']])
+            if not known_navi:
+                raise RuntimeError(f'Arquivo existente difere; nada será sobrescrito: {target}')
         changes.append({'scope': scope, 'path': relative, 'data': data, 'before': before,
                         'keep': keep, 'preserve': before == data})
 
@@ -173,6 +206,8 @@ def plan_install(root, selected_pack, bundle):
         if (w <= nw or h <= nh or w > 16384 or h > 16384 or
                 w * nh != h * nw or w & (w - 1) or h & (h - 1)):
             raise RuntimeError(f'Resolução/aspecto inesperado: {source}')
+        if rules.get('navi_repair', {}).get('source') == item['original']:
+            data = repair_navi_hud(data, rules)
         add('pack', 'UI/PTBR_HASHES/' + item['translated'], data)
     profile = read_json(bounded(root, 'TriAevum.launch.json'))
     if profile.get('format') != 'oot3d_native_game_launch_profile_v1':
@@ -214,7 +249,10 @@ def validate_receipt(root):
         bounded(root if row['scope'] == 'install' else pack, row['path'])
         if row.get('backup'):
             backup = bounded(root, row['backup'])
-            if (key != ('install', CONFIG) or
+            valid_owner = key == ('install', CONFIG)
+            if key == navi_backup_key(rules):
+                valid_owner = row['before_sha256'] == rules['pack_files']['UI/' + rules['navi_repair']['source']]
+            if (not valid_owner or
                     row['backup'] != f'data/mods/ptbr-hd/backups/{transaction}/{index}.bin' or
                     digest(backup.read_bytes()) != row['before_sha256']):
                 raise RuntimeError('Backup HD inválido.')

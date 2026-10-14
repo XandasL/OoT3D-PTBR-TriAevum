@@ -12,9 +12,9 @@ a = Analysis(
     datas=[(str(root / 'Instalador_Traducao_PTBR_OoT3D_V4_compat_test.py'), '.'),
            (str(root / 'payload-manifest.json'), '.'),
            (str(payload), 'TraducaoCompleta/citra/romfs'),
-           (str(root / 'hd_textures.py'), '.'), (str(root / 'hd-recipe.json'), '.')] + extra_hd,
+           (str(root / 'hd_textures.py'), '.'), (str(root / 'hd-recipe.json'), '.'), (str(root / 'navi-hud-overlay.png'), '.')] + extra_hd,
     hiddenimports=['hashlib', 'json', 'shutil', 'struct', 'time', 'zipfile', 'argparse',
-                   'csv', 'subprocess', 'tempfile', 'uuid'],
+                   'csv', 'subprocess', 'tempfile', 'uuid', 'PIL.Image', 'PIL.PngImagePlugin'],
     hookspath=[], hooksconfig={}, runtime_hooks=[], excludes=[], noarchive=False, optimize=0,
 )
 pyz = PYZ(a.pure)

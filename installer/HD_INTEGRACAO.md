@@ -55,3 +55,7 @@ O EXE atualizado oferece a opÃƒÂ§ÃƒÂ£o `Input.DualSenseWindowsCompatibil
 ## DistribuiÃ§Ã£o simplificada
 
 O ZIP do usuÃ¡rio contÃ©m o instalador, instruÃ§Ãµes, crÃ©ditos e licenÃ§as. Os fontes correspondentes sÃ£o oferecidos separadamente em `OoT3D_PTBR_TriAevum_v1.2.0_Fontes-HD.zip`, na mesma release, sem custo. O runtime tÃ©cnico do Actions permanece em draft interno separado. Os hashes aparecem na descriÃ§Ã£o da release; os arquivos `.sha256` ficam apenas nos artefatos do Actions.
+
+## Aviso da Navi
+
+A integração recompõe o texto `Navi` que falta no atlas HD, apenas no alias da tradução. O PNG original do pack não é alterado. O recurso de composição é próprio da integração e não inclui o atlas dos autores. Um alias antigo que seja uma cópia exata do PNG validado pode ser atualizado com backup; arquivos diferentes são recusados. A remoção restaura o alias preexistente.
