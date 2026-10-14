@@ -22,15 +22,15 @@ SOURCE_SHA256 = '7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7
 
 def extract_payload(source_zip):
     if hashlib.sha256(source_zip.read_bytes()).hexdigest() != SOURCE_SHA256:
-        raise RuntimeError('ZIP de referência não corresponde à release validada.')
+        raise RuntimeError('ZIP de referÃªncia nÃ£o corresponde Ã  release validada.')
     with zipfile.ZipFile(source_zip) as z:
         names = [n for n in z.namelist() if n.endswith('.exe')]
         if len(names) != 1:
-            raise RuntimeError('Executável de referência ausente ou ambíguo.')
+            raise RuntimeError('ExecutÃ¡vel de referÃªncia ausente ou ambÃ­guo.')
         raw = z.read(names[0])
     pos = raw.rfind(b'MEI\x0c\x0b\x0a\x0b\x0e')
     if pos < 0 or pos + 88 > len(raw):
-        raise RuntimeError('CArchive inválido.')
+        raise RuntimeError('CArchive invÃ¡lido.')
     _, total, toc_offset, toc_size, _, _ = struct.unpack_from('!8sIIII64s', raw, pos)
     start = pos + 88 - total
     off = start + toc_offset
@@ -44,7 +44,7 @@ def extract_payload(source_zip):
             raise RuntimeError('Registro CArchive truncado.')
         length, position, compressed, size, flag, kind = struct.unpack_from('!IIIIBc', raw, off)
         if length < 18 or off + length > end:
-            raise RuntimeError('Registro CArchive inválido.')
+            raise RuntimeError('Registro CArchive invÃ¡lido.')
         name = raw[off + 18:off + length].split(b'\0')[0].decode().replace('\\', '/')
         if name.startswith('TraducaoCompleta/'):
             dest = (dest_root / name).resolve()
@@ -62,7 +62,7 @@ def extract_payload(source_zip):
             seen.add(name)
         off += length
     if off != end or len(seen) != 112:
-        raise RuntimeError('Esperava exatamente 112 arquivos de tradução.')
+        raise RuntimeError('Esperava exatamente 112 arquivos de traduÃ§Ã£o.')
     return dest_root / 'TraducaoCompleta/citra/romfs'
 
 
@@ -71,7 +71,7 @@ def validate_payload(payload):
     actual = {p.relative_to(payload).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in payload.rglob('*') if p.is_file() and not p.relative_to(payload).as_posix().startswith('scene/fazer/')}
     if actual != expected:
-        raise RuntimeError('Payload da tradução não corresponde aos 112 recursos validados.')
+        raise RuntimeError('Payload da traduÃ§Ã£o nÃ£o corresponde aos 112 recursos validados.')
 
 
 def main():
@@ -95,7 +95,7 @@ def main():
             urllib.request.urlretrieve(SOURCE_URL, source)
         payload = extract_payload(source)
     validate_payload(payload)
-    print('Payload validado: 112 arquivos; nenhuma execução do EXE antigo.')
+    print('Payload validado: 112 arquivos; nenhuma execuÃ§Ã£o do EXE antigo.')
     if args.prepare_only:
         return
     machine = platform.machine().lower()
@@ -121,7 +121,20 @@ def main():
     report = output/(name+'-self-test.json')
     subprocess.run([str(binary), '--self-test-report', str(report)], check=True, timeout=120)
     if not json.loads(report.read_text(encoding='utf-8')).get('ok'):
-        raise RuntimeError('Autoteste do executável falhou.')
+        raise RuntimeError('Autoteste do executÃ¡vel falhou.')
+    if args.hd_runtime:
+        source_archive = output/f'OoT3D_PTBR_TriAevum_v{VERSION}_Fontes-HD.zip'
+        with zipfile.ZipFile(source_archive, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False) as z:
+            for path in sorted(args.hd_runtime.rglob('*')):
+                if path.is_file() and path.name not in ('TriAevum-PTBR-HD.exe', 'nvngx_dlss.dll', 'amd_fidelityfx_vk.dll', 'manifest.json'):
+                    z.write(path, path.relative_to(args.hd_runtime).as_posix())
+            z.writestr('LEIA-ME-FONTES.txt', 'Fontes exatos do runtime HD distribuido na v1.2.0.\n'
+                       'Extraia source/TriAevum-source.zip e aplique source/menus-HD.patch com\n'
+                       'git apply --ignore-whitespace. Instrucoes e dependencias estao no arquivo original.\n'
+                       'Os nomes/commits de origem constam em SOURCE_ARCHIVE_MANIFEST.json.\n'
+                       'Este pacote e opcional para jogar. Nenhuma ROM, plugin privado ou textura PNG incluida.\n')
+        source_hash = hashlib.sha256(source_archive.read_bytes()).hexdigest()
+        (output/(source_archive.name+'.sha256')).write_text(source_hash+'  '+source_archive.name+'\n', encoding='utf-8')
     variants = [(label + ('_HD' if args.hd_runtime else ''), '')] if sys.platform == 'win32' else [
         ('Linux-x86_64-AppImage', 'AppImage'), ('Linux-x86_64-Flatpak', 'Flatpak')]
     for variant, runtime in variants:
@@ -137,9 +150,16 @@ def main():
             z.write(ROOT/'installer/TEXTURAS_CREDITOS.md', 'TEXTURAS-CREDITOS.md')
             if args.hd_runtime:
                 z.write(ROOT/'installer/HD_INTEGRACAO.md', 'TEXTURAS-HD.md')
-                for path in sorted(args.hd_runtime.rglob('*')):
-                    if path.is_file() and path.name not in ('TriAevum-PTBR-HD.exe', 'nvngx_dlss.dll', 'amd_fidelityfx_vk.dll', 'manifest.json'):
-                        z.write(path, 'runtime-HD/' + path.relative_to(args.hd_runtime).as_posix())
+                z.write(args.hd_runtime/'LICENSE', 'Licencas/LICENSE-TriAevum.txt')
+                z.write(args.hd_runtime/'THIRD_PARTY_NOTICES.md', 'Licencas/THIRD_PARTY_NOTICES.md')
+                z.write(args.hd_runtime/'LICENSE_SCOPE.md', 'Licencas/LICENSE_SCOPE.md')
+                for path in sorted((args.hd_runtime/'LICENSES').rglob('*')):
+                    if path.is_file():
+                        z.write(path, 'Licencas/componentes/' + path.relative_to(args.hd_runtime/'LICENSES').as_posix())
+                z.writestr('FONTES.txt', 'Fontes correspondentes do runtime HD modificado e seu patch:\n'
+                           'OoT3D_PTBR_TriAevum_v1.2.0_Fontes-HD.zip, na mesma release.\n'
+                           'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.0\n'
+                           'Download gratuito e opcional para jogar; licencas acompanham este pacote.\n')
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         (output/(archive.name+'.sha256')).write_text(digest+'  '+archive.name+'\n', encoding='utf-8')
         print('Pacote:', archive)
