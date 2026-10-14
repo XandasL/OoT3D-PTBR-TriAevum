@@ -77,7 +77,7 @@ O port leva em consideração a adaptação USA → EUR feita pelo runtime e pos
 
 **v1.1.0:** TriAevum **v0.8.0-beta.1**, com Windows x64 testado e Linux x86_64 ainda experimental. **v1.0.0:** TriAevum **v0.6.0-alpha.2c** no Windows x64. Não presuma compatibilidade com outras versões.
 
-### Base testada / hashes de referência
+### Base histórica testada na v1.0.0 / hashes de referência
 
 A instalação utilizada no desenvolvimento e na validação da tradução foi criada a partir de uma cópia **USA (En/Fr/Es)** de *The Legend of Zelda: Ocarina of Time 3D*. Estas hashes servem apenas para conferência de uma cópia obtida legalmente pelo próprio usuário; este repositório não fornece nem aponta downloads do jogo.
 
@@ -93,9 +93,9 @@ A instalação utilizada no desenvolvimento e na validação da tradução foi c
 
 O instalador v1.0.0 valida o RomFS compatível antes de aplicar a tradução.
 
-## ✅ Validação da v1.0.0
+## ✅ Histórico de validação da v1.0.0
 
-Foram testados no executável final:
+Na versão anterior v1.0.0, foram testados no executável final:
 
 - detecção da instalação do TriAevum;
 - verificação do estado do RomFS;
