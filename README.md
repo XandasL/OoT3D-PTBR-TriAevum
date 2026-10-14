@@ -18,6 +18,22 @@ A tradução inclui:
 - adaptação do slot USA para o layout EUR utilizado pelo runtime;
 - compatibilidade com **TopScreen / Single Screen**.
 
+
+## v1.2.0 — integração HD opcional
+
+A versão 1.2.0 está em preparação pelo [GitHub Actions](https://github.com/XandasL/OoT3D-PTBR-TriAevum/actions/workflows/build-installer-compat.yml). Windows x64 inclui o componente HD opcional para TriAevum v0.8.0-beta.1; Linux mantém a tradução comum e a validação funcional no jogo pendente.
+
+A composição testada usa **Henriko Magnifico + texturas 4K do TopScreen + UI/MENU 4K TRADUZIDA PT-BR + PS5 LAYOUT**. Os packs continuam externos e pertencem aos respectivos autores. [Créditos e links completos](installer/TEXTURAS_CREDITOS.md).
+
+São 71 correspondências de texturas: 13 menus/HUD e 58 adicionais de áreas, bosses e outros gráficos. O componente corrige o carregamento do HUD/menus e adapta hashes alterados pela tradução comum. Não há certificação de cobertura total. [Instalação e remoção do HD](installer/HD_INTEGRACAO.md).
+
+1. Instale a tradução comum com a v1.2.0.
+2. Mescle os packs externos, feche o jogo e use **Adicionar texturas HD (Windows 0.8)**.
+3. Selecione `user/load/textures/0004000000033500`, a pasta que contém `pack.json`.
+4. Abra **TriAevum-PTBR-HD.exe** diretamente. O executável original e seus saves são preservados.
+
+Para atualizar uma instalação HD anterior, remova esse componente pelo instalador anterior antes de instalar a nova versão. Os artefatos da 1.2 serão anexados a um draft; a 1.1 abaixo permanece disponível enquanto a nova versão não é publicada.
+
 ## 📥 Downloads — v1.1.0 (TriAevum v0.8.0-beta.1)
 
 **Versão atual:** [Notas e downloads da v1.1.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.1.0).

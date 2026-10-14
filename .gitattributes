@@ -1,0 +1,2 @@
+# Preserve bytes of the hash-pinned source patch and its meaningful diff whitespace.
+installer/runtime-HD.patch -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol

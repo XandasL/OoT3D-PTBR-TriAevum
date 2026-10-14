@@ -15,7 +15,7 @@ import zipfile
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 SOURCE_URL = 'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip'
 SOURCE_SHA256 = '7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b'
 
@@ -79,7 +79,13 @@ def main():
     parser.add_argument('--payload', type=Path)
     parser.add_argument('--source-zip', type=Path)
     parser.add_argument('--prepare-only', action='store_true')
+    parser.add_argument('--hd-runtime', type=Path, help='Bundle HD validado; somente Windows x64')
     args = parser.parse_args()
+    if args.hd_runtime:
+        if sys.platform != 'win32':
+            raise RuntimeError('O runtime HD opcional foi validado somente no Windows x64.')
+        from hd_textures import validate_bundle
+        validate_bundle(args.hd_runtime)
     if args.payload:
         payload = args.payload.resolve()
     else:
@@ -97,12 +103,18 @@ def main():
         raise RuntimeError('Builds destinados aos alvos oficiais Windows/Linux x64.')
     label = 'Windows-x64' if sys.platform == 'win32' else 'Linux-x86_64'
     name = f'OoT3D_PTBR_TriAevum_v{VERSION}_{label}'
+    if args.hd_runtime:
+        name += '_HD'
     env = os.environ.copy()
     env['OOT3D_PAYLOAD_ROOT'] = str(payload)
     env['OOT3D_BUILD_NAME'] = name
+    if args.hd_runtime:
+        env['OOT3D_HD_BUNDLE'] = str(args.hd_runtime.resolve())
+    else:
+        env.pop('OOT3D_HD_BUNDLE', None)
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
                     '--distpath', str(ROOT/'dist'), '--workpath', str(ROOT/'build/pyinstaller'),
-                    str(ROOT/'installer/OoT3D_PTBR_TriAevum_v1.1.spec')], check=True, env=env, cwd=ROOT)
+                    str(ROOT/'installer/OoT3D_PTBR_TriAevum_v1.2.spec')], check=True, env=env, cwd=ROOT)
     binary = ROOT/'dist'/(name + ('.exe' if sys.platform == 'win32' else ''))
     output = ROOT/'artifacts'
     output.mkdir(exist_ok=True)
@@ -110,27 +122,29 @@ def main():
     subprocess.run([str(binary), '--self-test-report', str(report)], check=True, timeout=120)
     if not json.loads(report.read_text(encoding='utf-8')).get('ok'):
         raise RuntimeError('Autoteste do executável falhou.')
-    variants = [('Windows-x64', '')] if sys.platform == 'win32' else [
-        ('Linux-x86_64-AppImage', 'AppImage'),
-        ('Linux-x86_64-Flatpak', 'Flatpak'),
-    ]
+    variants = [(label + ('_HD' if args.hd_runtime else ''), '')] if sys.platform == 'win32' else [
+        ('Linux-x86_64-AppImage', 'AppImage'), ('Linux-x86_64-Flatpak', 'Flatpak')]
     for variant, runtime in variants:
         package_name = f'OoT3D_PTBR_TriAevum_v{VERSION}_{variant}'
         archive = output/(package_name+'.zip')
-        with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
-            z.write(binary,binary.name)
-            readme = (ROOT/'installer/LEIA-ME_v1.1.txt').read_text(encoding='utf-8')
+        with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False) as z:
+            z.write(binary, binary.name)
+            readme = (ROOT/'installer/LEIA-ME_v1.2.txt').read_text(encoding='utf-8')
             if runtime:
-                readme = ('PACOTE LINUX: '+runtime+'\\n'
-                          'O executavel do instalador e o mesmo nas duas variantes; '
-                          'selecione a pasta de dados preparada pelo Forge.\\n'
-                          'LINUX: VALIDACAO FUNCIONAL PENDENTE.\\n\\n') + readme
-            z.writestr('LEIA-ME.txt',readme)
+                readme = ('PACOTE LINUX: '+runtime+'\nVALIDACAO FUNCIONAL NO JOGO PENDENTE.\nHD exclusivo do Windows.\n\n') + readme
+            z.writestr('LEIA-ME.txt', readme)
+            z.write(ROOT/'installer/CREDITOS.txt', 'CREDITOS.txt')
+            z.write(ROOT/'installer/TEXTURAS_CREDITOS.md', 'TEXTURAS-CREDITOS.md')
+            if args.hd_runtime:
+                z.write(ROOT/'installer/HD_INTEGRACAO.md', 'TEXTURAS-HD.md')
+                for path in sorted(args.hd_runtime.rglob('*')):
+                    if path.is_file() and path.name not in ('TriAevum-PTBR-HD.exe', 'nvngx_dlss.dll', 'amd_fidelityfx_vk.dll', 'manifest.json'):
+                        z.write(path, 'runtime-HD/' + path.relative_to(args.hd_runtime).as_posix())
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-        (output/(archive.name+'.sha256')).write_text(
-            digest+'  '+archive.name+'\\n',encoding='utf-8')
-        print('Pacote:',archive)
-        print('SHA-256:',digest)
+        (output/(archive.name+'.sha256')).write_text(digest+'  '+archive.name+'\n', encoding='utf-8')
+        print('Pacote:', archive)
+        print('SHA-256:', digest)
+
 
 
 if __name__ == '__main__':

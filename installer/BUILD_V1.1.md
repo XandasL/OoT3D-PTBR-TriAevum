@@ -4,6 +4,8 @@ Alvo: TriAevum v0.8.0-beta.1. A release do runtime oferece Windows x64, Linux x8
 
 Os fontes/builds v1.0 permanecem preservados. A v1.1 incorpora o núcleo compatível, a tradução completa, preservação da fonte HD e correção dos aliases de til. Nenhuma nova release é criada automaticamente.
 
+Há uma opção de menus/texturas HD para Windows 0.8 no build com `--hd-runtime`. O build padrão permanece sem esse runtime. Consulte [HD_INTEGRACAO.md](HD_INTEGRACAO.md) para instalação, verificação, rollback e composição do bundle validado.
+
 ## Windows
 
 Execute `installer/GERAR_V1.1_WINDOWS.bat`, ou num Python 3.12 x64:

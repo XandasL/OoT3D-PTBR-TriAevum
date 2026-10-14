@@ -1,0 +1,392 @@
+--- a/runtime/three_ds_recomp/cmake/spirv_pack.cmake
++++ b/runtime/three_ds_recomp/cmake/spirv_pack.cmake
+@@ -19,7 +19,7 @@
+         set(list "${directory}/${name}.inc")
+         if(NOT EXISTS "${list}" OR "${pack}" IS_NEWER_THAN "${list}")
+             execute_process(COMMAND "${CMAKE_COMMAND}" "-DINPUT=${pack}" "-DOUTPUT=${list}"
+-                -P "${TRIAEVUM_SPIRV_PACK_TO_INC}" COMMAND_ERROR_IS_FATAL ANY)
++                -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/spirv_pack_to_inc.cmake" COMMAND_ERROR_IS_FATAL ANY)
+         endif()
+         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${pack}")
+         target_include_directories(${target} PRIVATE "${directory}")
+--- a/runtime/three_ds_recomp/src/fast/backends/gfx_vulkan_pica_draw.cpp
++++ b/runtime/three_ds_recomp/src/fast/backends/gfx_vulkan_pica_draw.cpp
+@@ -1,5 +1,8 @@
+ // Native PICA on Vulkan: draw submission, composition anchors, interactive grass and shadow maps.
+ #ifdef ENABLE_OOT3D_VULKAN
++#if defined(_MSC_VER)
++#define _SILENCE_CXX20_U8PATH_DEPRECATION_WARNING
++#endif
+ #include "gfx_vulkan_pica_internal.h"
+ #include "fast/renderer3ds/pica_draw_coverage.h"
+ #include "fast/renderer3ds/pica_surface_appearance.h"
+--- a/tools/oot3d/native_demo_host/oot3d_demo_host_context.cpp
++++ b/tools/oot3d/native_demo_host/oot3d_demo_host_context.cpp
+@@ -67,6 +67,15 @@
+     RecordSwitchHostInitStage("host_base_services");
+ 
+     auto config = context->GetConfig();
++#ifdef _WIN32
++    // Opt-in fallback for Bluetooth devices that stop reporting through HIDAPI.
++    // Keep the normal sensor-capable backend unless explicitly selected.
++    if (config->GetBool("Input.DualSenseWindowsCompatibility", false)) {
++        SDL_SetHintWithPriority(SDL_HINT_JOYSTICK_HIDAPI_PS5, "0", SDL_HINT_OVERRIDE);
++        SDL_SetHintWithPriority(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "0", SDL_HINT_OVERRIDE);
++        SDL_SetHintWithPriority(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "0", SDL_HINT_OVERRIDE);
++    }
++#endif
+     config->SetBool("Window.Fullscreen.Enabled", false);
+     config->SetInt("Window.Width", static_cast<int32_t>(args.Width));
+     config->SetInt("Window.Height", static_cast<int32_t>(args.Height));
+@@ -157,3 +166,4 @@
+     }
+     return *api;
+ }
++
+--- a/tools/oot3d/native_game_runtime/oot3d_native_a32_window_setup.cpp
++++ b/tools/oot3d/native_game_runtime/oot3d_native_a32_window_setup.cpp
+@@ -1,5 +1,6 @@
+ // Native A32 window session: setup (process image, host services, renderer, UI, initial state).
+ #include "oot3d_native_a32_window_session.h"
++#include "oot3d/renderer/azahar_texture_pack.h"
+ 
+ namespace Oot3dA32Window {
+ 
+@@ -751,6 +752,26 @@
+ #endif
+   auto &nativeUiTextureProvider = nativeUiTextureProviderStorage.emplace(
+       picaMemoryView, topScreenTextureOverridePackPointer);
++  nativeUiTextureProvider.SetCustomTextureResolver(
++      [](std::uint16_t width, std::uint16_t height, std::uint8_t format,
++         std::span<const std::uint8_t> encoded, oot3d::ui::UiTexturePixels& pixels) {
++        auto& packs = Oot3d::Renderer::AzaharTexturePackRuntime::Instance();
++        const auto result = packs.ResolveOrQueue({width, height, format, 0, encoded, pixels.rgba8});
++        pixels.replacement_pending = result.State == Oot3d::Renderer::AzaharTextureResolveState::Pending;
++        if (result.State == Oot3d::Renderer::AzaharTextureResolveState::Missing)
++          pixels.replacement_pending = packs.Snapshot().IndexPending;
++        if (result.Replacement && result.Replacement->Rgba8 &&
++            result.Replacement->Width > 0 && result.Replacement->Width <= 65535 &&
++            result.Replacement->Height > 0 && result.Replacement->Height <= 65535 &&
++            result.Replacement->Rgba8->size() ==
++                std::size_t(result.Replacement->Width) * result.Replacement->Height * 4) {
++          pixels.width = static_cast<std::uint16_t>(result.Replacement->Width);
++          pixels.height = static_cast<std::uint16_t>(result.Replacement->Height);
++          pixels.rgba8 = *result.Replacement->Rgba8;
++          pixels.content_revision = result.Replacement->PixelContentHash;
++          pixels.replacement_pending = false;
++        }
++      }, [] { return Oot3d::Renderer::AzaharTexturePackRuntime::Instance().Generation(); });
+   if (hdFontsLoaded) nativeUiTextureProvider.SetGeneratedTextureTransform(
+       [&](const Oot3dNativeGame::Oot3dPicaTextureState& texture,
+           Oot3dNativeGame::Oot3dPicaResourceSnapshot& resource) {
+--- a/tools/oot3d/native_game_runtime/oot3d_native_a32_window_summary.cpp
++++ b/tools/oot3d/native_game_runtime/oot3d_native_a32_window_summary.cpp
+@@ -1543,6 +1543,9 @@
+                     nativeTextures.overrides_already_applied},
+                    {"native_texture_provider_override_no_matches",
+                     nativeTextures.override_no_matches},
++                   {"native_ui_custom_texture_checks", nativeTextures.custom_texture_checks},
++                   {"native_ui_custom_texture_replacements", nativeTextures.custom_texture_replacements},
++                   {"native_ui_custom_texture_pending", nativeTextures.custom_texture_pending},
+                    {"topscreen_texture_override_pack_loaded",
+                     topScreenTextureOverridePackPointer != nullptr},
+                    {"hd_font_pack_loaded", hdFontsLoaded},
+--- a/tools/oot3d/native_game_runtime/oot3d_native_ui_texture_provider.cpp
++++ b/tools/oot3d/native_game_runtime/oot3d_native_ui_texture_provider.cpp
+@@ -317,6 +317,13 @@
+                 return false;
+             }
+             ++mStats.profile_asset_resolves;
++            if (mCustomTextureResolver) {
++                mCustomTextureResolver(profileTexture->Width, profileTexture->Height,
++                    profileTexture->NativePicaFormat, profileTexture->EncodedPayload, pixels);
++                ++mStats.custom_texture_checks;
++                if (pixels.content_revision) ++mStats.custom_texture_replacements;
++                if (pixels.replacement_pending) ++mStats.custom_texture_pending;
++            }
+             return true;
+         }
+     }
+@@ -467,6 +474,13 @@
+         pixels = {};
+         return false;
+     }
++    if (!generatedText && mCustomTextureResolver) {
++        mCustomTextureResolver(descriptor->width, descriptor->height,
++            encoding->native_pica_format, encoded, pixels);
++        ++mStats.custom_texture_checks;
++        if (pixels.content_revision) ++mStats.custom_texture_replacements;
++        if (pixels.replacement_pending) ++mStats.custom_texture_pending;
++    }
+     if (generatedText && (*runtimeFormat == 8U || *runtimeFormat == 11U)) {
+         // Native text uses primary RGB and the A8/A4 font as coverage. The
+         // host UI multiplies RGBA, so lower that mask to neutral RGB here.
+--- a/tools/oot3d/native_game_runtime/oot3d_native_ui_texture_provider.h
++++ b/tools/oot3d/native_game_runtime/oot3d_native_ui_texture_provider.h
+@@ -7,6 +7,7 @@
+ 
+ #include <cstddef>
+ #include <cstdint>
++#include <functional>
+ #include <optional>
+ #include <string>
+ #include <string_view>
+@@ -49,6 +50,9 @@
+     std::uint64_t override_no_matches = 0;
+     std::uint64_t profile_asset_resolves = 0;
+     std::uint64_t profile_asset_decode_failures = 0;
++    std::uint64_t custom_texture_checks = 0;
++    std::uint64_t custom_texture_replacements = 0;
++    std::uint64_t custom_texture_pending = 0;
+ };
+ 
+ // Reads the CTXB payload selected by the original OoT3D resource loader from
+@@ -65,6 +69,17 @@
+                  std::string* error = nullptr) const override;
+ 
+     const Oot3dNativeUiTextureProviderStats& Stats() const noexcept;
++    using CustomTextureResolver = std::function<void(
++        std::uint16_t, std::uint16_t, std::uint8_t,
++        std::span<const std::uint8_t>, oot3d::ui::UiTexturePixels&)>;
++    void SetCustomTextureResolver(CustomTextureResolver resolver,
++                                 std::function<std::uint64_t()> generation) {
++        mCustomTextureResolver = std::move(resolver);
++        mCustomTextureGeneration = std::move(generation);
++    }
++    std::uint64_t TextureGeneration() const override {
++        return mCustomTextureGeneration ? mCustomTextureGeneration() : 0;
++    }
+     void SetGeneratedTextureTransform(Oot3dNativePicaSubmissionQueue::TextureSnapshotTransform transform) {
+         mGeneratedTextureTransform = std::move(transform);
+     }
+@@ -74,6 +89,8 @@
+     const TopScreenTextureOverridePack* mTextureOverrides = nullptr;
+     mutable Oot3dNativeUiTextureProviderStats mStats;
+     Oot3dNativePicaSubmissionQueue::TextureSnapshotTransform mGeneratedTextureTransform;
++    CustomTextureResolver mCustomTextureResolver;
++    std::function<std::uint64_t()> mCustomTextureGeneration;
+ };
+ 
+ } // namespace Oot3dNativeGame
+--- a/tools/oot3d/native_game_runtime/oot3d_native_ui_texture_provider_tests.cpp
++++ b/tools/oot3d/native_game_runtime/oot3d_native_ui_texture_provider_tests.cpp
+@@ -304,6 +304,32 @@
+             "named TopScreen profile CTXB did not resolve through the common "
+             "PICA decoder");
+ 
++    bool customProfileResolved = false;
++    profileTextureProvider.SetCustomTextureResolver(
++        [&](std::uint16_t w, std::uint16_t h, std::uint8_t format,
++            std::span<const std::uint8_t> encoded, oot3d::ui::UiTexturePixels& output) {
++            Require(w == 8 && h == 8 && format == 0 && encoded.size() == profileTexturePayload.size(),
++                    "custom TopScreen resolver received incorrect native identity");
++            customProfileResolved = true;
++            output.width = 32; output.height = 32;
++            output.rgba8.assign(32 * 32 * 4, 128);
++            output.content_revision = 99;
++        }, [] { return 7; });
++    Require(profileTextureProvider.Resolve(profileTextureIdentity, pixels, &error) &&
++            customProfileResolved && pixels.width == 32 && pixels.height == 32 &&
++            pixels.rgba8.size() == 32 * 32 * 4 && pixels.content_revision == 99 &&
++            profileTextureProvider.TextureGeneration() == 7,
++            "TopScreen profile atlas bypassed the HD resolver");
++    bool customNativeResolved = false;
++    provider.SetCustomTextureResolver(
++        [&](std::uint16_t, std::uint16_t, std::uint8_t,
++            std::span<const std::uint8_t>, oot3d::ui::UiTexturePixels& output) {
++            customNativeResolved = true;
++            output.width = 1024; output.height = 512;
++            output.rgba8.assign(1024 * 512 * 4, 255);
++        }, [] { return 1; });
++    Require(provider.Resolve(identity, pixels, &error) && customNativeResolved && pixels.width == 1024,
++            "native menu atlas bypassed the HD resolver");
+     std::cout << "oot3d_native_ui_texture_provider_tests: ok\n";
+     return 0;
+ }
+--- a/tools/oot3d/native_game_runtime/oot3d_top_screen_ocarina_text_runtime.h
++++ b/tools/oot3d/native_game_runtime/oot3d_top_screen_ocarina_text_runtime.h
+@@ -23,6 +23,9 @@
+   void Append(std::vector<oot3d::ui::UiPrimitive> &output) const;
+   bool Resolve(const oot3d::ui::UiTextureIdentity &identity,
+                oot3d::ui::UiTexturePixels &pixels, std::string *error) const override;
++  std::uint64_t TextureGeneration() const override {
++    return mNativeTextures.TextureGeneration();
++  }
+   std::uint64_t Builds() const noexcept { return mBuilds; }
+   std::uint64_t Releases() const noexcept { return mReleases; }
+ 
+--- a/tools/oot3d/native_game_runtime/triaevum_title_aot_stub.cpp
++++ b/tools/oot3d/native_game_runtime/triaevum_title_aot_stub.cpp
+@@ -2,7 +2,9 @@
+ #include "triaevum_title_whole_aot_abi.h"
+ 
+ #if defined(_WIN32)
+-#define TRIAEVUM_TITLE_AOT_EXPORT __declspec(dllexport)
++#define TRIAEVUM_TITLE_AOT_EXPORT
++#pragma comment(linker, "/export:triaevum_title_aot_query")
++#pragma comment(linker, "/export:triaevum_title_whole_aot_query")
+ #else
+ #define TRIAEVUM_TITLE_AOT_EXPORT __attribute__((visibility("default")))
+ #endif
+--- a/tools/oot3d/ui_n64/oot3d_n64_ui_renderer.cpp
++++ b/tools/oot3d/ui_n64/oot3d_n64_ui_renderer.cpp
+@@ -255,6 +255,8 @@
+     }
+     uploaded.width = pixels.width;
+     uploaded.height = pixels.height;
++    uploaded.generation = prepared.generation;
++    uploaded.content_revision = pixels.content_revision;
+     ++stats_.texture_uploads;
+     return &textures_.emplace(semanticKey, uploaded).first->second;
+ }
+@@ -271,6 +273,16 @@
+ 
+ void N64UiFast3dRenderer::Stage(PreparedUiTextures prepared) {
+     for (auto& texture : prepared) {
++        const auto resident = textures_.find(texture.key);
++        if (resident != textures_.end()) {
++            if (resident->second.generation == texture.generation &&
++                resident->second.content_revision == texture.pixels.content_revision) {
++                continue;
++            }
++            rendering_api_.DeleteUiTexture(resident->second.renderer_id);
++            textures_.erase(resident);
++        }
++        failed_textures_.erase(texture.key);
+         std::string key = texture.key;
+         staged_textures_.insert_or_assign(std::move(key), std::move(texture));
+     }
+@@ -279,16 +291,24 @@
+ PreparedUiTextures N64UiFast3dRenderer::PrepareTextures(
+     std::span<const UiPrimitive> primitives) {
+     PreparedUiTextures prepared;
++    std::unordered_set<std::string> frameKeys;
++    const auto generation = texture_provider_ ? texture_provider_->TextureGeneration() : 0;
++    if (generation != prepared_generation_) {
++        prepared_keys_.clear();
++        prepared_generation_ = generation;
++    }
+     for (const UiPrimitive& primitive : primitives) {
+         if (!DrawsPrimitive(primitive) ||
+             primitive.texture.semantic_name.empty()) {
+             continue;
+         }
+         std::string key = BuildUiTextureCacheKey(primitive.texture);
++        if (!frameKeys.insert(key).second) continue;
+         if (!prepared_keys_.insert(key).second) {
+             continue;
+         }
+         PreparedUiTexture texture;
++        texture.generation = generation;
+         texture.key = std::move(key);
+         texture.native = primitive.texture.semantic_name.starts_with("oot3d/");
+         if (texture_provider_ == nullptr) {
+@@ -303,6 +323,9 @@
+                     static_cast<std::size_t>(pixels.width) * pixels.height * 4U;
+             texture.status = resolved ? PreparedUiTexture::Status::Resolved
+                                       : PreparedUiTexture::Status::Invalid;
++            if (pixels.replacement_pending) {
++                prepared_keys_.erase(texture.key);
++            }
+         }
+         prepared.push_back(std::move(texture));
+     }
+--- a/tools/oot3d/ui_n64/oot3d_n64_ui_renderer.h
++++ b/tools/oot3d/ui_n64/oot3d_n64_ui_renderer.h
+@@ -39,6 +39,8 @@
+     std::uint16_t width = 0;
+     std::uint16_t height = 0;
+     std::vector<std::uint8_t> rgba8;
++    bool replacement_pending = false;
++    std::uint64_t content_revision = 0;
+ };
+ 
+ // Backend-independent boundary for textures whose authoritative payload lives
+@@ -46,6 +48,7 @@
+ class UiTextureProvider {
+   public:
+     virtual ~UiTextureProvider() = default;
++    virtual std::uint64_t TextureGeneration() const { return 0; }
+     virtual bool Resolve(const UiTextureIdentity& identity,
+                          UiTexturePixels& pixels,
+                          std::string* error = nullptr) const = 0;
+@@ -61,6 +64,7 @@
+     bool native = false;
+     UiTexturePixels pixels;
+     std::string error;
++    std::uint64_t generation = 0;
+ };
+ using PreparedUiTextures = std::vector<PreparedUiTexture>;
+ 
+@@ -87,9 +91,8 @@
+                 std::uint32_t framebufferWidth,
+                 std::uint32_t framebufferHeight, N64UiCanvasMode canvasMode,
+                 std::string* error = nullptr);
+-    // Resolves every texture a Render of these primitives would resolve for
+-    // the first time. Prepared keys are remembered (until Release), so each
+-    // payload is read once, as Render alone would.
++    // Resolves textures before rendering. Ready keys remain cached until
++    // Release or a pack-generation change; pending replacements are retried.
+     [[nodiscard]] PreparedUiTextures
+     PrepareTextures(std::span<const UiPrimitive> primitives);
+     // Hands prepared payloads to the renderer without drawing (a frame that
+@@ -110,6 +113,8 @@
+         std::uint32_t renderer_id = 0;
+         std::uint16_t width = 0;
+         std::uint16_t height = 0;
++        std::uint64_t generation = 0;
++        std::uint64_t content_revision = 0;
+     };
+ 
+     const ResidentTexture* ResolveTexture(const UiTextureIdentity& identity,
+@@ -120,6 +125,7 @@
+     std::unordered_set<std::string> failed_textures_;
+     // Preparing side: keys already handed to the renderer.
+     std::unordered_set<std::string> prepared_keys_;
++    std::uint64_t prepared_generation_ = 0;
+     // Rendering side: prepared payloads not consumed yet.
+     std::unordered_map<std::string, PreparedUiTexture> staged_textures_;
+     N64UiRendererStats stats_;
+--- a/tools/oot3d/ui_n64/oot3d_n64_ui_renderer_tests.cpp
++++ b/tools/oot3d/ui_n64/oot3d_n64_ui_renderer_tests.cpp
+@@ -159,6 +159,40 @@
+                 archiveIdentity.semantic_name,
+             "archive texture cache identity unexpectedly changed");
+     TestPreparedTextures();
++    {
++        class AsyncProvider final : public UiTextureProvider {
++        public:
++            bool pending = true;
++            std::uint64_t generation = 1;
++            std::uint64_t TextureGeneration() const override { return generation; }
++            bool Resolve(const UiTextureIdentity&, UiTexturePixels& pixels, std::string*) const override {
++                pixels.width = pending ? 2 : 8;
++                pixels.height = pending ? 1 : 4;
++                pixels.rgba8.assign(pixels.width * pixels.height * 4, 255);
++                pixels.replacement_pending = pending;
++                pixels.content_revision = pending ? 0 : 123;
++                return true;
++            }
++        } provider;
++        RecordingBackend backend;
++        N64UiFast3dRenderer renderer(backend, &provider);
++        const std::vector<UiPrimitive> primitives{TexturedPrimitive("oot3d/native/menu")};
++        Require(renderer.Render(primitives,400,240,N64UiCanvasMode::NativeTopScreen400x240),
++                "pending HD menu did not render its native fallback");
++        Require(renderer.Render(primitives,400,240,N64UiCanvasMode::NativeTopScreen400x240) && backend.created == 1,
++                "pending HD menu repeatedly uploaded its fallback");
++        provider.pending = false;
++        Require(renderer.Render(primitives,400,240,N64UiCanvasMode::NativeTopScreen400x240) && backend.created == 2,
++                "ready HD menu did not replace the cached native image");
++        Require(renderer.PrepareTextures(primitives).empty(), "ready HD menu was not cached");
++        ++provider.generation;
++        Require(renderer.Render(primitives,400,240,N64UiCanvasMode::NativeTopScreen400x240) && backend.created == 3,
++                "reloading the pack retained the old menu upload");
++        provider.pending = true;
++        ++provider.generation;
++        Require(renderer.Render(primitives,400,240,N64UiCanvasMode::NativeTopScreen400x240) && backend.created == 4,
++                "disabling or changing a pack retained its HD menu");
++    }
+     std::cout << "oot3d_n64_ui_renderer_tests: ok\n";
+     return 0;
+ }

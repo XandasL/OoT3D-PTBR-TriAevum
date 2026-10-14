@@ -1,14 +1,18 @@
-name: Build instalador PT-BR 0.8 e anexar ao draft
+name: Build instalador PT-BR v1.2.0 e anexar ao draft
 on:
   workflow_dispatch:
   push:
     branches: [compat/triaevum-0.8.0-beta.1]
     paths:
-      - "installer/**"
-      - "test_compat_safety.py"
-      - ".github/workflows/build-installer-compat.yml"
+      - 'installer/**'
+      - 'test_compat_safety.py'
+      - 'test_hd_integration.py'
+      - '.github/workflows/build-installer-compat.yml'
 permissions:
   contents: read
+concurrency:
+  group: installer-v1.2-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     strategy:
@@ -16,11 +20,11 @@ jobs:
       matrix:
         include:
           - os: windows-2022
-            label: Windows-x64
+            label: Windows-x64-HD
           - os: ubuntu-22.04
             label: Linux-x86_64-AppImage-Flatpak
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,37 +38,28 @@ jobs:
         run: python -m pip install -r installer/requirements-build.txt
       - name: Obter e validar os 112 recursos da tradução
         run: python installer/build_installer.py --prepare-only
-      - name: Testes de segurança e conversão
-        run: python test_compat_safety.py
-      - name: Build Windows e autoteste do executável
+      - name: Testes de segurança, conversão e integração HD
+        run: python -m unittest test_compat_safety test_hd_integration -v
+      - name: Obter runtime HD genérico e conferir SHA-256 e fontes
         if: runner.os == 'Windows'
-        run: python installer/build_installer.py
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python installer/fetch_hd_runtime.py
+      - name: Build Windows HD opcional e autoteste do executável
+        if: runner.os == 'Windows'
+        run: python installer/build_installer.py --hd-runtime build/hd-runtime-v1.2
       - name: Build Linux e autoteste de Tk sem monitor
         if: runner.os == 'Linux'
         run: xvfb-run -a python installer/build_installer.py
-      - name: Upload Windows
-        if: runner.os == 'Windows'
+      - name: Artefatos de build e autotestes
         uses: actions/upload-artifact@v4
         with:
-          name: OoT3D-PTBR-v1.1.0-Windows-x64
-          path: artifacts/*Windows-x64.zip
+          name: OoT3D-PTBR-v1.2.0-${{ matrix.label }}
+          path: artifacts/*
           if-no-files-found: error
-      - name: Upload Linux AppImage
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: OoT3D-PTBR-v1.1.0-Linux-x86_64-AppImage
-          path: artifacts/*Linux-x86_64-AppImage.zip
-          if-no-files-found: error
-      - name: Upload Linux Flatpak
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: OoT3D-PTBR-v1.1.0-Linux-x86_64-Flatpak
-          path: artifacts/*Linux-x86_64-Flatpak.zip
-          if-no-files-found: error
+          retention-days: 30
   attach-draft:
-    name: Anexar pacotes ao draft existente (sem publicar)
+    name: Anexar instaladores ao draft 1.2.0 (sem publicar)
     needs: build
     runs-on: ubuntu-22.04
     permissions:
@@ -72,25 +67,20 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: OoT3D-PTBR-v1.1.0-*
+          pattern: OoT3D-PTBR-v1.2.0-*
           merge-multiple: true
           path: release-assets
-      - name: Anexar somente os tres ZIPs finais e limpar anexos extras
+      - name: Anexar os três instaladores finais e checksums
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
-          TAG="1.1.0"
-          RELEASE_ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.tag_name == "1.1.0" and .draft == true and .prerelease == true) | .id' | head -n 1)
-          test -n "$RELEASE_ID" || { echo "Draft 1.1.0 nao encontrado"; exit 1; }
+          RELEASE_ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.tag_name == "1.2.0" and .draft == true and .prerelease == true) | .id' | head -n 1)
+          test -n "$RELEASE_ID" || { echo "Draft 1.2.0 nao encontrado"; exit 1; }
           test "$(find release-assets -maxdepth 1 -name '*.zip' | wc -l)" -eq 3
-          # Remove anexos de diagnostico e checksums antigos do draft.
-          for asset_id in $(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq '.[] | select(.name | endswith(".sha256") or endswith(".json")) | .id'); do
-            gh api -X DELETE "repos/$GH_REPO/releases/assets/$asset_id"
-          done
-          for file in release-assets/*.zip; do
+          for file in release-assets/*.zip release-assets/*.sha256; do
             name=$(basename "$file")
             old_id=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq ".[] | select(.name == \"$name\") | .id" | head -n 1)
             if [ -n "$old_id" ]; then
@@ -99,4 +89,4 @@ jobs:
             gh api -X POST -H "Content-Type: application/octet-stream" --input "$file" "https://uploads.github.com/repos/$GH_REPO/releases/$RELEASE_ID/assets?name=$name" >/dev/null
             echo "Anexado: $name"
           done
-          echo "Draft atualizado; publicacao permanece manual."
+          echo "Draft 1.2.0 atualizado; publicacao permanece manual."
