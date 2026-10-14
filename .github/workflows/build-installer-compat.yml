@@ -14,7 +14,31 @@ concurrency:
   group: installer-v1.2-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  prepare-runtime:
+    name: Ler e validar apenas o insumo HD do draft
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # GitHub restricts draft assets to collaborators.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Baixar o asset fixado por hash (nenhuma execução do runtime)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python installer/fetch_hd_runtime.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-HD-input-v1.2.0
+          path: build/hd-runtime-v1.2/**
+          if-no-files-found: error
+          retention-days: 7
   build:
+    needs: prepare-runtime
     strategy:
       fail-fast: false
       matrix:
@@ -40,11 +64,12 @@ jobs:
         run: python installer/build_installer.py --prepare-only
       - name: Testes de segurança, conversão e integração HD
         run: python -m unittest test_compat_safety test_hd_integration -v
-      - name: Obter runtime HD genérico e conferir SHA-256 e fontes
+      - name: Obter o runtime já validado do job sem compilação
         if: runner.os == 'Windows'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python installer/fetch_hd_runtime.py
+        uses: actions/download-artifact@v4
+        with:
+          name: runtime-HD-input-v1.2.0
+          path: build/hd-runtime-v1.2
       - name: Build Windows HD opcional e autoteste do executável
         if: runner.os == 'Windows'
         run: python installer/build_installer.py --hd-runtime build/hd-runtime-v1.2
