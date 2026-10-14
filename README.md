@@ -2,7 +2,7 @@
 
 Port da tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D** para execução através do **TriAevum**.
 
-> **Versão atual: v1.1.0 para TriAevum v0.8.0-beta.1.** Windows x64 testado no jogo. Linux x86_64 (TriAevum AppImage/Flatpak) disponível em caráter experimental, com validação funcional pendente. A versão v1.0.0 continua disponível para TriAevum v0.6.0-alpha.2c.
+> **Versão atual: v1.2.0 para TriAevum v0.8.0-beta.1.** Windows x64 com tradução comum e HD opcional. Linux x86_64 experimental, com validação funcional no jogo pendente. A v1.0.0 permanece disponível para TriAevum v0.6.0-alpha.2c.
 
 ## 🇧🇷 Sobre o projeto
 
@@ -21,7 +21,7 @@ A tradução inclui:
 
 ## v1.2.0 — integração HD opcional
 
-A versão 1.2.0 está em preparação pelo [GitHub Actions](https://github.com/XandasL/OoT3D-PTBR-TriAevum/actions/workflows/build-installer-compat.yml). Windows x64 inclui o componente HD opcional para TriAevum v0.8.0-beta.1; Linux mantém a tradução comum e a validação funcional no jogo pendente.
+A versão 1.2.0 está disponível na [página de downloads e tutorial](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.0). Windows x64 inclui o componente HD opcional para TriAevum v0.8.0-beta.1; Linux mantém a tradução comum e a validação funcional no jogo pendente.
 
 A composição testada usa **Henriko Magnifico + texturas 4K do TopScreen + UI/MENU 4K TRADUZIDA PT-BR + PS5 LAYOUT**. Os packs continuam externos e pertencem aos respectivos autores. [Créditos e links completos](installer/TEXTURAS_CREDITOS.md).
 
@@ -32,11 +32,21 @@ São 71 correspondências de texturas: 13 menus/HUD e 58 adicionais de áreas, b
 3. Selecione `user/load/textures/0004000000033500`, a pasta que contém `pack.json`.
 4. Abra **TriAevum-PTBR-HD.exe** diretamente. O executável original e seus saves são preservados.
 
-Para atualizar uma instalação HD anterior, remova esse componente pelo instalador anterior antes de instalar a nova versão. Os artefatos da 1.2 serão anexados a um draft; a 1.1 abaixo permanece disponível enquanto a nova versão não é publicada.
+Para atualizar uma instalação HD anterior, remova esse componente pelo instalador anterior antes de instalar a nova versão. Os downloads oferecem um ZIP por plataforma e o código-fonte correspondente em um pacote opcional separado. O ZIP do usuário contém instalador, instruções, créditos e licenças, sem a pasta `runtime-HD`. Os hashes estão na descrição da release.
 
-## 📥 Downloads — v1.1.0 (TriAevum v0.8.0-beta.1)
+## 📥 Downloads da v1.2.0
 
-**Versão atual:** [Notas e downloads da v1.1.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.1.0).
+| Plataforma | Download |
+| --- | --- |
+| Windows x64 — tradução comum + HD opcional | [Baixar Windows](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.2.0/OoT3D_PTBR_TriAevum_v1.2.0_Windows-x64_HD.zip) |
+| Linux AppImage — tradução comum, experimental | [Baixar Linux AppImage](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.2.0/OoT3D_PTBR_TriAevum_v1.2.0_Linux-x86_64-AppImage.zip) |
+| Linux Flatpak — tradução comum, experimental | [Baixar Linux Flatpak](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.2.0/OoT3D_PTBR_TriAevum_v1.2.0_Linux-x86_64-Flatpak.zip) |
+
+**Para jogar, baixe apenas o ZIP do seu sistema.** [Código-fonte HD correspondente](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.2.0/OoT3D_PTBR_TriAevum_v1.2.0_Fontes-HD.zip) — gratuito e opcional para jogar.
+
+### Versão anterior — v1.1.0
+
+**Versão anterior:** [Notas e downloads da v1.1.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.1.0).
 
 | Plataforma / instalação do TriAevum | Download |
 | --- | --- |

@@ -27,7 +27,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Baixar o asset fixado por hash (nenhuma execuÃƒÂ§ÃƒÂ£o do runtime)
+      - name: Baixar o asset fixado por hash (nenhuma execução do runtime)
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python installer/fetch_hd_runtime.py
@@ -55,22 +55,22 @@ jobs:
         with:
           python-version: '3.12'
           architecture: x64
-      - name: DependÃƒÂªncias Linux para Tk e empacotamento
+      - name: Dependências Linux para Tk e empacotamento
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-tk binutils xvfb
-      - name: DependÃƒÂªncias de build
+      - name: Dependências de build
         run: python -m pip install -r installer/requirements-build.txt
-      - name: Obter e validar os 112 recursos da traduÃƒÂ§ÃƒÂ£o
+      - name: Obter e validar os 112 recursos da tradução
         run: python installer/build_installer.py --prepare-only
-      - name: Testes de seguranÃƒÂ§a, conversÃƒÂ£o e integraÃƒÂ§ÃƒÂ£o HD
+      - name: Testes de segurança, conversão e integração HD
         run: python -m unittest test_compat_safety test_hd_integration -v
-      - name: Obter o runtime jÃƒÂ¡ validado do job sem compilaÃƒÂ§ÃƒÂ£o
+      - name: Obter o runtime já validado do job sem compilação
         if: runner.os == 'Windows'
         uses: actions/download-artifact@v4
         with:
           name: runtime-HD-input-v1.2.0
           path: build/hd-runtime-v1.2
-      - name: Build Windows HD opcional e autoteste do executÃƒÂ¡vel
+      - name: Build Windows HD opcional e autoteste do executável
         if: runner.os == 'Windows'
         run: python installer/build_installer.py --hd-runtime build/hd-runtime-v1.2
       - name: Build Linux e autoteste de Tk sem monitor
@@ -95,7 +95,7 @@ jobs:
           pattern: OoT3D-PTBR-v1.2.0-*
           merge-multiple: true
           path: release-assets
-      - name: Anexar os trÃƒÂªs instaladores finais e checksums
+      - name: Anexar os três instaladores finais e checksums
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}

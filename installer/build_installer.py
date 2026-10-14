@@ -22,15 +22,15 @@ SOURCE_SHA256 = '7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7
 
 def extract_payload(source_zip):
     if hashlib.sha256(source_zip.read_bytes()).hexdigest() != SOURCE_SHA256:
-        raise RuntimeError('ZIP de referÃªncia nÃ£o corresponde Ã  release validada.')
+        raise RuntimeError('ZIP de referência não corresponde à release validada.')
     with zipfile.ZipFile(source_zip) as z:
         names = [n for n in z.namelist() if n.endswith('.exe')]
         if len(names) != 1:
-            raise RuntimeError('ExecutÃ¡vel de referÃªncia ausente ou ambÃ­guo.')
+            raise RuntimeError('Executável de referência ausente ou ambíguo.')
         raw = z.read(names[0])
     pos = raw.rfind(b'MEI\x0c\x0b\x0a\x0b\x0e')
     if pos < 0 or pos + 88 > len(raw):
-        raise RuntimeError('CArchive invÃ¡lido.')
+        raise RuntimeError('CArchive inválido.')
     _, total, toc_offset, toc_size, _, _ = struct.unpack_from('!8sIIII64s', raw, pos)
     start = pos + 88 - total
     off = start + toc_offset
@@ -44,7 +44,7 @@ def extract_payload(source_zip):
             raise RuntimeError('Registro CArchive truncado.')
         length, position, compressed, size, flag, kind = struct.unpack_from('!IIIIBc', raw, off)
         if length < 18 or off + length > end:
-            raise RuntimeError('Registro CArchive invÃ¡lido.')
+            raise RuntimeError('Registro CArchive inválido.')
         name = raw[off + 18:off + length].split(b'\0')[0].decode().replace('\\', '/')
         if name.startswith('TraducaoCompleta/'):
             dest = (dest_root / name).resolve()
@@ -62,7 +62,7 @@ def extract_payload(source_zip):
             seen.add(name)
         off += length
     if off != end or len(seen) != 112:
-        raise RuntimeError('Esperava exatamente 112 arquivos de traduÃ§Ã£o.')
+        raise RuntimeError('Esperava exatamente 112 arquivos de tradução.')
     return dest_root / 'TraducaoCompleta/citra/romfs'
 
 
@@ -71,7 +71,7 @@ def validate_payload(payload):
     actual = {p.relative_to(payload).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in payload.rglob('*') if p.is_file() and not p.relative_to(payload).as_posix().startswith('scene/fazer/')}
     if actual != expected:
-        raise RuntimeError('Payload da traduÃ§Ã£o nÃ£o corresponde aos 112 recursos validados.')
+        raise RuntimeError('Payload da tradução não corresponde aos 112 recursos validados.')
 
 
 def main():
@@ -95,7 +95,7 @@ def main():
             urllib.request.urlretrieve(SOURCE_URL, source)
         payload = extract_payload(source)
     validate_payload(payload)
-    print('Payload validado: 112 arquivos; nenhuma execuÃ§Ã£o do EXE antigo.')
+    print('Payload validado: 112 arquivos; nenhuma execução do EXE antigo.')
     if args.prepare_only:
         return
     machine = platform.machine().lower()
@@ -121,7 +121,7 @@ def main():
     report = output/(name+'-self-test.json')
     subprocess.run([str(binary), '--self-test-report', str(report)], check=True, timeout=120)
     if not json.loads(report.read_text(encoding='utf-8')).get('ok'):
-        raise RuntimeError('Autoteste do executÃ¡vel falhou.')
+        raise RuntimeError('Autoteste do executável falhou.')
     if args.hd_runtime:
         source_archive = output/f'OoT3D_PTBR_TriAevum_v{VERSION}_Fontes-HD.zip'
         with zipfile.ZipFile(source_archive, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False) as z:
