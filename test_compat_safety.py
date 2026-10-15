@@ -7,7 +7,7 @@ class Safety(unittest.TestCase):
   with tempfile.TemporaryDirectory() as folder, patch.object(c,'BASE',Path(folder)):
    for variable in ('${profile_dir}', '${runtime_dir}'):
     for separator in ('/', '\\'):
-     self.assertEqual(c.resolve_profile_path(variable+separator+'data/title.json'),Path(folder)/'data/title.json')
+     self.assertEqual(c.resolve_profile_path(variable+separator+'data/title.json'),(Path(folder)/'data/title.json').resolve())
     with self.assertRaises(RuntimeError):c.resolve_profile_path(variable+'/../escape')
    with self.assertRaises(RuntimeError):c.resolve_profile_path('${unknown}/data')
  def test_o3tu_replacement_corruption(self):
