@@ -17,6 +17,8 @@ EXE = 'TriAevum-PTBR-HD.exe'
 PROFILE = 'TriAevum-PTBR-HD.launch.json'
 CONFIG = 'data/config/TriAevum-PTBR-HD.json'
 FORMAT = 'oot3d_ptbr_hd_install_v1'
+DEPLOY_FORMAT = 'oot3d_ptbr_hd_runtime_deploy_v1'
+SOURCE_DOWNLOAD = 'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.2.1/OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip'
 
 
 def digest(data):
@@ -107,24 +109,51 @@ def validate_base(root, rules):
         raise RuntimeError('O RomFS mudou depois da tradução; verifique o status primeiro.')
 
 
-def validate_bundle(bundle, rules=None):
+def validate_bundle(bundle, rules=None, *, require_sources=True):
     rules = rules or recipe()
     bundle = canonical(bundle)
     manifest = read_json(bundle / 'manifest.json')
     expected = rules['runtime_files']
-    if manifest.get('format') != 'oot3d_ptbr_hd_runtime_v1' or manifest.get('files') != expected:
+    deploy = manifest.get('format') == DEPLOY_FORMAT
+    if (manifest.get('format') not in ('oot3d_ptbr_hd_runtime_v1', DEPLOY_FORMAT) or
+            manifest.get('files') != expected or (deploy and require_sources)):
         raise RuntimeError('O pacote do runtime HD não corresponde ao build validado.')
     for name, sha in expected.items():
         if digest(bounded(bundle, name).read_bytes()) != sha:
             raise RuntimeError(f'Arquivo do runtime HD corrompido: {name}')
-    for name, sha in rules['source_files'].items():
-        if digest(bounded(bundle, name).read_bytes()) != sha:
-            raise RuntimeError(f'Código-fonte/patch do bundle HD diferente: {name}')
-    for name in ('source/TriAevum-source.zip', 'source/menus-HD.patch', 'LICENSE',
-                 'THIRD_PARTY_NOTICES.md', 'SOURCE_OFFER.md'):
+    if deploy:
+        if manifest.get('source_files') != rules['source_files'] or manifest.get('source_url') != SOURCE_DOWNLOAD:
+            raise RuntimeError('Referência aos fontes correspondentes inválida.')
+        allowed = set(expected) | {'manifest.json', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'SOURCE_OFFER.md'}
+        if (bundle / 'source').exists() or any(p.relative_to(bundle).as_posix() not in allowed
+                                               for p in bundle.rglob('*') if p.is_file()):
+            raise RuntimeError('Arquivos extras no runtime de distribuição.')
+    else:
+        for name, sha in rules['source_files'].items():
+            if digest(bounded(bundle, name).read_bytes()) != sha:
+                raise RuntimeError(f'Código-fonte/patch do bundle HD diferente: {name}')
+    for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md', 'SOURCE_OFFER.md'):
         if not bounded(bundle, name).is_file():
             raise RuntimeError(f'Pacote HD incompleto: {name}')
     return bundle
+
+
+def prepare_deploy_bundle(source, output, rules=None):
+    rules = rules or recipe()
+    source = validate_bundle(source, rules)
+    output = canonical(output)
+    if output.exists() and any(output.iterdir()):
+        raise RuntimeError('Destino do runtime de distribuição precisa estar vazio.')
+    output.mkdir(parents=True, exist_ok=True)
+    for name in (*rules['runtime_files'], 'LICENSE', 'THIRD_PARTY_NOTICES.md'):
+        bounded(output, name).write_bytes(bounded(source, name).read_bytes())
+    (output / 'SOURCE_OFFER.md').write_text(
+        'Corresponding source code and local patch are available at no charge:\n\n' + SOURCE_DOWNLOAD +
+        '\n\nSource file hashes are recorded in manifest.json and the installer recipe.\n', encoding='utf-8')
+    (output / 'manifest.json').write_bytes(encoded_json({
+        'format': DEPLOY_FORMAT, 'files': rules['runtime_files'],
+        'source_files': rules['source_files'], 'source_url': SOURCE_DOWNLOAD}))
+    return validate_bundle(output, rules, require_sources=False)
 
 
 def locate_pack(selected):
@@ -173,7 +202,7 @@ def plan_install(root, selected_pack, bundle):
     root = canonical(root)
     rules = recipe()
     validate_base(root, rules)
-    bundle = validate_bundle(bundle, rules)
+    bundle = validate_bundle(bundle, rules, require_sources=False)
     pack = locate_pack(selected_pack)
     for relative, expected in rules['pack_files'].items():
         if digest(bounded(pack, relative).read_bytes()) != expected:

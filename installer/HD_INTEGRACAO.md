@@ -32,4 +32,6 @@ A fonte nativa compatível com a cobertura HD do TriAevum é preservada. Os alia
 
 O ZIP do usuário contém instalador, instruções, créditos e licenças. Os packs de texturas são externos. O pacote opcional `OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip` oferece os fontes exatos do runtime e seu patch na mesma release. O insumo técnico do Actions permanece em draft interno separado.
 
+Os fontes e o patch não ficam embutidos no instalador; são oferecidos somente no download separado. Os binários continuam sendo verificados pelos mesmos hashes antes da instalação.
+
 As compilações Linux incluem a tradução comum; sua validação funcional no jogo continua pendente. [Build da 1.2.1](BUILD_V1.2.1.md).

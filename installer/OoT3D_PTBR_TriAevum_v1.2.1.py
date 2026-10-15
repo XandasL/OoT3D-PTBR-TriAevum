@@ -758,8 +758,11 @@ def bundle_self_test(report):
 
     result["hd_runtime_included"] = hd_bundle() is not None
     if hd_bundle():
-        module.validate_bundle(hd_bundle())
+        module.validate_bundle(hd_bundle(), require_sources=False)
         result["hd_bundle_verified"] = True
+        result["hd_sources_embedded"] = (hd_bundle() / 'source').exists()
+        if getattr(sys, 'frozen', False) and result["hd_sources_embedded"]:
+            raise RuntimeError('O instalador não deve embutir os fontes do runtime.')
     Path(report).write_text(json.dumps(result, indent=2), encoding="utf-8")
 
 

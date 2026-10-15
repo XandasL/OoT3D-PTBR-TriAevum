@@ -144,6 +144,31 @@ class HDIntegration(unittest.TestCase):
         with self.assertRaises(RuntimeError): self.install()
         self.assert_originals()
 
+    def test_deploy_without_sources_installs_and_restores(self):
+        deploy = hd.prepare_deploy_bundle(self.bundle, self.base / 'deploy', self.rules)
+        self.assertFalse((deploy / 'source').exists())
+        self.assertIn(hd.SOURCE_DOWNLOAD, (deploy / 'SOURCE_OFFER.md').read_text())
+        with self.assertRaises(RuntimeError):hd.validate_bundle(deploy, self.rules)
+        hd.install(self.root, self.pack, deploy)
+        hd.restore(self.root)
+        self.assert_originals()
+
+    def test_deploy_source_reference_and_runtime_are_checked(self):
+        deploy = hd.prepare_deploy_bundle(self.bundle, self.base / 'deploy', self.rules)
+        manifest = hd.read_json(deploy / 'manifest.json')
+        manifest['source_url'] = 'https://example.com/wrong.zip'
+        self.write(deploy, 'manifest.json', hd.encoded_json(manifest))
+        with self.assertRaises(RuntimeError):hd.validate_bundle(deploy, self.rules, require_sources=False)
+        manifest['source_url'] = hd.SOURCE_DOWNLOAD
+        self.write(deploy, 'manifest.json', hd.encoded_json(manifest))
+        self.write(deploy, hd.EXE, b'corrupted')
+        with self.assertRaises(RuntimeError):hd.validate_bundle(deploy, self.rules, require_sources=False)
+
+    def test_missing_or_corrupt_sources_cannot_prepare_deploy(self):
+        self.write(self.bundle, 'source/menus-HD.patch', b'corrupted source')
+        with self.assertRaises(RuntimeError):hd.prepare_deploy_bundle(self.bundle, self.base / 'deploy', self.rules)
+        self.assertFalse((self.base / 'deploy').exists())
+
     def test_dry_run_does_not_mutate(self):
         self.assertEqual(self.install(dry_run=True)['aliases'], 1)
         self.assertFalse((self.root / hd.RECEIPT).exists())

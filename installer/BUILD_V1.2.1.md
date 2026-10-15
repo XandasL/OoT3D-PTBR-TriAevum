@@ -11,6 +11,8 @@ python installer/build_installer.py --hd-runtime build/hd-runtime-v1.2.1
 
 O runtime HD deve ser recompilado a partir do arquivo `source/TriAevum-source.zip` da beta.1c e do patch `runtime-HD.patch`. Não reutilize o EXE HD da beta.1: ele perderia as correções recentes do TriAevum e não corresponde ao novo plugin do título.
 
+O build valida o bundle completo, incluindo os hashes dos fontes e do patch. Para o executável do instalador, prepara um bundle reduzido sem a pasta `source`, com os binários validados, avisos e referência ao download gratuito de fontes. O arquivo `Fontes-HD.zip` continua sendo gerado a partir do bundle completo. O autoteste do instalador verifica que os fontes não estão embutidos.
+
 O Actions recebe somente um bundle genérico fixado por SHA-256, sem ROM, plugin privado, saves ou packs de texturas. O job isolado de download tem a permissão necessária para ler o draft técnico. Os jobs de build mantêm acesso de leitura; o job de anexação atualiza somente a release 1.2.1.
 
 Os três ZIPs de instalação e o ZIP opcional de fontes correspondentes são anexados à release. Os hashes ficam na descrição. Os arquivos `.sha256` e relatórios de autoteste permanecem nos artefatos do Actions. Releases anteriores são preservadas.

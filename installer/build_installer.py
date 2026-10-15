@@ -10,6 +10,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import tempfile
 import urllib.request
 import zipfile
 import zlib
@@ -108,13 +109,15 @@ def main():
     env = os.environ.copy()
     env['OOT3D_PAYLOAD_ROOT'] = str(payload)
     env['OOT3D_BUILD_NAME'] = name
-    if args.hd_runtime:
-        env['OOT3D_HD_BUNDLE'] = str(args.hd_runtime.resolve())
-    else:
-        env.pop('OOT3D_HD_BUNDLE', None)
-    subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
-                    '--distpath', str(ROOT/'dist'), '--workpath', str(ROOT/'build/pyinstaller'),
-                    str(ROOT/'installer/OoT3D_PTBR_TriAevum_v1.2.1.spec')], check=True, env=env, cwd=ROOT)
+    with tempfile.TemporaryDirectory(prefix='hd-deploy-', dir=ROOT/'build') as temporary:
+        if args.hd_runtime:
+            from hd_textures import prepare_deploy_bundle
+            env['OOT3D_HD_BUNDLE'] = str(prepare_deploy_bundle(args.hd_runtime, Path(temporary)))
+        else:
+            env.pop('OOT3D_HD_BUNDLE', None)
+        subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
+                        '--distpath', str(ROOT/'dist'), '--workpath', str(ROOT/'build/pyinstaller'),
+                        str(ROOT/'installer/OoT3D_PTBR_TriAevum_v1.2.1.spec')], check=True, env=env, cwd=ROOT)
     binary = ROOT/'dist'/(name + ('.exe' if sys.platform == 'win32' else ''))
     output = ROOT/'artifacts'
     output.mkdir(exist_ok=True)
