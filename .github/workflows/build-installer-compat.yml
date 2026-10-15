@@ -125,7 +125,7 @@ jobs:
               parts = path.read_text().strip().split(maxsplit=1)
               rows.append('| `' + parts[1] + '` | `' + parts[0] + '` |')
           body += '\n\n<!-- integridade:start -->\n<details>\n<summary>Verificar integridade (SHA-256)</summary>\n\n| Arquivo | SHA-256 |\n| --- | --- |\n' + '\n'.join(rows) + '\n\n</details>\n'
-          Path('release-body.json').write_text(json.dumps({'body': body}), encoding='utf-8')
+          Path('release-body.json').write_text(json.dumps({'body': body, 'tag_name': '1.2.1'}), encoding='utf-8')
           PY
           gh api -X PATCH "repos/$GH_REPO/releases/$RELEASE_ID" --input release-body.json > /dev/null
           echo "Release atualizada; estado de publicacao preservado."
