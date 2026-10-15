@@ -1,21 +1,22 @@
 {
   "format": "oot3d_ptbr_hd_recipe_v1",
-  "target": "TriAevum v0.8.0-beta.1 Windows x64",
-  "original_runtime_sha256": "156143fa6fccf63bd1aa58d06762cc32a63b227d5017ba1b5981d428ff540e3c",
+  "target": "TriAevum v0.8.0-beta.1c Windows x64",
+  "original_runtime_sha256": "fe0b3b8cbff5c414d6e61817e810afa65ecd3f71f3a34d381cfb975445dcf404",
   "clean_romfs_sha256": "dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56",
   "original_dependencies": {
     "shaderc_shared.dll": "ff7eb3639f2c72e99b0d904af13401ff994c6471446b1e8792fe4c9250bb3d17",
     "triaevum_title_aot.dll": "5906c2ceb7a3ebbc4751125d345215aabe34a40415918181f35467153d201b6e",
-    "triaevum_immerse.dll": "97e708ecbbea61922b446e7cd9d1437771c8bf9960127c28813d2325492d4bef"
+    "triaevum_immerse.dll": "ee7f04b6ad9dc26207bf3547b0fbf9b8a791055a16f8df163561359ccc3ee90a",
+    "triaevum_dlss.dll": "8ec337a5610b44d9ad0992026e60536a16330dde6d060702f59dc2d23a2d6430"
   },
   "runtime_files": {
-    "TriAevum-PTBR-HD.exe": "293c46312d82ec13e048304c2924c276da12d968957e1dce2f685a37a9cf1749",
+    "TriAevum-PTBR-HD.exe": "c84862b74da18aa73a922d8ab34a0937c0c8beec7aa44f2b90de6d079738adbf",
     "amd_fidelityfx_vk.dll": "a1624cc4238fef046f30c4d80ce3f47be63fc5f5373f49e3ee9edb9960f54c78",
     "nvngx_dlss.dll": "be6e434a94ca32499515eb62ca0e6c274526055d568d0426e4c652dcdfb6ee6e"
   },
   "source_files": {
-    "source/TriAevum-source.zip": "8c9f34ddf1df8188f372875d8658e94bba865fca0ce43022bcd8ccc475ed9fad",
-    "source/menus-HD.patch": "27131202e39ee0e8c9a12cccdc26b861df6c3d70d87707510ef521eeab864830"
+    "source/TriAevum-source.zip": "41539259e8f5f04f595a92c9cef776ff323b9b69a8de80b2d354ec4dfc3b587d",
+    "source/menus-HD.patch": "e7ccd7bed03734fa224733552324122aa60c8db295e896262e548f27b65f9c7a"
   },
   "aliases": [
     {

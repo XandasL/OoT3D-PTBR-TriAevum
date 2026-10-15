@@ -22,10 +22,10 @@ def main():
     if not token:
         raise RuntimeError('GITHUB_TOKEN é necessário para acessar o insumo do draft.')
     request = urllib.request.Request(rules['url'], headers={
-        'Accept': 'application/octet-stream', 'User-Agent': 'PTBR-installer-v1.2'})
+        'Accept': 'application/octet-stream', 'User-Agent': 'PTBR-installer-v1.2.1'})
     # A GitHub asset redirects to storage: never forward the credential there.
     request.add_unredirected_header('Authorization', 'Bearer '+token)
-    archive = ROOT/'build/hd-runtime-input-v1.2.zip'
+    archive = ROOT/'build/hd-runtime-input-v1.2.1.zip'
     archive.parent.mkdir(parents=True, exist_ok=True)
     with urllib.request.urlopen(request, timeout=120) as response, archive.open('wb') as out:
         count = 0
@@ -36,7 +36,7 @@ def main():
             out.write(block)
     if archive.stat().st_size != rules['size'] or hashlib.sha256(archive.read_bytes()).hexdigest() != rules['sha256']:
         raise RuntimeError('SHA-256/tamanho do runtime HD incorreto.')
-    output = ROOT/'build/hd-runtime-v1.2'
+    output = ROOT/'build/hd-runtime-v1.2.1'
     if output.exists() and any(output.iterdir()):
         raise RuntimeError('Destino não vazio: preserve o bundle existente.')
     with zipfile.ZipFile(archive) as z:

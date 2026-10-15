@@ -2,6 +2,14 @@ import importlib.util,unittest,struct,tempfile,json
 from pathlib import Path
 spec=importlib.util.spec_from_file_location('compat',Path(__file__).parent/'installer/Instalador_Traducao_PTBR_OoT3D_V4_compat_test.py');c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c)
 class Safety(unittest.TestCase):
+ def test_runtime_and_profile_paths_stay_inside_installation(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder, patch.object(c,'BASE',Path(folder)):
+   for variable in ('${profile_dir}', '${runtime_dir}'):
+    for separator in ('/', '\\'):
+     self.assertEqual(c.resolve_profile_path(variable+separator+'data/title.json'),Path(folder)/'data/title.json')
+    with self.assertRaises(RuntimeError):c.resolve_profile_path(variable+'/../escape')
+   with self.assertRaises(RuntimeError):c.resolve_profile_path('${unknown}/data')
  def test_o3tu_replacement_corruption(self):
   raw=b'O3TU'+struct.pack('<IIIQQI',2,1,0,1,2,1)+b'x'
   _,_,n,e=c.parse_o3tu_entries(raw)

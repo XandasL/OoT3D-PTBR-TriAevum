@@ -22,7 +22,7 @@
  #include "fast/renderer3ds/pica_surface_appearance.h"
 --- a/tools/oot3d/native_demo_host/oot3d_demo_host_context.cpp
 +++ b/tools/oot3d/native_demo_host/oot3d_demo_host_context.cpp
-@@ -67,6 +67,15 @@
+@@ -109,6 +109,15 @@
      RecordSwitchHostInitStage("host_base_services");
  
      auto config = context->GetConfig();
@@ -38,7 +38,7 @@
      config->SetBool("Window.Fullscreen.Enabled", false);
      config->SetInt("Window.Width", static_cast<int32_t>(args.Width));
      config->SetInt("Window.Height", static_cast<int32_t>(args.Height));
-@@ -157,3 +166,4 @@
+@@ -209,3 +218,4 @@
      }
      return *api;
  }
@@ -49,10 +49,10 @@
  // Native A32 window session: setup (process image, host services, renderer, UI, initial state).
  #include "oot3d_native_a32_window_session.h"
 +#include "oot3d/renderer/azahar_texture_pack.h"
- 
- namespace Oot3dA32Window {
- 
-@@ -751,6 +752,26 @@
+ #include "oot3d_native_direct_aot.h"
+ #include "oot3d_title_grass_rules.h"
+ #include "fast/oot3d/graphics_settings_persistence.h"
+@@ -836,6 +837,26 @@
  #endif
    auto &nativeUiTextureProvider = nativeUiTextureProviderStorage.emplace(
        picaMemoryView, topScreenTextureOverridePackPointer);
@@ -81,7 +81,7 @@
            Oot3dNativeGame::Oot3dPicaResourceSnapshot& resource) {
 --- a/tools/oot3d/native_game_runtime/oot3d_native_a32_window_summary.cpp
 +++ b/tools/oot3d/native_game_runtime/oot3d_native_a32_window_summary.cpp
-@@ -1543,6 +1543,9 @@
+@@ -1545,6 +1545,9 @@
                      nativeTextures.overrides_already_applied},
                     {"native_texture_provider_override_no_matches",
                      nativeTextures.override_no_matches},
@@ -230,7 +230,7 @@
  #endif
 --- a/tools/oot3d/ui_n64/oot3d_n64_ui_renderer.cpp
 +++ b/tools/oot3d/ui_n64/oot3d_n64_ui_renderer.cpp
-@@ -255,6 +255,8 @@
+@@ -262,6 +262,8 @@
      }
      uploaded.width = pixels.width;
      uploaded.height = pixels.height;
@@ -239,7 +239,7 @@
      ++stats_.texture_uploads;
      return &textures_.emplace(semanticKey, uploaded).first->second;
  }
-@@ -271,6 +273,16 @@
+@@ -278,6 +280,16 @@
  
  void N64UiFast3dRenderer::Stage(PreparedUiTextures prepared) {
      for (auto& texture : prepared) {
@@ -256,7 +256,7 @@
          std::string key = texture.key;
          staged_textures_.insert_or_assign(std::move(key), std::move(texture));
      }
-@@ -279,16 +291,24 @@
+@@ -286,16 +298,24 @@
  PreparedUiTextures N64UiFast3dRenderer::PrepareTextures(
      std::span<const UiPrimitive> primitives) {
      PreparedUiTextures prepared;
@@ -281,7 +281,7 @@
          texture.key = std::move(key);
          texture.native = primitive.texture.semantic_name.starts_with("oot3d/");
          if (texture_provider_ == nullptr) {
-@@ -303,6 +323,9 @@
+@@ -310,6 +330,9 @@
                      static_cast<std::size_t>(pixels.width) * pixels.height * 4U;
              texture.status = resolved ? PreparedUiTexture::Status::Resolved
                                        : PreparedUiTexture::Status::Invalid;

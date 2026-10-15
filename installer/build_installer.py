@@ -15,7 +15,7 @@ import zipfile
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 SOURCE_URL = 'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip'
 SOURCE_SHA256 = '7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b'
 
@@ -114,7 +114,7 @@ def main():
         env.pop('OOT3D_HD_BUNDLE', None)
     subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
                     '--distpath', str(ROOT/'dist'), '--workpath', str(ROOT/'build/pyinstaller'),
-                    str(ROOT/'installer/OoT3D_PTBR_TriAevum_v1.2.spec')], check=True, env=env, cwd=ROOT)
+                    str(ROOT/'installer/OoT3D_PTBR_TriAevum_v1.2.1.spec')], check=True, env=env, cwd=ROOT)
     binary = ROOT/'dist'/(name + ('.exe' if sys.platform == 'win32' else ''))
     output = ROOT/'artifacts'
     output.mkdir(exist_ok=True)
@@ -128,7 +128,7 @@ def main():
             for path in sorted(args.hd_runtime.rglob('*')):
                 if path.is_file() and path.name not in ('TriAevum-PTBR-HD.exe', 'nvngx_dlss.dll', 'amd_fidelityfx_vk.dll', 'manifest.json'):
                     z.write(path, path.relative_to(args.hd_runtime).as_posix())
-            z.writestr('LEIA-ME-FONTES.txt', 'Fontes exatos do runtime HD distribuido na v1.2.0.\n'
+            z.writestr('LEIA-ME-FONTES.txt', 'Fontes exatos do runtime HD distribuido na v1.2.1.\n'
                        'Extraia source/TriAevum-source.zip e aplique source/menus-HD.patch com\n'
                        'git apply --ignore-whitespace. Instrucoes e dependencias estao no arquivo original.\n'
                        'Os nomes/commits de origem constam em SOURCE_ARCHIVE_MANIFEST.json.\n'
@@ -142,7 +142,7 @@ def main():
         archive = output/(package_name+'.zip')
         with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False) as z:
             z.write(binary, binary.name)
-            readme = (ROOT/'installer/LEIA-ME_v1.2.txt').read_text(encoding='utf-8')
+            readme = (ROOT/'installer/LEIA-ME_v1.2.1.txt').read_text(encoding='utf-8')
             if runtime:
                 readme = ('PACOTE LINUX: '+runtime+'\nVALIDACAO FUNCIONAL NO JOGO PENDENTE.\nHD exclusivo do Windows.\n\n') + readme
             z.writestr('LEIA-ME.txt', readme)
@@ -160,8 +160,8 @@ def main():
                     if path.is_file():
                         z.write(path, 'Licencas/componentes/' + path.relative_to(args.hd_runtime/'LICENSES').as_posix())
                 z.writestr('FONTES.txt', 'Fontes correspondentes do runtime HD modificado e seu patch:\n'
-                           'OoT3D_PTBR_TriAevum_v1.2.0_Fontes-HD.zip, na mesma release.\n'
-                           'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.0\n'
+                           'OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip, na mesma release.\n'
+                           'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.1\n'
                            'Download gratuito e opcional para jogar; licencas acompanham este pacote.\n')
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         (output/(archive.name+'.sha256')).write_text(digest+'  '+archive.name+'\n', encoding='utf-8')

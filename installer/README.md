@@ -1,5 +1,9 @@
 # Fontes do instalador
 
+O instalador atual é a **v1.2.1**, para **TriAevum v0.8.0-beta.1c**. Consulte [BUILD_V1.2.1.md](BUILD_V1.2.1.md) para gerar os pacotes e [HD_INTEGRACAO.md](HD_INTEGRACAO.md) para adicionar ou remover as texturas HD. A interface atual é `OoT3D_PTBR_TriAevum_v1.2.1.py`; o núcleo é `Instalador_Traducao_PTBR_OoT3D_V4_compat_test.py`.
+
+## Histórico da primeira versão
+
 Esta pasta preserva o código e os arquivos de build do instalador da tradução PT-BR para **TriAevum v0.6.0-alpha.2c**.
 
 **Compatibilidade validada:** TriAevum **v0.6.0-alpha.2c Windows x64**. O protótipo Linux desta pasta também tem como alvo a **v0.6.0-alpha.2c distribuída via Flatpak**.

@@ -96,6 +96,17 @@ class HDIntegration(unittest.TestCase):
         self.install()
         self.assertEqual(hd.read_json(self.root / hd.CONFIG)['Graphics']['Custom'], 99)
 
+    def test_beta1c_runtime_paths_and_title_plugin_are_preserved(self):
+        profile = hd.read_json(self.root / 'TriAevum.launch.json')
+        profile['arguments'] = ['--config', '${runtime_dir}/data/config/TriAevum.json',
+                                '--title-plugin', '${runtime_dir}/private-plugins/new-title.dll',
+                                '--save-data', '${runtime_dir}/data/savedata']
+        self.write(self.root, 'TriAevum.launch.json', hd.encoded_json(profile))
+        self.install()
+        actual = hd.read_json(self.root / hd.PROFILE)['arguments']
+        self.assertEqual(actual[2:], profile['arguments'][2:])
+        self.assertEqual(actual[:2], ['--config', '${profile_dir}/' + hd.CONFIG])
+
     def test_existing_alias_is_not_owned(self):
         self.write(self.pack, 'UI/PTBR_HASHES/ptbr.png', png())
         self.install(); hd.restore(self.root)

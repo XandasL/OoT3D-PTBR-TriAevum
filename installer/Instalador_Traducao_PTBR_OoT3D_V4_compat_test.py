@@ -134,9 +134,16 @@ def human(n):
 # ============================================================
 
 def resolve_profile_path(text):
-    text = text.replace("${profile_dir}/", "")
-    text = text.replace("${profile_dir}\\", "")
-    return (BASE / text).resolve()
+    if not isinstance(text, str) or not text or '\0' in text:
+        raise RuntimeError('Caminho inválido no launch profile.')
+    text = text.replace('\\', '/')
+    for variable in ('${profile_dir}/', '${runtime_dir}/'):
+        if text.startswith(variable):
+            text = text[len(variable):]
+            break
+    if '${' in text:
+        raise RuntimeError('Variável de caminho desconhecida no launch profile.')
+    return contained(BASE / text)
 
 
 def locate_runtime():
@@ -1054,7 +1061,7 @@ def main():
 # Experimental compatibility checks. Public V4 and release v1.0.0 are unchanged.
 KNOWN_BASES = {
     '011c0b6933f3932c704ff1c6ab562023f407c2929661a6d54ecea1ca81072f99': 'alpha.2c',
-    'dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56': 'beta.1 observed local base',
+    'dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56': 'beta.1 / beta.1c (base local validada)',
 }
 
 
@@ -1316,7 +1323,7 @@ def diagnostic():
 
 if __name__ == '__main__':
     import argparse
-    parser = argparse.ArgumentParser(description='V4 experimental alpha.2c / beta.1')
+    parser = argparse.ArgumentParser(description='Tradução alpha.2c / beta.1 / beta.1c')
     parser.add_argument('--root', type=Path, default=BASE)
     parser.add_argument('--payload', type=Path)
     parser.add_argument('--action', choices=('diagnostic', 'install', 'restore'), default='diagnostic')

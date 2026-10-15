@@ -1,0 +1,64 @@
+TRADUÇÃO PT-BR — OCARINA OF TIME 3D / TRIAEVUM
+Instalador v1.2.1 — build para TriAevum v0.8.0-beta.1c.
+
+ALVO
+TriAevum v0.8.0-beta.1c Windows x64.
+Linux x86_64: AppImage e Flatpak; validação no jogo pendente.
+Base conhecida TriAevum v0.6.0-alpha.2c preservada.
+Outras ROMs/bases exigem validação; o instalador recusa hashes desconhecidos.
+
+INSTALAÇÃO
+1. Prepare o jogo pelo Forge. Feche o jogo e o Forge.
+2. Windows: coloque o EXE junto de TriAevum.launch.json.
+3. Linux: extraia o ZIP, dê permissão de execução ao instalador e abra-o.
+   Use Selecionar pasta do TriAevum para escolher o perfil preparado pelo Forge.
+   AppImage: normalmente ~/.local/share/TriAevum, ou $XDG_DATA_HOME/TriAevum.
+   Flatpak: normalmente ~/.var/app/io.github.coccofresco.TriAevum/data/TriAevum.
+   Não escolha o arquivo AppImage ou a área /app do Flatpak.
+4. Clique em Verificar status, depois em Instalar tradução.
+5. Abra o jogo pelo launcher original.
+
+ATUALIZAÇÃO DA VARIANTE ANTERIOR
+Restaure o original pelo instalador antes de reinstalar.
+
+FONTE HD E SINGLE SCREEN
+Na base 0.8, a fonte original que ativa a cobertura HD é preservada.
+Os aliases da tradução são convertidos para ã/õ/Ã/Õ sem alterar offsets.
+A fonte HD do runtime é usada em alturas de saída de pelo menos 480 pixels.
+A compatibilidade de menus TopScreen / Single Screen é mantida.
+
+RESTAURAÇÃO
+Feche o jogo e use Restaurar original. Não apague os backups enquanto a
+tradução estiver instalada. Backups existentes nunca são sobrescritos.
+
+CRÉDITOS — TRADUÇÃO PT-BR ORIGINAL
+Projeto Zelda Brasil – Heroes of Time
+Catatau Game Dev e Traduções
+Elite dos Quatro Traduções
+JumpManClub Brasil Traduções
+TRADU-ROMS
+
+PORT PARA TRIAEVUM
+XandasL — port, adaptação e empacotamento do instalador.
+Port e distribuição autorizados pelo responsável pela tradução.
+TriAevum / TopScreen: créditos e licenças presentes na instalação do runtime.
+
+Projeto de fãs, sem afiliação oficial com a Nintendo.
+The Legend of Zelda pertence aos seus respectivos detentores.
+Este pacote não contém ROM nem executável do jogo.
+
+TEXTURAS HD OPCIONAIS (WINDOWS 0.8)
+Instale a traducao, depois use Adicionar texturas HD. Escolha a pasta
+0004000000033500 que contem pack.json do pacote mesclado e validado.
+Abra TriAevum-PTBR-HD.exe diretamente, sem CMD.
+71 correspondencias: 13 menus + 58 areas, bosses e outros graficos.
+Os packs PNG sao externos. Leia TEXTURAS-CREDITOS.md e TEXTURAS-HD.md.
+Remover suporte HD desfaz somente os arquivos registrados pelo componente.
+Para atualizar um HD anterior, remova-o com seu instalador anterior primeiro.
+
+NOVIDADES DA 1.2.1
+Compatibilidade com caminhos runtime_dir do novo Forge.
+Runtime HD recompilado sobre beta.1c, preservando suas correções.
+Correção do aviso Navi e 71 correspondências de texturas mantidas.
+Instale em uma pasta nova preparada pelo Forge; não copie o executável HD antigo.
+Copie apenas seus saves da instalação anterior com o jogo fechado.

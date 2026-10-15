@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.2.1 — 2026-10-15
+
+- Compatibilidade com os caminhos `${runtime_dir}` dos novos perfis Forge.
+- Runtime HD atualizado para a base TriAevum v0.8.0-beta.1c, preservando as correções recentes do TopScreen e renderer.
+- Mantidas as 71 correspondências HD, a correção da Navi e a fonte com acentos PT-BR.
+- Instalação e restauração da tradução verificadas numa cópia isolada da nova base.
+- Pacotes simplificados e fontes correspondentes separados; releases anteriores preservadas.
+
+
 ## v1.0 — 2026-09-17
 
 Primeira versão pública preparada do port PT-BR de **The Legend of Zelda: Ocarina of Time 3D** para **TriAevum v0.6.0-alpha.2c**.
