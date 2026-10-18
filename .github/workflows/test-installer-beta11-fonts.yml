@@ -9,6 +9,7 @@ on:
       - 'test_hd_integration.py'
       - 'test_hd_font_discovery.py'
       - '.github/workflows/build-installer-compat.yml'
+      - '.github/workflows/test-installer-beta11-fonts.yml'
 permissions:
   contents: read
 concurrency:
