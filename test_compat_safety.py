@@ -20,6 +20,41 @@ class Safety(unittest.TestCase):
  def test_o3tu_extra_bytes(self):
   raw=b'O3TU'+struct.pack('<III',2,0,0)+b'x'
   with self.assertRaises(RuntimeError):c.validate_o3tu_complete(raw,[],0)
+ def test_restore_allows_missing_o3tu_backup_when_no_override_exists(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder:
+   pack=Path(folder)/'atlas_overrides.o3tu';pack.write_bytes(b'active-pack')
+   backup=Path(str(pack)+'.antes_traducao_ptbr_v4')
+   with patch.object(c,'inspect_topscreen',return_value=(b'valid-pack',None)) as inspect:
+    self.assertFalse(c._validate_optional_o3tu_restore(pack,backup,{'topscreen_backup':None}))
+   inspect.assert_called_once_with(pack,expected_original_hash=c.O3TU_OLD_ORIGINAL_HASH,allow_missing=True)
+ def test_restore_rejects_missing_o3tu_backup_when_marker_requires_it(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder:
+   pack=Path(folder)/'atlas_overrides.o3tu';pack.write_bytes(b'active-pack')
+   backup=Path(str(pack)+'.antes_traducao_ptbr_v4')
+   with patch.object(c,'inspect_topscreen') as inspect:
+    with self.assertRaisesRegex(RuntimeError,'backup TopScreen'):
+     c._validate_optional_o3tu_restore(pack,backup,{'topscreen_backup':str(backup)})
+    inspect.assert_not_called()
+ def test_restore_rejects_missing_o3tu_backup_if_original_override_is_active(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder:
+   pack=Path(folder)/'atlas_overrides.o3tu';pack.write_bytes(b'active-pack')
+   backup=Path(str(pack)+'.antes_traducao_ptbr_v4')
+   entry={'original':c.O3TU_OLD_ORIGINAL_HASH}
+   with patch.object(c,'inspect_topscreen',return_value=(b'valid-pack',entry)):
+    with self.assertRaisesRegex(RuntimeError,'backup O3TU está ausente'):
+     c._validate_optional_o3tu_restore(pack,backup,{'topscreen_backup':None})
+ def test_restore_validates_existing_o3tu_backup(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder:
+   pack=Path(folder)/'atlas_overrides.o3tu';pack.write_bytes(b'active-pack')
+   backup=Path(str(pack)+'.antes_traducao_ptbr_v4');backup.write_bytes(b'backup-pack')
+   entry={'original':c.O3TU_OLD_ORIGINAL_HASH}
+   with patch.object(c,'inspect_topscreen',return_value=(b'valid-pack',entry)) as inspect:
+    self.assertTrue(c._validate_optional_o3tu_restore(pack,backup,{'topscreen_backup':str(backup)}))
+   inspect.assert_called_once_with(backup,expected_original_hash=c.O3TU_OLD_ORIGINAL_HASH,allow_missing=True)
  def test_path_escape(self):
   c.BASE=Path(__file__).parent
   with self.assertRaises(RuntimeError):c.contained(c.BASE.parent/'escape')
