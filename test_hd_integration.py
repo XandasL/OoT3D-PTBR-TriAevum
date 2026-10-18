@@ -281,6 +281,37 @@ class HDIntegration(unittest.TestCase):
         self.assertFalse((self.root / hd.EXE).exists())
 
 
+    def test_native_beta11_launcher_copies_exact_runtime_and_restores(self):
+        import shutil
+
+        self.rules['runtime_mode'] = hd.NATIVE_RUNTIME_MODE
+        self.rules['runtime_files'] = {}
+        self.rules['source_files'] = {}
+        shutil.rmtree(self.bundle / 'source')
+        (self.bundle / hd.EXE).unlink()
+        self.write(self.bundle, 'LICENSE_SCOPE.md', b'native runtime only')
+        self.write(self.bundle, 'manifest.json', hd.encoded_json({
+            'format': 'oot3d_ptbr_hd_runtime_v1',
+            'runtime_mode': hd.NATIVE_RUNTIME_MODE,
+            'files': {},
+            'source_files': {},
+            'source_url': hd.SOURCE_DOWNLOAD,
+        }))
+        original_exe = (self.root / 'TriAevum.exe').read_bytes()
+
+        self.install()
+
+        launcher = self.root / hd.EXE
+        self.assertEqual(launcher.read_bytes(), original_exe)
+        self.assertEqual((self.root / 'TriAevum.exe').read_bytes(), original_exe)
+        self.assert_originals()
+
+        self.assertTrue(hd.restore(self.root))
+        self.assertFalse(launcher.exists())
+        self.assertEqual((self.root / 'TriAevum.exe').read_bytes(), original_exe)
+        self.assert_originals()
+
+
 if __name__ == '__main__':
     unittest.main()
 
@@ -294,7 +325,13 @@ class HDRecipeV12(unittest.TestCase):
             self.assertIn('UI/' + alias['original'], rules['pack_files'])
             self.assertEqual(len(rules['pack_files']['UI/' + alias['original']]), 64)
 
-    def test_corresponding_runtime_patch_is_pinned(self):
+    def test_beta11_native_runtime_is_pinned(self):
         rules = hd.recipe()
-        patch_path = Path(__file__).parent / 'installer/runtime-HD.patch'
-        self.assertEqual(hd.digest(patch_path.read_bytes()), rules['source_files']['source/menus-HD.patch'])
+        self.assertEqual(rules['target'], 'TriAevum v0.8.0-beta.1.1 Windows x64')
+        self.assertEqual(rules['runtime_mode'], hd.NATIVE_RUNTIME_MODE)
+        self.assertEqual(
+            rules['original_runtime_sha256'],
+            '13f934c68d536b09dc580fa28ba54e3967fe6b2058cfe6e918828917455a1357',
+        )
+        self.assertEqual(rules['runtime_files'], {})
+        self.assertEqual(rules['source_files'], {})
