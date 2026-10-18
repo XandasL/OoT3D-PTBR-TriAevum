@@ -1199,6 +1199,49 @@ def prepare_payload(item):
     return _legacy_prepare_payload(item)
 
 
+def locate_hd_font_pack(o3tu=None):
+    """Localiza a cobertura HD no layout legado ou no layout importado pelo Forge."""
+    if o3tu is None:
+        o3tu = locate_o3tu()
+    topscreen_root = contained(BASE / 'data' / 'mods' / 'topscreen')
+    candidates = []
+    legacy = contained(o3tu.parent / 'font_coverage.zip')
+    if legacy.is_file():
+        candidates.append(legacy)
+    if topscreen_root.is_dir():
+        candidates.extend(
+            contained(path) for path in sorted(topscreen_root.rglob('font_coverage.zip'))
+            if path.is_file()
+        )
+
+    unique = []
+    seen = set()
+    for path in candidates:
+        key = str(path.resolve()).casefold()
+        if key not in seen:
+            seen.add(key)
+            unique.append(path)
+
+    if not unique:
+        raise RuntimeError(
+            'Pacote de fonte HD não encontrado. Procurei ao lado do atlas TopScreen '
+            'e nas subpastas de data/mods/topscreen. Importe novamente o SingleScreen '
+            'com suporte a fontes HD pelo TriAevum Forge.'
+        )
+
+    pinned = [path for path in unique if sha256_file(path) == HD_FONT_PACK_SHA256]
+    if pinned:
+        return pinned[0]
+    if len(unique) == 1:
+        return unique[0]
+    raise RuntimeError(
+        'Encontrei mais de um pacote font_coverage.zip, mas nenhum corresponde '
+        'ao pacote legado conhecido. Remova importações duplicadas ou deixe apenas '
+        'a fonte HD ativa do perfil TriAevum. Arquivos encontrados: '
+        + ', '.join(str(path.relative_to(BASE)) for path in unique)
+    )
+
+
 def validate_hd_font(romfs, index):
     import zipfile
     global PRESERVED_NATIVE_FONT
@@ -1211,9 +1254,11 @@ def validate_hd_font(romfs, index):
         native = f.read(info['size'])
     if native[:4] != b'QBF1' or len(native) != 28232 or struct.unpack_from('<H', native, 4)[0] != 199:
         raise RuntimeError('QBF original inesperada.')
-    pack = contained(locate_o3tu().parent / 'font_coverage.zip')
-    if not pack.is_file() or sha256_file(pack) != HD_FONT_PACK_SHA256:
-        raise RuntimeError('Pacote de fonte HD ausente ou diferente da base 0.8 analisada.')
+    pack = locate_hd_font_pack(locate_o3tu())
+    if not pack.is_file():
+        raise RuntimeError(f'Pacote de fonte HD não encontrado: {pack}')
+    if sha256_file(pack) != HD_FONT_PACK_SHA256:
+        print('[INFO] Pacote HD importado pelo Forge; validando manifesto e conteúdo internos.')
     with zipfile.ZipFile(pack) as z:
         manifest = json.loads(z.read('manifest.json'))
         if manifest.get('format') != 'oot3d_qbf_coverage_v1':
@@ -1229,14 +1274,16 @@ def validate_hd_font(romfs, index):
                 or coverage[:4] != b'QBF1' or coverage[13:15] != bytes((64, 64))):
             raise RuntimeError('Identidade ou cobertura da fonte HD inválida.')
         native_codes = {struct.unpack_from('<H', native, 16 + i * 8)[0] for i in range(199)}
-        hd_codes = {struct.unpack_from('<H', coverage, 16 + i * 8)[0]
-                    for i in range(struct.unpack_from('<H', coverage, 4)[0])}
+        hd_count = struct.unpack_from('<H', coverage, 4)[0]
+        if len(coverage) < 16 + hd_count * 8:
+            raise RuntimeError('Tabela de caracteres da fonte HD truncada.')
+        hd_codes = {struct.unpack_from('<H', coverage, 16 + i * 8)[0] for i in range(hd_count)}
         if not native_codes <= hd_codes:
             raise RuntimeError('Cobertura HD incompleta.')
         if not {ord(ch) for ch in 'áàâãéêíóôõúüçÁÀÂÃÉÊÍÓÔÕÚÜÇ'} <= hd_codes:
             raise RuntimeError('Acentos PT-BR ausentes na fonte HD.')
     PRESERVED_NATIVE_FONT = native
-    print('[OK] Fonte original EUR preservada para manter cobertura HD 4x e acentos PT-BR.')
+    print(f'[OK] Fonte original EUR preservada; pacote validado: {pack}')
 
 
 def preflight(require_payload=False):
