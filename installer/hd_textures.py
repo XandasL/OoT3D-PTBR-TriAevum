@@ -93,10 +93,17 @@ def validate_base(root, rules):
     if (marker.get('format') != 'oot3d_ptbr_full_translation_install_v4' or
             marker.get('original_romfs_sha256') != rules['clean_romfs_sha256']):
         raise RuntimeError('Instale e valide a tradução para a base 0.8 antes do HD.')
+    # The beta.1.1 compatibility path supports both a HD coverage font pack
+    # and native-font tilde aliases. HD texture replacement is independent of
+    # which of these two valid Portuguese-font modes is active.
+    supported_font_policies = {
+        'preserve_native_hd_normalized_tildes',
+        'preserve_native_font_tilde_alias_patch',
+    }
     if (marker.get('translation_files') != 112 or marker.get('menu_eu_mirrors') != 14 or
             marker.get('patch_operations') != 126 or
-            marker.get('font_policy') != 'preserve_native_hd_normalized_tildes'):
-        raise RuntimeError('A tradução precisa estar completa e preservar a fonte HD e os acentos da base 0.8.')
+            marker.get('font_policy') not in supported_font_policies):
+        raise RuntimeError('A tradução precisa estar completa e usar uma política de fonte PT-BR compatível com a base 0.8.')
     romfs = canonical(marker['romfs_path'])
     if not romfs.is_relative_to(canonical(root)) or not romfs.is_file():
         raise RuntimeError('O RomFS do recibo não pertence a esta instalação.')
