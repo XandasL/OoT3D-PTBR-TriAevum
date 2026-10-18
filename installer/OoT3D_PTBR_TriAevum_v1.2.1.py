@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Instalador v1.2.1 da tradução PT-BR de Ocarina of Time 3D para TriAevum.
-Alvo: TriAevum v0.8.0-beta.1c; base alpha.2c preservada. Linux pendente de validação no jogo.
+Alvo HD: TriAevum v0.8.0-beta.1.1 Windows x64; base alpha.2c da tradução comum preservada. Linux pendente de validação no jogo.
 Preparado para distribuição como executável único (PyInstaller one-file).
 """
 
@@ -19,7 +19,7 @@ from tkinter.scrolledtext import ScrolledText
 
 
 APP_VERSION = "1.2.1"
-APP_TITLE = "Tradução PT-BR / TriAevum v0.8.0-beta.1c"
+APP_TITLE = "Tradução PT-BR / TriAevum 0.8"
 CORE_FILENAME = "Instalador_Traducao_PTBR_OoT3D_V4_compat_test.py"
 PAYLOAD_RELATIVE = Path("TraducaoCompleta") / "citra" / "romfs"
 
@@ -179,7 +179,7 @@ class App(tk.Tk):
 
         ttk.Label(
             header,
-            text="TriAevum v0.8.0-beta.1c • Fonte HD e acentos PT-BR • Single Screen",
+            text="TriAevum beta.1.1 • Fonte nativa, acentos PT-BR e HD",
         ).grid(row=1, column=0, sticky="w", pady=(4, 0))
 
         buttons = ttk.Frame(self, padding=(18, 8))
@@ -245,7 +245,7 @@ class App(tk.Tk):
         ttk.Button(footer, text="Leia-me", command=self.open_credits).grid(
             row=0, column=0, padx=(0, 6)
         )
-        ttk.Label(footer, text="v1.2.1 • TriAevum v0.8.0-beta.1c").grid(
+        ttk.Label(footer, text="v1.2.1 • HD Windows: beta.1.1").grid(
             row=0, column=1
         )
         ttk.Button(footer, text="Sair", command=self.destroy).grid(
@@ -666,7 +666,7 @@ class App(tk.Tk):
 
     def open_credits(self):
         """Abre um LEIA-ME resumido em uma janela interna."""
-        readme_text = 'LEIA-ME — Tradução PT-BR para Ocarina of Time 3D\n\nSOBRE\nAdaptação da tradução brasileira de The Legend of Zelda: Ocarina of Time 3D para o TriAevum.\nCOMPATIBILIDADE VALIDADA\nTriAevum v0.8.0-beta.1c Windows x64: tradução e fonte HD testadas pelo usuário. Correção do til preparada para conferência final. Linux x86_64 (AppImage/Flatpak): validação no jogo pendente. Base v0.6.0-alpha.2c preservada.\n\nEste projeto não distribui o jogo ou ROM.\n\nCOMO INSTALAR\n1. Windows: coloque o instalador ao lado de TriAevum.launch.json. Linux: selecione o perfil de dados preparado pelo Forge.\n2. Feche o jogo e o TriAevum.\n3. Clique em “Verificar status”.\n4. Clique em “Instalar tradução” e aguarde a conclusão.\n5. Abra o jogo e confira a tradução.\n\nCOMO RESTAURAR\n1. Abra o instalador.\n2. Clique em “Restaurar original”.\n3. Confirme e aguarde a restauração dos backups.\n\nIMPORTANTE\n• Não apague os backups criados pelo instalador enquanto a tradução estiver instalada.\n• Se a validação falhar, não force a instalação.\n• A versão 0.8 mantém a fonte HD original e corrige os códigos de ã/õ/Ã/Õ.\n• No Linux, selecione a pasta com TriAevum.launch.json; não selecione o arquivo AppImage.\n• Recomenda-se testar a tradução antes de instalar outros mods.\n\nCRÉDITOS — TRADUÇÃO PT-BR ORIGINAL\nProjeto Zelda Brasil – Heroes of Time\nCatatau Game Dev e Traduções\nElite dos Quatro Traduções\nJumpManClub Brasil Traduções\nTRADU-ROMS\n\nPORT PARA TRIAEVUM\nXandasL — port, adaptação e empacotamento do instalador.\n\nAUTORIZAÇÃO\nO port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, mantendo os devidos créditos dentro e fora do jogo.\n\nAVISO\nProjeto feito por fãs, sem afiliação oficial com a Nintendo.\nThe Legend of Zelda e demais propriedades relacionadas pertencem aos seus respectivos detentores.\n'
+        readme_text = 'LEIA-ME — Tradução PT-BR para Ocarina of Time 3D\n\nSOBRE\nAdaptação da tradução brasileira de The Legend of Zelda: Ocarina of Time 3D para o TriAevum.\nCOMPATIBILIDADE VALIDADA\nTexturas HD (Windows x64): TriAevum v0.8.0-beta.1.1. O launcher HD copia, sem alterar os bytes, o executável local validado; a instalação real das texturas ainda precisa de confirmação. Linux x86_64 (AppImage/Flatpak): validação no jogo pendente. Base v0.6.0-alpha.2c preservada.\n\nEste projeto não distribui o jogo ou ROM.\n\nCOMO INSTALAR\n1. Windows: coloque o instalador ao lado de TriAevum.launch.json. Linux: selecione o perfil de dados preparado pelo Forge.\n2. Feche o jogo e o TriAevum.\n3. Clique em “Verificar status”.\n4. Clique em “Instalar tradução” e aguarde a conclusão.\n5. Abra o jogo e confira a tradução.\n\nCOMO RESTAURAR\n1. Abra o instalador.\n2. Clique em “Restaurar original”.\n3. Confirme e aguarde a restauração dos backups.\n\nIMPORTANTE\n• Não apague os backups criados pelo instalador enquanto a tradução estiver instalada.\n• Se a validação falhar, não force a instalação.\n• A versão 0.8 mantém a fonte HD original e corrige os códigos de ã/õ/Ã/Õ.\n• No Linux, selecione a pasta com TriAevum.launch.json; não selecione o arquivo AppImage.\n• Recomenda-se testar a tradução antes de instalar outros mods.\n\nCRÉDITOS — TRADUÇÃO PT-BR ORIGINAL\nProjeto Zelda Brasil – Heroes of Time\nCatatau Game Dev e Traduções\nElite dos Quatro Traduções\nJumpManClub Brasil Traduções\nTRADU-ROMS\n\nPORT PARA TRIAEVUM\nXandasL — port, adaptação e empacotamento do instalador.\n\nAUTORIZAÇÃO\nO port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, mantendo os devidos créditos dentro e fora do jogo.\n\nAVISO\nProjeto feito por fãs, sem afiliação oficial com a Nintendo.\nThe Legend of Zelda e demais propriedades relacionadas pertencem aos seus respectivos detentores.\n'
 
         window = tk.Toplevel(self)
         window.title("LEIA-ME - Tradução PT-BR Ocarina of Time 3D")
