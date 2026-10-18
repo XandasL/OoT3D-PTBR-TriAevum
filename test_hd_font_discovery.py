@@ -27,7 +27,9 @@ class HdFontDiscoveryTests(unittest.TestCase):
         o3tu = topscreen / "active-profile" / "atlas_overrides.o3tu"
         o3tu.parent.mkdir(parents=True)
         o3tu.write_bytes(b"")
-        self.assertEqual(core.locate_hd_font_pack(o3tu), pack)
+        # Windows may represent the same temporary directory using its 8.3
+        # short path in one Path and the long path in another.
+        self.assertTrue(core.locate_hd_font_pack(o3tu).samefile(pack))
 
     def test_prefers_known_legacy_pack_when_both_layouts_exist(self):
         topscreen = self.root / "data" / "mods" / "topscreen"
@@ -43,7 +45,7 @@ class HdFontDiscoveryTests(unittest.TestCase):
         original_sha = core.HD_FONT_PACK_SHA256
         try:
             core.HD_FONT_PACK_SHA256 = core.sha256_file(legacy)
-            self.assertEqual(core.locate_hd_font_pack(o3tu), legacy)
+            self.assertTrue(core.locate_hd_font_pack(o3tu).samefile(legacy))
         finally:
             core.HD_FONT_PACK_SHA256 = original_sha
 
