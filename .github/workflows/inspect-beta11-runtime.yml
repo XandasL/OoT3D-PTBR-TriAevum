@@ -42,7 +42,7 @@ jobs:
               for n in z.namelist():
                   if not n.endswith("/"):
                       base = n.rsplit("/",1)[-1]
-                      if base in wanted: candidates.setdefault(base,[]).append(n)
+                      if base in wanted and n.count("/") == 1: candidates.setdefault(base,[]).append(n)
               for name in sorted(wanted):
                   paths = candidates.get(name, [])
                   if len(paths) != 1:
