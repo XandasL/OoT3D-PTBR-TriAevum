@@ -1,0 +1,86 @@
+name: TESTE — detecção de fontes HD TriAevum beta.1.1
+on:
+  workflow_dispatch:
+  push:
+    branches: [test/beta-1.1-hd-font-detection]
+    paths:
+      - 'installer/**'
+      - 'test_compat_safety.py'
+      - 'test_hd_integration.py'
+      - 'test_hd_font_discovery.py'
+      - '.github/workflows/build-installer-compat.yml'
+permissions:
+  contents: read
+concurrency:
+  group: installer-test-beta11-fonts-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  prepare-runtime:
+    name: Ler e validar apenas o insumo HD do draft
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # GitHub restricts draft assets to collaborators.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Baixar o asset fixado por hash (nenhuma execução do runtime)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python installer/fetch_hd_runtime.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-HD-input-v1.2.1
+          path: build/hd-runtime-v1.2.1/**
+          if-no-files-found: error
+          retention-days: 7
+  build:
+    needs: prepare-runtime
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            label: Windows-x64-HD
+          - os: ubuntu-22.04
+            label: Linux-x86_64-AppImage-Flatpak
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Dependências Linux para Tk e empacotamento
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk binutils xvfb
+      - name: Dependências de build
+        run: python -m pip install -r installer/requirements-build.txt
+      - name: Obter e validar os 112 recursos da tradução
+        run: python installer/build_installer.py --prepare-only
+      - name: Testes de segurança, conversão e integração HD
+        run: python -m unittest test_compat_safety test_hd_integration test_hd_font_discovery -v
+      - name: Obter o runtime já validado do job sem compilação
+        if: runner.os == 'Windows'
+        uses: actions/download-artifact@v4
+        with:
+          name: runtime-HD-input-v1.2.1
+          path: build/hd-runtime-v1.2.1
+      - name: Build Windows HD opcional e autoteste do executável
+        if: runner.os == 'Windows'
+        run: python installer/build_installer.py --hd-runtime build/hd-runtime-v1.2.1
+      - name: Build Linux e autoteste de Tk sem monitor
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python installer/build_installer.py
+      - name: Artefatos de build e autotestes
+        uses: actions/upload-artifact@v4
+        with:
+          name: OoT3D-PTBR-TEST-beta1.1-fonts-${{ matrix.label }}
+          path: artifacts/*
+          if-no-files-found: error
+          retention-days: 30
