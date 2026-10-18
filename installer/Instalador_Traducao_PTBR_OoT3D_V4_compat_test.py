@@ -1611,8 +1611,8 @@ def restore():
     missing_main = [p for p in (rb, mb) if not p.is_file()]
     if missing_main:
         raise RuntimeError(
-            "Backups obrigatórios do RomFS/manifesto não encontrados:\\n"
-            + "\\n".join(str(p) for p in missing_main)
+            "Backups obrigatórios do RomFS/manifesto não encontrados:\n"
+            + "\n".join(str(p) for p in missing_main)
         )
 
     marker = read_marker()
