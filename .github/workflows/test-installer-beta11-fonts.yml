@@ -17,11 +17,11 @@ concurrency:
   cancel-in-progress: true
 jobs:
   prepare-runtime:
-    name: Ler e validar apenas o insumo HD do draft
+    name: Preparar bundle HD para runtime nativo beta.1.1
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     permissions:
-      contents: write # GitHub restricts draft assets to collaborators.
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,10 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Baixar o asset fixado por hash (nenhuma execução do runtime)
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python installer/fetch_hd_runtime.py
+      - name: Preparar bundle sem runtime antigo ou binários externos
+        run: python installer/prepare_hd_native_runtime.py --output build/hd-runtime-v1.2.1
       - uses: actions/upload-artifact@v4
         with:
           name: runtime-HD-input-v1.2.1
@@ -66,7 +64,7 @@ jobs:
         run: python installer/build_installer.py --prepare-only
       - name: Testes de segurança, conversão e integração HD
         run: python -m unittest test_compat_safety test_hd_integration test_hd_font_discovery -v
-      - name: Obter o runtime já validado do job sem compilação
+      - name: Receber manifesto do modo HD nativo beta.1.1
         if: runner.os == 'Windows'
         uses: actions/download-artifact@v4
         with:
