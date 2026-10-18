@@ -21,6 +21,92 @@ class HdFontDiscoveryTests(unittest.TestCase):
         self.temp.cleanup()
 
     @staticmethod
+    def make_native_qbf(include_tilde_codepoints=False):
+        codes = list(range(32, 127))
+        european = [
+            code for code in range(0xA1, 0x100)
+            if code not in ({0x00C3, 0x00D5, 0x00E3, 0x00F5}
+                            if not include_tilde_codepoints else set())
+        ]
+        codes.extend(european)
+        if include_tilde_codepoints:
+            codes.extend([0x00C3, 0x00D5, 0x00E3, 0x00F5])
+        while len(codes) < 199:
+            candidate = 0x0100 + len(codes)
+            if candidate not in codes:
+                codes.append(candidate)
+        codes = codes[:199]
+        assert len(codes) == 199 and len(set(codes)) == 199
+
+        width = height = 16
+        glyph_count = 208
+        glyphs = [[0] * (width * height) for _ in range(glyph_count)]
+        code_to_glyph = {code: index for index, code in enumerate(codes)}
+
+        def put(code, x, y, value=15):
+            glyphs[code_to_glyph[code]][y * width + x] = value
+
+        # Simple test shapes for the four base vowels and the native '~'.
+        for code in (ord('a'), ord('o'), ord('A'), ord('O')):
+            for x in range(5, 10):
+                put(code, x, 7)
+                put(code, x, 12)
+            for y in range(8, 12):
+                put(code, 5, y)
+                put(code, 9, y)
+            if code in (ord('A'), ord('O')):
+                for x in range(4, 11):
+                    put(code, x, 4)
+                put(code, 4, 5)
+                put(code, 10, 5)
+
+        tilde_code = ord('~')
+        for x, y in ((4, 5), (5, 4), (6, 4), (7, 5),
+                     (8, 5), (9, 4), (10, 4), (11, 5)):
+            put(tilde_code, x, y, 12)
+
+        if include_tilde_codepoints:
+            for alias, target, base in (
+                (ord('ä'), ord('ã'), ord('a')),
+                (ord('ö'), ord('õ'), ord('o')),
+                (ord('Ä'), ord('Ã'), ord('A')),
+                (ord('Ö'), ord('Õ'), ord('O')),
+            ):
+                base_pixels = list(glyphs[code_to_glyph[base]])
+                for x, y in ((4, 2), (5, 1), (6, 1), (7, 2),
+                             (8, 2), (9, 1), (10, 1), (11, 2)):
+                    base_pixels[y * width + x] = 12
+                glyphs[code_to_glyph[target]] = base_pixels
+
+        header = bytearray(struct.pack(
+            "<4sHHIBBBB", b"QBF1", len(codes), glyph_count, 0,
+            4, width, height, 4
+        ))
+        metadata = bytearray()
+        for index, code in enumerate(codes):
+            metadata.extend(struct.pack("<HHBBH", code, index, 0, 0, 0))
+
+        bitmap_data = bytearray()
+        for pixels in glyphs:
+            for i in range(0, len(pixels), 2):
+                bitmap_data.append(((pixels[i] & 0x0F) << 4) | (pixels[i + 1] & 0x0F))
+        return bytes(header + metadata + bitmap_data)
+
+    @staticmethod
+    def qbf_glyph(data, codepoint):
+        count = struct.unpack_from("<H", data, 4)[0]
+        glyph_count = struct.unpack_from("<H", data, 6)[0]
+        bpp, width, height = data[12], data[13], data[14]
+        table = {}
+        for index in range(count):
+            offset = 16 + index * 8
+            code, glyph = struct.unpack_from("<HH", data, offset)
+            table[code] = glyph
+        glyph = table[codepoint]
+        start = 16 + count * 8 + glyph * (width * height * bpp // 8)
+        return data[start:start + (width * height * bpp // 8)]
+
+    @staticmethod
     def write_o3tu(path, entries):
         raw = bytearray(b"O3TU" + struct.pack("<III", 2, len(entries), 0))
         for original_hash, payload in entries:
@@ -177,13 +263,12 @@ class HdFontDiscoveryTests(unittest.TestCase):
         topscreen = self.root / "data" / "mods" / "topscreen"
         topscreen.mkdir(parents=True)
         (topscreen / "atlas_overrides.o3tu").write_bytes(b"test-o3tu")
-        native = bytearray(28232)
-        native[:4] = b"QBF1"
-        struct.pack_into("<H", native, 4, 199)
+        native = self.make_native_qbf(include_tilde_codepoints=False)
         romfs = self.root / "romfs.bin"
         romfs.write_bytes(native)
         old_digest = core.EXPECTED_CLEAN_ROMFS_SHA256
         old_native = core.PRESERVED_NATIVE_FONT
+        old_layout = core.NATIVE_FONT_LAYOUT
         old_enabled = core.HD_FONT_COVERAGE_ENABLED
         try:
             core.EXPECTED_CLEAN_ROMFS_SHA256 = core.BETA_ROMFS_SHA256
@@ -193,12 +278,43 @@ class HdFontDiscoveryTests(unittest.TestCase):
                 core.validate_hd_font(
                     romfs, {"message/eu/ltn16.qbf": {"absolute": 0, "size": len(native)}}
                 )
-            self.assertEqual(core.PRESERVED_NATIVE_FONT, bytes(native))
+            patched = core.PRESERVED_NATIVE_FONT
+            self.assertIsNotNone(patched)
+            self.assertNotEqual(patched, native)
+            self.assertEqual(len(patched), len(native))
+            self.assertEqual(patched[:1608], native[:1608])
+            self.assertEqual(core.NATIVE_FONT_LAYOUT, native)
             self.assertFalse(core.HD_FONT_COVERAGE_ENABLED)
+
+            # The aliased characters should now use newly composed tilde
+            # accents, without changing the base vowels or unrelated glyphs.
+            for alias, base in (
+                (ord('ä'), ord('a')), (ord('ö'), ord('o')),
+                (ord('Ä'), ord('A')), (ord('Ö'), ord('O'))
+            ):
+                alias_bitmap = self.qbf_glyph(patched, alias)
+                base_bitmap = self.qbf_glyph(native, base)
+                self.assertNotEqual(alias_bitmap, self.qbf_glyph(native, alias))
+                self.assertNotEqual(alias_bitmap, base_bitmap)
+            self.assertEqual(self.qbf_glyph(patched, ord('Z')), self.qbf_glyph(native, ord('Z')))
         finally:
             core.EXPECTED_CLEAN_ROMFS_SHA256 = old_digest
             core.PRESERVED_NATIVE_FONT = old_native
+            core.NATIVE_FONT_LAYOUT = old_layout
             core.HD_FONT_COVERAGE_ENABLED = old_enabled
+
+    def test_native_qbf_uses_existing_real_tilde_glyphs_when_available(self):
+        native = self.make_native_qbf(include_tilde_codepoints=True)
+        patched = core.patch_native_font_tilde_aliases(native)
+        self.assertEqual(len(patched), len(native))
+        for alias, target in (
+            (ord('ä'), ord('ã')), (ord('ö'), ord('õ')),
+            (ord('Ä'), ord('Ã')), (ord('Ö'), ord('Õ'))
+        ):
+            self.assertEqual(
+                self.qbf_glyph(patched, alias),
+                self.qbf_glyph(native, target)
+            )
 
     def test_reports_missing_font_pack_with_actionable_message(self):
         topscreen = self.root / "data" / "mods" / "topscreen"
