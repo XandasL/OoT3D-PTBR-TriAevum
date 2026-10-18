@@ -165,15 +165,15 @@ def main():
                     if path.is_file():
                         z.write(path, 'Licencas/componentes/' + path.relative_to(args.hd_runtime/'LICENSES').as_posix())
                 if hd_runtime_mode == 'verified_native_copy':
-                    z.writestr('FONTES.txt', 'O launcher HD copia o TriAevum.exe validado desta instalação, sem alterar seus bytes.\\n'
-                               'O instalador não inclui nem substitui o executável original ou DLLs.\\n'
-                               'Fontes correspondentes do runtime oficial beta.1.1:\\n'
-                               'https://github.com/coccofresco/TriAevum/tree/v0.8.0-beta.1.1\\n')
+                    z.writestr('FONTES.txt', 'O launcher HD copia o TriAevum.exe validado desta instalação, sem alterar seus bytes.\n'
+                               'O instalador não inclui nem substitui o executável original ou DLLs.\n'
+                               'Fontes correspondentes do runtime oficial beta.1.1:\n'
+                               'https://github.com/coccofresco/TriAevum/tree/v0.8.0-beta.1.1\n')
                 else:
-                    z.writestr('FONTES.txt', 'Fontes correspondentes do runtime HD modificado e seu patch:\\n'
-                               'OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip, na mesma release.\\n'
-                               'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.1\\n'
-                               'Download gratuito e opcional para jogar; licencas acompanham este pacote.\\n')
+                    z.writestr('FONTES.txt', 'Fontes correspondentes do runtime HD modificado e seu patch:\n'
+                               'OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip, na mesma release.\n'
+                               'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.1\n'
+                               'Download gratuito e opcional para jogar; licencas acompanham este pacote.\n')
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         (output/(archive.name+'.sha256')).write_text(digest+'  '+archive.name+'\n', encoding='utf-8')
         print('Pacote:', archive)
