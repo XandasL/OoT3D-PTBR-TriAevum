@@ -97,7 +97,7 @@ def assert_closed():
 
 def validate_base(root, rules):
     if digest(bounded(root, 'TriAevum.exe').read_bytes()) != rules['original_runtime_sha256']:
-        raise RuntimeError('Runtime diferente do TriAevum 0.8 Windows validado; nada foi alterado.')
+        raise RuntimeError('Runtime diferente do TriAevum v0.8.0-beta.1.1 Windows x64 validado; nada foi alterado.')
     for name, expected in rules['original_dependencies'].items():
         if digest(bounded(root, name).read_bytes()) != expected:
             raise RuntimeError(f'Dependência original diferente da validada: {name}')
@@ -156,6 +156,13 @@ def validate_bundle(bundle, rules=None, *, require_sources=True):
         for name, sha in rules['source_files'].items():
             if digest(bounded(bundle, name).read_bytes()) != sha:
                 raise RuntimeError(f'Código-fonte/patch do bundle HD diferente: {name}')
+        if runtime_mode == NATIVE_RUNTIME_MODE:
+            allowed = {'manifest.json', 'LICENSE', 'THIRD_PARTY_NOTICES.md',
+                       'SOURCE_OFFER.md', 'LICENSE_SCOPE.md'}
+            if ((bundle / 'source').exists() or
+                    any(p.relative_to(bundle).as_posix() not in allowed
+                        for p in bundle.rglob('*') if p.is_file())):
+                raise RuntimeError('Bundle nativo contém binários ou fontes externos não permitidos.')
     for name in ('LICENSE', 'THIRD_PARTY_NOTICES.md', 'SOURCE_OFFER.md'):
         if not bounded(bundle, name).is_file():
             raise RuntimeError(f'Pacote HD incompleto: {name}')
@@ -261,7 +268,7 @@ def plan_install(root, selected_pack, bundle):
     else:
         for name in rules['runtime_files']:
             add('install', name, bounded(bundle, name).read_bytes())
-    for item in rules['aliases']
+    for item in rules['aliases']:
         source = bounded(pack, 'UI/' + item['original'])
         data = source.read_bytes()
         if len(data) < 33 or data[:8] != b'\x89PNG\r\n\x1a\n' or data[12:16] != b'IHDR':
