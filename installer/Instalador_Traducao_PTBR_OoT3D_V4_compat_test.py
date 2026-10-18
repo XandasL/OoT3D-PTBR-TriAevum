@@ -364,7 +364,11 @@ def convert_qm_us_to_eu(data):
             dst = entry + 16 + dest * 8
             out[dst:dst + 8] = data[src:src + 8]
 
-    if EXPECTED_CLEAN_ROMFS_SHA256 == BETA_ROMFS_SHA256:
+    if (EXPECTED_CLEAN_ROMFS_SHA256 == BETA_ROMFS_SHA256
+            and HD_FONT_COVERAGE_ENABLED):
+        # Use real Portuguese tilde codepoints only when Forge imported and
+        # the HD coverage pack was fully validated. Without it, keep the
+        # legacy umlaut aliases supported by the native TriAevum font.
         out = normalize_ptbr_tildes(data, out)
     return bytes(out)
 
@@ -858,7 +862,12 @@ def install():
             "format": MARKER_FORMAT,
             "installed_at_local": time.strftime("%Y-%m-%d %H:%M:%S"),
             "translation_files": 112,
-            "font_policy": "preserve_native_hd_normalized_tildes" if EXPECTED_CLEAN_ROMFS_SHA256 == BETA_ROMFS_SHA256 else "legacy_translation",
+            "font_policy": (
+                "preserve_native_hd_normalized_tildes" if HD_FONT_COVERAGE_ENABLED
+                else "preserve_native_font_legacy_tilde_aliases"
+                if EXPECTED_CLEAN_ROMFS_SHA256 == BETA_ROMFS_SHA256
+                else "legacy_translation"
+            ),
             "menu_eu_mirrors": 14,
             "patch_operations": len(items),
             "ignored_scene_fazer": 85,
@@ -1205,6 +1214,7 @@ def normalize_ptbr_tildes(original, converted):
 BETA_ROMFS_SHA256 = 'dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56'
 HD_FONT_PACK_SHA256 = '1c49f6d817e9e6a6aed3a47143ad7cba0f0b9cf4f7a5441c9cf99a4c7d8e588e'
 PRESERVED_NATIVE_FONT = None
+HD_FONT_COVERAGE_ENABLED = False
 _legacy_prepare_payload = prepare_payload
 
 
@@ -1220,8 +1230,8 @@ def prepare_payload(item):
     return _legacy_prepare_payload(item)
 
 
-def locate_hd_font_pack(o3tu=None):
-    """Localiza a cobertura HD no layout legado ou no layout importado pelo Forge."""
+def locate_hd_font_pack(o3tu=None, required=True):
+    """Localiza cobertura HD. Se required=False, ausência significa modo nativo, não erro."""
     if o3tu is None:
         o3tu = locate_o3tu()
     topscreen_root = contained(BASE / 'data' / 'mods' / 'topscreen')
@@ -1244,10 +1254,12 @@ def locate_hd_font_pack(o3tu=None):
             unique.append(path)
 
     if not unique:
+        if not required:
+            return None
         raise RuntimeError(
             'Pacote de fonte HD não encontrado. Procurei ao lado do atlas TopScreen '
-            'e nas subpastas de data/mods/topscreen. Importe novamente o SingleScreen '
-            'com suporte a fontes HD pelo TriAevum Forge.'
+            'e nas subpastas de data/mods/topscreen. Para ativar fontes HD, importe '
+            'SingleScreen com suporte a fontes HD pelo TriAevum Forge.'
         )
 
     pinned = [path for path in unique if sha256_file(path) == HD_FONT_PACK_SHA256]
@@ -1265,8 +1277,9 @@ def locate_hd_font_pack(o3tu=None):
 
 def validate_hd_font(romfs, index):
     import zipfile
-    global PRESERVED_NATIVE_FONT
+    global PRESERVED_NATIVE_FONT, HD_FONT_COVERAGE_ENABLED
     PRESERVED_NATIVE_FONT = None
+    HD_FONT_COVERAGE_ENABLED = False
     if EXPECTED_CLEAN_ROMFS_SHA256 != BETA_ROMFS_SHA256:
         return
     info = index['message/eu/ltn16.qbf']
@@ -1275,9 +1288,16 @@ def validate_hd_font(romfs, index):
         native = f.read(info['size'])
     if native[:4] != b'QBF1' or len(native) != 28232 or struct.unpack_from('<H', native, 4)[0] != 199:
         raise RuntimeError('QBF original inesperada.')
-    pack = locate_hd_font_pack(locate_o3tu())
+    pack = locate_hd_font_pack(locate_o3tu(), required=False)
+    if pack is None:
+        # HD fonts are optional in TriAevum beta.1.1. Preserve the native QBF
+        # and leave the translation's legacy aliases intact for this mode.
+        PRESERVED_NATIVE_FONT = native
+        HD_FONT_COVERAGE_ENABLED = False
+        print('[INFO] Pacote de cobertura HD ausente; usando fonte nativa e aliases compatíveis.')
+        return
     if not pack.is_file():
-        raise RuntimeError(f'Pacote de fonte HD não encontrado: {pack}')
+        raise RuntimeError(f'Pacote de fonte HD inválido: {pack}')
     if sha256_file(pack) != HD_FONT_PACK_SHA256:
         print('[INFO] Pacote HD importado pelo Forge; validando manifesto e conteúdo internos.')
     with zipfile.ZipFile(pack) as z:
@@ -1304,7 +1324,8 @@ def validate_hd_font(romfs, index):
         if not {ord(ch) for ch in 'áàâãéêíóôõúüçÁÀÂÃÉÊÍÓÔÕÚÜÇ'} <= hd_codes:
             raise RuntimeError('Acentos PT-BR ausentes na fonte HD.')
     PRESERVED_NATIVE_FONT = native
-    print(f'[OK] Fonte original EUR preservada; pacote validado: {pack}')
+    HD_FONT_COVERAGE_ENABLED = True
+    print(f'[OK] Fonte original EUR preservada; cobertura HD validada: {pack}')
 
 
 def preflight(require_payload=False):
