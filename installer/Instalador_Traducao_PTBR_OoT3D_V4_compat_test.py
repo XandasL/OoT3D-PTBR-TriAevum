@@ -970,59 +970,94 @@ def install():
 # Restauração
 # ============================================================
 
+def _validate_optional_o3tu_restore(pack, backup, marker):
+    """Return True only when a validated O3TU backup must be restored.
+
+    Some supported TopScreen packs do not override this game's native menu.
+    Installation leaves those packs untouched and does not create a backup.
+    Missing backups are safe only when both the marker and active pack confirm
+    that no TopScreen change needs reversing.
+    """
+    declared_backup = marker.get("topscreen_backup") if marker else None
+
+    if backup.is_file():
+        _, entry = inspect_topscreen(
+            backup, expected_original_hash=O3TU_OLD_ORIGINAL_HASH, allow_missing=True
+        )
+        if entry is None or entry["original"] != O3TU_OLD_ORIGINAL_HASH:
+            raise RuntimeError("Backup O3TU inválido: entrada original do menu_top ausente.")
+        return True
+
+    if declared_backup:
+        raise RuntimeError(
+            "O marcador da instalação registra um backup TopScreen, mas o arquivo "
+            f"não foi encontrado:\\n{backup}"
+        )
+
+    # This also raises if the active pack appears to have been patched to the
+    # PT-BR hash-gate. In that case restoring without the original backup would
+    # silently leave TopScreen in a modified state, so fail safely.
+    _, active_entry = inspect_topscreen(
+        pack, expected_original_hash=O3TU_OLD_ORIGINAL_HASH, allow_missing=True
+    )
+    if active_entry is not None:
+        raise RuntimeError(
+            "O backup O3TU está ausente, mas o TopScreen ativo ainda contém o "
+            "override original do menu_top. A restauração foi cancelada para "
+            "evitar deixar uma alteração sem backup."
+        )
+    return False
+
+
 def restore():
-    manifest, manifest_data, romfs = locate_runtime()
-    romfs_backup, manifest_backup = backup_paths(romfs, manifest)
-    o3tu = locate_o3tu()
-    o3tu_backup = o3tu.with_name(o3tu.name + ".antes_traducao_ptbr_v4")
+    global EXPECTED_CLEAN_ROMFS_SHA256
+    manifest, md, romfs = locate_runtime()
+    rb, mb = backup_paths(romfs, manifest)
+    pack = locate_o3tu()
+    pb = pack.with_name(pack.name + '.antes_traducao_ptbr_v4')
 
-    if not romfs_backup.exists() or not manifest_backup.exists():
+    missing_main = [p for p in (rb, mb) if not p.is_file()]
+    if missing_main:
         raise RuntimeError(
-            "Backups V4 completos não foram encontrados.\n\n"
-            f"RomFS backup: {romfs_backup}\n"
-            f"Manifest backup: {manifest_backup}"
+            "Backups obrigatórios do RomFS/manifesto não encontrados:\\n"
+            + "\\n".join(str(p) for p in missing_main)
         )
 
-    print("\nValidando backup do RomFS...")
-    size = romfs_backup.stat().st_size
-    digest = sha256_file(romfs_backup)
+    marker = read_marker()
+    restore_topscreen = _validate_optional_o3tu_restore(pack, pb, marker)
 
-    if size != EXPECTED_CLEAN_ROMFS_SIZE or digest.lower() != EXPECTED_CLEAN_ROMFS_SHA256:
-        raise RuntimeError(
-            "O backup V4 do RomFS não corresponde à base original conhecida.\n"
-            "Restauração cancelada."
-        )
+    digest = sha256_file(rb)
+    if digest not in KNOWN_BASES or rb.stat().st_size != EXPECTED_CLEAN_ROMFS_SIZE:
+        raise RuntimeError('Backup RomFS desconhecido ou corrompido.')
+    bm = load_json(mb)
+    if bm.get('format') != md.get('format') or bm.get('source', {}).get('romfs_image_path') != md['source']['romfs_image_path']:
+        raise RuntimeError('Manifesto backup não corresponde à instalação.')
+    if any(bm['source'].get(k) != EXPECTED_CLEAN_ROMFS_SIZE for k in ('romfs_image_file_size','romfs_service_size')) or bm['source'].get('romfs_service_offset') != 0:
+        raise RuntimeError('Manifesto backup inválido.')
 
-    print("[OK] Backup original confirmado.")
-    print("Restaurando...")
+    EXPECTED_CLEAN_ROMFS_SHA256 = digest
+    # Keep every available backup until all required files have been restored.
+    shutil.copy2(rb, romfs)
+    shutil.copy2(mb, manifest)
+    if restore_topscreen:
+        shutil.copy2(pb, pack)
 
-    shutil.copy2(romfs_backup, romfs)
-    shutil.copy2(manifest_backup, manifest)
-    if o3tu_backup.exists():
-        shutil.copy2(o3tu_backup, o3tu)
+    restored = [(romfs, rb), (manifest, mb)]
+    if restore_topscreen:
+        restored.append((pack, pb))
+    for original, backup_path in restored:
+        validate_copy(original, backup_path)
 
-    restored_manifest = load_json(manifest)
-    source = restored_manifest.get("source", {})
-
-    if (
-        source.get("romfs_image_file_size") != EXPECTED_CLEAN_ROMFS_SIZE
-        or source.get("romfs_service_size") != EXPECTED_CLEAN_ROMFS_SIZE
-    ):
-        raise RuntimeError(
-            "O manifesto restaurado não possui os tamanhos originais esperados."
-        )
-
-    if MARKER.exists():
-        MARKER.unlink()
-
-    # Remove os backups V4 somente depois de uma restauração validada.
-    romfs_backup.unlink()
-    manifest_backup.unlink()
-    if o3tu_backup.exists():
-        o3tu_backup.unlink()
-
-    print("\n[OK] Arquivos originais restaurados.")
-    print("Os backups V4 (RomFS/manifest/TopScreen) foram removidos após a restauração.")
+    preflight()
+    MARKER.unlink(missing_ok=True)
+    for backup_path in (rb, mb, pb if restore_topscreen else None):
+        if backup_path is not None:
+            backup_path.unlink(missing_ok=True)
+    print('[OK] Original restaurado e validado.')
+    if restore_topscreen:
+        print('Os backups V4 utilizados (RomFS/manifesto/TopScreen) foram removidos após a validação.')
+    else:
+        print('O TopScreen não precisou ser restaurado; os backups usados foram removidos após a validação.')
 
 
 # ============================================================
