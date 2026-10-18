@@ -1,20 +1,16 @@
-# Build da v1.2.1
+# Build de teste da v1.2.1 — TriAevum beta.1.1
 
-Alvo HD: TriAevum v0.8.0-beta.1c, Windows x64. A tradução comum continua restrita às bases RomFS conhecidas. Os novos perfis do Forge usam `${runtime_dir}`; os perfis anteriores com `${profile_dir}` continuam aceitos, sempre dentro da instalação selecionada.
+Alvo HD: **TriAevum v0.8.0-beta.1.1, Windows x64**. A tradução comum continua restrita às bases RomFS conhecidas. Os perfis do Forge usam os caminhos reconhecidos pelo instalador.
 
 ```powershell
 python installer/build_installer.py --prepare-only
-python -m unittest test_compat_safety test_hd_integration -v
-python installer/fetch_hd_runtime.py
+python -m unittest test_compat_safety test_hd_integration test_hd_font_discovery -v
+python installer/prepare_hd_native_runtime.py --output build/hd-runtime-v1.2.1
 python installer/build_installer.py --hd-runtime build/hd-runtime-v1.2.1
 ```
 
-O runtime HD deve ser recompilado a partir do arquivo `source/TriAevum-source.zip` da beta.1c e do patch `runtime-HD.patch`. Não reutilize o EXE HD da beta.1: ele perderia as correções recentes do TriAevum e não corresponde ao novo plugin do título.
+A beta.1.1 já inclui o resolvedor de texturas da interface. O bundle HD desta branch contém apenas um manifesto e avisos; não incorpora o executável antigo da beta.1c. Na instalação, o componente exige o SHA-256 publicado do `TriAevum.exe` da beta.1.1 e das DLLs dependentes. Somente após validar também a tradução e o RomFS, copia o executável local validado para `TriAevum-PTBR-HD.exe` e cria o perfil/configuração isolados.
 
-O build valida o bundle completo, incluindo os hashes dos fontes e do patch. Para o executável do instalador, prepara um bundle reduzido sem a pasta `source`, com os binários validados, avisos e referência ao download gratuito de fontes. O arquivo `Fontes-HD.zip` continua sendo gerado a partir do bundle completo. O autoteste do instalador verifica que os fontes não estão embutidos.
+O modo nativo evita substituir o plugin, as DLLs ou o runtime atual por binários de versão anterior. O executável original e seus arquivos não são alterados. A referência de código-fonte é a tag oficial beta.1.1: https://github.com/coccofresco/TriAevum/tree/v0.8.0-beta.1.1.
 
-O Actions recebe somente um bundle genérico fixado por SHA-256, sem ROM, plugin privado, saves ou packs de texturas. O job isolado de download tem a permissão necessária para ler o draft técnico. Os jobs de build mantêm acesso de leitura; o job de anexação atualiza somente a release 1.2.1.
-
-Os três ZIPs de instalação e o ZIP opcional de fontes correspondentes são anexados à release. Os hashes ficam na descrição. Os arquivos `.sha256` e relatórios de autoteste permanecem nos artefatos do Actions. Releases anteriores são preservadas.
-
-Linux inclui somente a tradução comum. O autoteste do instalador Linux não equivale à validação funcional dentro do jogo.
+Os builds e autotestes Linux não equivalem a validação funcional dentro do jogo. A build Windows deve ser testada em uma instalação beta.1.1 limpa, com o pack mesclado e validado, antes de se considerar o comportamento HD confirmado.
