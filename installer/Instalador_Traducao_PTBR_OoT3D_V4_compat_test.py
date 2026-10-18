@@ -1607,8 +1607,17 @@ def restore():
     rb, mb = backup_paths(romfs, manifest)
     pack = locate_o3tu()
     pb = pack.with_name(pack.name + '.antes_traducao_ptbr_v4')
-    if not all(p.is_file() for p in (rb, mb, pb)):
-        raise RuntimeError('Backups completos obrigatórios para restauração.')
+
+    missing_main = [p for p in (rb, mb) if not p.is_file()]
+    if missing_main:
+        raise RuntimeError(
+            "Backups obrigatórios do RomFS/manifesto não encontrados:\\n"
+            + "\\n".join(str(p) for p in missing_main)
+        )
+
+    marker = read_marker()
+    restore_topscreen = _validate_optional_o3tu_restore(pack, pb, marker)
+
     digest = sha256_file(rb)
     if digest not in KNOWN_BASES or rb.stat().st_size != EXPECTED_CLEAN_ROMFS_SIZE:
         raise RuntimeError('Backup RomFS desconhecido ou corrompido.')
@@ -1617,21 +1626,30 @@ def restore():
         raise RuntimeError('Manifesto backup não corresponde à instalação.')
     if any(bm['source'].get(k) != EXPECTED_CLEAN_ROMFS_SIZE for k in ('romfs_image_file_size','romfs_service_size')) or bm['source'].get('romfs_service_offset') != 0:
         raise RuntimeError('Manifesto backup inválido.')
-    _, e = inspect_topscreen(pb)
-    if e['original'] != O3TU_OLD_ORIGINAL_HASH:
-        raise RuntimeError('Backup O3TU não é original.')
+
     EXPECTED_CLEAN_ROMFS_SHA256 = digest
-    # Retain backups until all three restored files have been verified.
+    # Validate all required backups before modifying the installation.
     shutil.copy2(rb, romfs)
     shutil.copy2(mb, manifest)
-    shutil.copy2(pb, pack)
-    for original, backup in ((romfs, rb), (manifest, mb), (pack, pb)):
-        validate_copy(original, backup)
+    if restore_topscreen:
+        shutil.copy2(pb, pack)
+
+    restored = [(romfs, rb), (manifest, mb)]
+    if restore_topscreen:
+        restored.append((pack, pb))
+    for original, backup_path in restored:
+        validate_copy(original, backup_path)
+
     preflight()
     MARKER.unlink(missing_ok=True)
-    for backup in (rb, mb, pb):
-        backup.unlink()
+    for backup_path in (rb, mb, pb if restore_topscreen else None):
+        if backup_path is not None:
+            backup_path.unlink(missing_ok=True)
     print('[OK] Original restaurado e validado.')
+    if restore_topscreen:
+        print('Os backups V4 utilizados (RomFS/manifesto/TopScreen) foram removidos após a validação.')
+    else:
+        print('O TopScreen não precisou ser restaurado; os backups usados foram removidos após a validação.')
 
 
 def diagnostic():
