@@ -20,6 +20,16 @@ class HdFontDiscoveryTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    @staticmethod
+    def write_o3tu(path, entries):
+        raw = bytearray(b"O3TU" + struct.pack("<III", 2, len(entries), 0))
+        for original_hash, payload in entries:
+            replacement_hash = core.fnv1a64(payload)
+            raw.extend(struct.pack("<QQI", original_hash, replacement_hash, len(payload)))
+            raw.extend(payload)
+        path.write_bytes(raw)
+        return path
+
     def test_discovers_forge_imported_font_coverage(self):
         topscreen = self.root / "data" / "mods" / "topscreen"
         imported = topscreen / "singlescreen-31-content-key"
@@ -91,6 +101,68 @@ class HdFontDiscoveryTests(unittest.TestCase):
 
         self.assertEqual(entry["original"], core.O3TU_OLD_ORIGINAL_HASH)
         self.assertEqual(entry["replacement"], core.O3TU_ENGLISH_REPLACEMENT_HASH)
+
+    def test_accepts_version_specific_menu_top_replacement(self):
+        # The newer TriAevum pack can use a different replacement asset hash.
+        # The active source texture identity is the reliable selector.
+        path = self.root / "atlas_overrides.o3tu"
+        replacement = b"SingleScreen 3.1 menu_top replacement"
+        self.write_o3tu(path, [(core.O3TU_OLD_ORIGINAL_HASH, replacement)])
+
+        _, entry = core.inspect_topscreen(
+            path, expected_original_hash=core.O3TU_OLD_ORIGINAL_HASH
+        )
+        self.assertEqual(entry["original"], core.O3TU_OLD_ORIGINAL_HASH)
+        self.assertEqual(entry["replacement"], core.fnv1a64(replacement))
+        self.assertNotEqual(entry["replacement"], core.O3TU_ENGLISH_REPLACEMENT_HASH)
+
+    def test_missing_menu_top_override_is_a_safe_noop(self):
+        path = self.root / "atlas_overrides.o3tu"
+        replacement = b"An unrelated valid override"
+        unrelated_original = 0x1020304050607080
+        self.write_o3tu(path, [(unrelated_original, replacement)])
+        before = path.read_bytes()
+        backup = self.root / "atlas_overrides.o3tu.antes_traducao_ptbr_v4"
+
+        _, entry = core.inspect_topscreen(
+            path, expected_original_hash=core.O3TU_OLD_ORIGINAL_HASH,
+            allow_missing=True
+        )
+        self.assertIsNone(entry)
+
+        mode, index = core.patch_topscreen_to_ptbr(path, backup)
+        self.assertEqual(mode, "not_present")
+        self.assertIsNone(index)
+        self.assertFalse(backup.exists())
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_rejects_preexisting_ptbr_gate_without_installed_marker(self):
+        path = self.root / "atlas_overrides.o3tu"
+        self.write_o3tu(path, [(core.O3TU_PTBR_ORIGINAL_HASH, b"existing PT-BR override")])
+        with self.assertRaisesRegex(RuntimeError, "já contém o hash-gate PT-BR"):
+            core.inspect_topscreen(
+                path, expected_original_hash=core.O3TU_OLD_ORIGINAL_HASH,
+                allow_missing=True
+            )
+
+    def test_patches_only_original_hash_for_version_specific_replacement(self):
+        path = self.root / "atlas_overrides.o3tu"
+        backup = self.root / "atlas_overrides.o3tu.antes_traducao_ptbr_v4"
+        replacement = b"SingleScreen 3.1 menu_top replacement"
+        self.write_o3tu(path, [(core.O3TU_OLD_ORIGINAL_HASH, replacement)])
+        original = path.read_bytes()
+
+        mode, index = core.patch_topscreen_to_ptbr(path, backup)
+        self.assertEqual(mode, "patched")
+        self.assertEqual(index, 0)
+        self.assertEqual(backup.read_bytes(), original)
+
+        _, entry = core.inspect_topscreen(
+            path, expected_original_hash=core.O3TU_PTBR_ORIGINAL_HASH
+        )
+        self.assertEqual(entry["original"], core.O3TU_PTBR_ORIGINAL_HASH)
+        self.assertEqual(entry["payload"], replacement)
+        self.assertEqual(entry["replacement"], core.fnv1a64(replacement))
 
     def test_optional_lookup_returns_none_when_hd_pack_is_absent(self):
         topscreen = self.root / "data" / "mods" / "topscreen"
