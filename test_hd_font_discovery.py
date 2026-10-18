@@ -92,6 +92,39 @@ class HdFontDiscoveryTests(unittest.TestCase):
         self.assertEqual(entry["original"], core.O3TU_OLD_ORIGINAL_HASH)
         self.assertEqual(entry["replacement"], core.O3TU_ENGLISH_REPLACEMENT_HASH)
 
+    def test_optional_lookup_returns_none_when_hd_pack_is_absent(self):
+        topscreen = self.root / "data" / "mods" / "topscreen"
+        topscreen.mkdir(parents=True)
+        o3tu = topscreen / "atlas_overrides.o3tu"
+        o3tu.write_bytes(b"test-o3tu")
+        self.assertIsNone(core.locate_hd_font_pack(o3tu, required=False))
+        with self.assertRaisesRegex(RuntimeError, "Importe novamente o SingleScreen"):
+            core.locate_hd_font_pack(o3tu)
+
+    def test_beta_without_hd_pack_keeps_native_font_and_alias_mode(self):
+        topscreen = self.root / "data" / "mods" / "topscreen"
+        topscreen.mkdir(parents=True)
+        (topscreen / "atlas_overrides.o3tu").write_bytes(b"test-o3tu")
+        native = bytearray(28232)
+        native[:4] = b"QBF1"
+        struct.pack_into("<H", native, 4, 199)
+        romfs = self.root / "romfs.bin"
+        romfs.write_bytes(native)
+        old_digest = core.EXPECTED_CLEAN_ROMFS_SHA256
+        old_native = core.PRESERVED_NATIVE_FONT
+        old_enabled = core.HD_FONT_COVERAGE_ENABLED
+        try:
+            core.EXPECTED_CLEAN_ROMFS_SHA256 = core.BETA_ROMFS_SHA256
+            core.validate_hd_font(
+                romfs, {"message/eu/ltn16.qbf": {"absolute": 0, "size": len(native)}}
+            )
+            self.assertEqual(core.PRESERVED_NATIVE_FONT, bytes(native))
+            self.assertFalse(core.HD_FONT_COVERAGE_ENABLED)
+        finally:
+            core.EXPECTED_CLEAN_ROMFS_SHA256 = old_digest
+            core.PRESERVED_NATIVE_FONT = old_native
+            core.HD_FONT_COVERAGE_ENABLED = old_enabled
+
     def test_reports_missing_font_pack_with_actionable_message(self):
         topscreen = self.root / "data" / "mods" / "topscreen"
         topscreen.mkdir(parents=True)
