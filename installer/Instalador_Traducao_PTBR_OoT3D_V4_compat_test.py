@@ -991,7 +991,7 @@ def _validate_optional_o3tu_restore(pack, backup, marker):
     if declared_backup:
         raise RuntimeError(
             "O marcador da instalação registra um backup TopScreen, mas o arquivo "
-            f"não foi encontrado:\\n{backup}"
+            f"não foi encontrado:\n{backup}"
         )
 
     # This also raises if the active pack appears to have been patched to the
@@ -1019,8 +1019,8 @@ def restore():
     missing_main = [p for p in (rb, mb) if not p.is_file()]
     if missing_main:
         raise RuntimeError(
-            "Backups obrigatórios do RomFS/manifesto não encontrados:\\n"
-            + "\\n".join(str(p) for p in missing_main)
+            "Backups obrigatórios do RomFS/manifesto não encontrados:\n"
+            + "\n".join(str(p) for p in missing_main)
         )
 
     marker = read_marker()
