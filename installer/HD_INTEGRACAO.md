@@ -1,26 +1,28 @@
 # Texturas HD traduzidas — instalador 1.2.1
 
-O componente HD é opcional e destinado ao **TriAevum v0.8.0-beta.1c Windows x64**. A tradução comum deve estar instalada e validada antes de adicionar o HD.
+O componente HD é opcional e destinado ao **TriAevum v0.8.0-beta.1.1 Windows x64**. A tradução comum deve estar instalada e validada antes de adicionar o HD. O componente recusa executáveis de outras versões.
 
 ## Instalação
 
-1. Prepare a beta.1c pelo Forge em uma pasta nova e feche jogo e Forge.
+1. Prepare a beta.1.1 pelo Forge em uma pasta nova e confirme que o jogo abre; depois feche o jogo e o Forge.
 2. Abra o instalador 1.2.1, selecione essa pasta e instale a tradução comum.
 3. Mescle os packs externos: Henriko Magnifico, TopScreen 4K e UI/MENU 4K PT-BR + PS5 LAYOUT. [Créditos e downloads](TEXTURAS_CREDITOS.md).
-4. Clique em **Adicionar texturas HD** e escolha `user/load/textures/0004000000033500`, a pasta que contém `pack.json`. Uma pasta superior só é aceita quando contém um único pack.
+4. Clique em **Adicionar texturas HD (Windows 0.8)** e escolha `user/load/textures/0004000000033500`, a pasta que contém `pack.json`. Uma pasta superior só é aceita quando contém um único pack.
 5. Abra **TriAevum-PTBR-HD.exe** diretamente.
 
-O EXE HD é compilado sobre os fontes da beta.1c para manter as correções recentes de TopScreen, menus, gráficos e compatibilidade do plugin. Não copie o EXE HD da versão anterior para a pasta nova. Os saves podem ser copiados da instalação antiga com o jogo fechado.
+## Como funciona o launcher HD
+
+A beta.1.1 já tem o resolvedor de texturas personalizadas para a interface. Para evitar misturar o executável HD antigo, compilado para a beta.1c, com o runtime e o plugin da beta.1.1, o instalador cria `TriAevum-PTBR-HD.exe` como uma **cópia byte a byte do `TriAevum.exe` validado dessa instalação**. Não baixa, não distribui e não substitui o executável oficial nem as DLLs da instalação.
+
+Antes de qualquer gravação, o instalador confere o SHA-256 do executável e das dependências, valida os 112 recursos da tradução, os 14 espelhos de menu, as 126 operações e a integridade do RomFS. O launcher usa um perfil e uma configuração separados para apontar ao pack de texturas escolhido; o executável original, o perfil original e as DLLs ficam intactos. O caminho de saves do perfil original é preservado.
 
 ## Arquivos e restauração
-
-O executável original e seu perfil são preservados. O HD cria um launcher e uma configuração separados, mantendo o novo plugin, os recursos e os caminhos do perfil original. Ele usa a pasta de saves indicada nesse perfil.
 
 Os 71 aliases em `UI/PTBR_HASHES` correspondem a 13 menus/HUD e 58 gráficos de áreas, bosses e outros recursos. As imagens originais do pack permanecem intactas. Arquivos idênticos preexistentes são preservados durante a remoção; conflitos desconhecidos são recusados antes de gravar.
 
 O recibo da transação fica em `data/mods/ptbr-hd/installation.json`. Falhas de gravação desfazem a transação. **Remover suporte HD** desfaz os arquivos pertencentes ao componente e mantém suas preferências. Não apague recibos ou backups enquanto precisar da restauração. Arquivos modificados depois da instalação devem ser verificados antes da remoção.
 
-**Restaurar original** remove primeiro o suporte HD registrado e depois restaura a tradução comum a partir dos backups. Para remover um componente de uma versão antiga, use o instalador que o instalou.
+**Restaurar original** remove primeiro o suporte HD registrado e depois restaura a tradução comum a partir dos backups. Para remover um componente HD de uma versão antiga, use o instalador que o instalou.
 
 ## Aviso da Navi e fonte
 
@@ -30,8 +32,6 @@ A fonte nativa compatível com a cobertura HD do TriAevum é preservada. Os alia
 
 ## Pacote e código-fonte
 
-O ZIP do usuário contém instalador, instruções, créditos e licenças. Os packs de texturas são externos. O pacote opcional `OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip` oferece os fontes exatos do runtime e seu patch na mesma release. O insumo técnico do Actions permanece em draft interno separado.
+O instalador não inclui executável ou DLL do TriAevum. O launcher HD é copiado da instalação validada no momento da instalação. O código-fonte correspondente ao runtime nativo está disponível no repositório oficial: https://github.com/coccofresco/TriAevum/tree/v0.8.0-beta.1.1. Os packs de texturas são externos.
 
-Os fontes e o patch não ficam embutidos no instalador; são oferecidos somente no download separado. Os binários continuam sendo verificados pelos mesmos hashes antes da instalação.
-
-As compilações Linux incluem a tradução comum; sua validação funcional no jogo continua pendente. [Build da 1.2.1](BUILD_V1.2.1.md).
+As compilações Linux incluem a tradução comum; sua validação funcional dentro do jogo continua pendente e não incluem o componente HD. Consulte [Build da 1.2.1](BUILD_V1.2.1.md).
