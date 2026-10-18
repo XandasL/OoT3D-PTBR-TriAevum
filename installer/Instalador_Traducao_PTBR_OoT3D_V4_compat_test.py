@@ -516,16 +516,37 @@ def inspect_topscreen(pack):
     raw = pack.read_bytes()
     version, count, profiles, entries = parse_o3tu_entries(raw)
     validate_o3tu_complete(raw, entries, profiles)
-    candidates = [
+    hash_candidates = [
         e for e in entries
         if e["original"] in (O3TU_OLD_ORIGINAL_HASH, O3TU_PTBR_ORIGINAL_HASH)
     ]
-    if len(candidates) != 1:
+    # TopScreen 3.1 may contain another entry whose OriginalHash matches one
+    # of the known menu_top states. Prefer the unique entry with the exact
+    # English replacement payload instead of relying on OriginalHash alone.
+    candidates = [
+        e for e in hash_candidates
+        if e["replacement"] == O3TU_ENGLISH_REPLACEMENT_HASH
+        and fnv1a64(e["payload"]) == O3TU_ENGLISH_REPLACEMENT_HASH
+    ]
+    if len(candidates) == 1:
+        e = candidates[0]
+    elif len(hash_candidates) == 1:
+        # Retain the more specific validation error below for a single
+        # candidate whose English replacement was modified.
+        e = hash_candidates[0]
+    else:
+        details = "; ".join(
+            f"#{entry['index']} OriginalHash={entry['original']:016x}, "
+            f"ReplacementHash={entry['replacement']:016x}, tamanho={entry['size']}"
+            for entry in hash_candidates
+        ) or "nenhuma entrada com os hashes conhecidos"
         raise RuntimeError(
             "Não consegui identificar unicamente a entrada inglesa menu_top "
-            "do TopScreen. A instalação foi cancelada."
+            "do TopScreen. "
+            f"Candidatas por OriginalHash: {len(hash_candidates)}; "
+            f"correspondências exatas do replacement inglês: {len(candidates)}. "
+            f"Detalhes: {details}. A instalação foi cancelada."
         )
-    e = candidates[0]
     calculated = fnv1a64(e["payload"])
     if e["replacement"] != O3TU_ENGLISH_REPLACEMENT_HASH:
         raise RuntimeError(
