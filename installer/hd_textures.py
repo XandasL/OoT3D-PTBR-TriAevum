@@ -18,7 +18,8 @@ PROFILE = 'TriAevum-PTBR-HD.launch.json'
 CONFIG = 'data/config/TriAevum-PTBR-HD.json'
 FORMAT = 'oot3d_ptbr_hd_install_v1'
 DEPLOY_FORMAT = 'oot3d_ptbr_hd_runtime_deploy_v1'
-SOURCE_DOWNLOAD = 'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/1.2.1/OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip'
+SOURCE_DOWNLOAD = 'https://github.com/coccofresco/TriAevum/tree/v0.8.0-beta.1.1'
+NATIVE_RUNTIME_MODE = 'verified_native_copy'
 
 
 def digest(data):
@@ -31,9 +32,20 @@ def read_json(path):
 
 def recipe():
     rules = read_json(HERE / 'hd-recipe.json')
-    allowed = {EXE, 'amd_fidelityfx_vk.dll', 'nvngx_dlss.dll'}
-    if rules.get('format') != 'oot3d_ptbr_hd_recipe_v1' or set(rules['runtime_files']) != allowed:
-        raise RuntimeError('Receita HD desconhecida ou arquivos de runtime não autorizados.')
+    mode = rules.get('runtime_mode', 'bundled')
+    bundled_files = {EXE, 'amd_fidelityfx_vk.dll', 'nvngx_dlss.dll'}
+    if rules.get('format') != 'oot3d_ptbr_hd_recipe_v1':
+        raise RuntimeError('Receita HD desconhecida.')
+    if mode == NATIVE_RUNTIME_MODE:
+        if rules['runtime_files'] or rules['source_files']:
+            raise RuntimeError('O modo nativo não pode incluir binários ou fontes de outro runtime.')
+        if rules.get('original_runtime_sha256') != '13f934c68d536b09dc580fa28ba54e3967fe6b2058cfe6e918828917455a1357':
+            raise RuntimeError('Hash do runtime nativo beta.1.1 não corresponde ao alvo fixado.')
+    elif mode == 'bundled':
+        if set(rules['runtime_files']) != bundled_files:
+            raise RuntimeError('Arquivos de runtime HD desconhecidos ou não autorizados.')
+    else:
+        raise RuntimeError('Modo de runtime HD desconhecido.')
     for item in rules['aliases']:
         for name in (item['original'], item['translated']):
             if '/' in name or '\\' in name or not name.endswith('.png'):
@@ -121,10 +133,15 @@ def validate_bundle(bundle, rules=None, *, require_sources=True):
     bundle = canonical(bundle)
     manifest = read_json(bundle / 'manifest.json')
     expected = rules['runtime_files']
+    runtime_mode = rules.get('runtime_mode', 'bundled')
     deploy = manifest.get('format') == DEPLOY_FORMAT
     if (manifest.get('format') not in ('oot3d_ptbr_hd_runtime_v1', DEPLOY_FORMAT) or
-            manifest.get('files') != expected or (deploy and require_sources)):
+            manifest.get('files') != expected or
+            manifest.get('runtime_mode', 'bundled') != runtime_mode or
+            (deploy and require_sources)):
         raise RuntimeError('O pacote do runtime HD não corresponde ao build validado.')
+    if runtime_mode == NATIVE_RUNTIME_MODE and manifest.get('source_url') != SOURCE_DOWNLOAD:
+        raise RuntimeError('Referência ao código-fonte do runtime beta.1.1 inválida.')
     for name, sha in expected.items():
         if digest(bounded(bundle, name).read_bytes()) != sha:
             raise RuntimeError(f'Arquivo do runtime HD corrompido: {name}')
@@ -154,12 +171,18 @@ def prepare_deploy_bundle(source, output, rules=None):
     output.mkdir(parents=True, exist_ok=True)
     for name in (*rules['runtime_files'], 'LICENSE', 'THIRD_PARTY_NOTICES.md'):
         bounded(output, name).write_bytes(bounded(source, name).read_bytes())
-    (output / 'SOURCE_OFFER.md').write_text(
-        'Corresponding source code and local patch are available at no charge:\n\n' + SOURCE_DOWNLOAD +
-        '\n\nSource file hashes are recorded in manifest.json and the installer recipe.\n', encoding='utf-8')
+    if rules.get('runtime_mode') == NATIVE_RUNTIME_MODE:
+        offer = ('Native TriAevum beta.1.1 runtime. The HD launcher is copied byte-for-byte from the user\'s '
+                 'verified TriAevum.exe at install time; the installer does not ship or patch that executable.\n\n'
+                 'Corresponding source: ' + SOURCE_DOWNLOAD + '\n')
+    else:
+        offer = ('Corresponding source code and local patch are available at no charge:\n\n' + SOURCE_DOWNLOAD +
+                 '\n\nSource file hashes are recorded in manifest.json and the installer recipe.\n')
+    (output / 'SOURCE_OFFER.md').write_text(offer, encoding='utf-8')
     (output / 'manifest.json').write_bytes(encoded_json({
-        'format': DEPLOY_FORMAT, 'files': rules['runtime_files'],
-        'source_files': rules['source_files'], 'source_url': SOURCE_DOWNLOAD}))
+        'format': DEPLOY_FORMAT, 'runtime_mode': rules.get('runtime_mode', 'bundled'),
+        'files': rules['runtime_files'], 'source_files': rules['source_files'],
+        'source_url': SOURCE_DOWNLOAD}))
     return validate_bundle(output, rules, require_sources=False)
 
 
@@ -230,9 +253,15 @@ def plan_install(root, selected_pack, bundle):
         changes.append({'scope': scope, 'path': relative, 'data': data, 'before': before,
                         'keep': keep, 'preserve': before == data})
 
-    for name in rules['runtime_files']:
-        add('install', name, bounded(bundle, name).read_bytes())
-    for item in rules['aliases']:
+    runtime_manifest = read_json(bundle / 'manifest.json')
+    if runtime_manifest.get('runtime_mode', 'bundled') == NATIVE_RUNTIME_MODE:
+        # Beta.1.1 already contains the UI texture-pack resolver. Reuse the
+        # exact validated binary from this install, never the old beta.1c EXE.
+        add('install', EXE, bounded(root, 'TriAevum.exe').read_bytes())
+    else:
+        for name in rules['runtime_files']:
+            add('install', name, bounded(bundle, name).read_bytes())
+    for item in rules['aliases']
         source = bounded(pack, 'UI/' + item['original'])
         data = source.read_bytes()
         if len(data) < 33 or data[:8] != b'\x89PNG\r\n\x1a\n' or data[12:16] != b'IHDR':
@@ -269,6 +298,8 @@ def validate_receipt(root):
         raise RuntimeError('Recibo HD desconhecido; restauração cancelada.')
     pack = canonical(state['pack_root'])
     allowed = {('install', name) for name in rules['runtime_files']}
+    if rules.get('runtime_mode') == NATIVE_RUNTIME_MODE:
+        allowed.add(('install', EXE))
     allowed |= {('install', PROFILE), ('install', CONFIG)}
     allowed |= {('pack', 'UI/PTBR_HASHES/' + item['translated']) for item in rules['aliases']}
     transaction = state.get('transaction', '')
