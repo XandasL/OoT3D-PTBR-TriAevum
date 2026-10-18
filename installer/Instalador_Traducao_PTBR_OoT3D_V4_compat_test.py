@@ -516,64 +516,81 @@ def parse_o3tu_entries(raw):
     return version, count, profiles, entries
 
 
-def inspect_topscreen(pack):
+def inspect_topscreen(pack, expected_original_hash=None, allow_missing=False):
     raw = pack.read_bytes()
     version, count, profiles, entries = parse_o3tu_entries(raw)
     validate_o3tu_complete(raw, entries, profiles)
+
+    # Runtime compatibility path: identify the entry by the exact source
+    # texture hash from the active RomFS. Replacement assets can legitimately
+    # differ between the legacy pack and SingleScreen 3.0/3.1; the O3TU parser
+    # already verifies every ReplacementHash against its payload.
+    if expected_original_hash is not None:
+        candidates = [e for e in entries if e["original"] == expected_original_hash]
+        if len(candidates) == 1:
+            return raw, candidates[0]
+        if len(candidates) > 1:
+            raise RuntimeError(
+                f"O3TU contém {len(candidates)} entradas para o mesmo OriginalHash "
+                f"{expected_original_hash:016x}; a instalação foi cancelada."
+            )
+        if (
+            expected_original_hash == O3TU_OLD_ORIGINAL_HASH
+            and any(e["original"] == O3TU_PTBR_ORIGINAL_HASH for e in entries)
+        ):
+            raise RuntimeError(
+                "O O3TU já contém o hash-gate PT-BR, mas o RomFS ainda parece original. "
+                "Restaure a instalação anterior antes de tentar novamente."
+            )
+        if allow_missing:
+            return raw, None
+        raise RuntimeError(
+            f"O O3TU ativo não contém uma entrada para o OriginalHash "
+            f"{expected_original_hash:016x}."
+        )
+
+    # Legacy diagnostic path retained for tests and callers without a source
+    # texture identity. It recognizes only the known legacy English texture.
     hash_candidates = [
         e for e in entries
         if e["original"] in (O3TU_OLD_ORIGINAL_HASH, O3TU_PTBR_ORIGINAL_HASH)
     ]
-    # TopScreen 3.1 may contain another entry whose OriginalHash matches one
-    # of the known menu_top states. Prefer the unique entry with the exact
-    # English replacement payload instead of relying on OriginalHash alone.
     candidates = [
         e for e in hash_candidates
         if e["replacement"] == O3TU_ENGLISH_REPLACEMENT_HASH
         and fnv1a64(e["payload"]) == O3TU_ENGLISH_REPLACEMENT_HASH
     ]
     if len(candidates) == 1:
-        e = candidates[0]
-    elif len(hash_candidates) == 1:
-        # Retain the more specific validation error below for a single
-        # candidate whose English replacement was modified.
+        return raw, candidates[0]
+    if len(hash_candidates) == 1:
         e = hash_candidates[0]
-    else:
-        details = "; ".join(
-            f"#{entry['index']} OriginalHash={entry['original']:016x}, "
-            f"ReplacementHash={entry['replacement']:016x}, tamanho={entry['size']}"
-            for entry in hash_candidates
-        ) or "nenhuma entrada com os hashes conhecidos"
         raise RuntimeError(
-            "Não consegui identificar unicamente a entrada inglesa menu_top "
-            "do TopScreen. "
-            f"Candidatas por OriginalHash: {len(hash_candidates)}; "
-            f"correspondências exatas do replacement inglês: {len(candidates)}. "
-            f"Detalhes: {details}. A instalação foi cancelada."
+            "A entrada menu_top conhecida não usa o replacement legado esperado. "
+            "A verificação de integridade do O3TU passou, mas o asset é de outra versão. "
+            f"OriginalHash={e['original']:016x}, ReplacementHash={e['replacement']:016x}, "
+            f"tamanho={e['size']}."
         )
-    calculated = fnv1a64(e["payload"])
-    if e["replacement"] != O3TU_ENGLISH_REPLACEMENT_HASH:
-        raise RuntimeError(
-            "O ReplacementHash da entrada menu_top foi modificado por algum "
-            "teste/versão diferente.\n"
-            f"Encontrado: {e['replacement']:016x}\n"
-            f"Esperado  : {O3TU_ENGLISH_REPLACEMENT_HASH:016x}\n\n"
-            "Restaure o atlas_overrides.o3tu original antes da instalação V4."
-        )
-    if calculated != O3TU_ENGLISH_REPLACEMENT_HASH:
-        raise RuntimeError(
-            "O payload replacement inglês do TopScreen foi modificado.\n"
-            f"FNV calculado: {calculated:016x}\n"
-            f"Esperado     : {O3TU_ENGLISH_REPLACEMENT_HASH:016x}\n\n"
-            "Restaure o atlas_overrides.o3tu original antes da instalação V4."
-        )
-    return raw, e
+    details = "; ".join(
+        f"#{entry['index']} OriginalHash={entry['original']:016x}, "
+        f"ReplacementHash={entry['replacement']:016x}, tamanho={entry['size']}"
+        for entry in hash_candidates
+    ) or "nenhuma entrada com os hashes conhecidos"
+    raise RuntimeError(
+        "Não consegui identificar a entrada menu_top usando os hashes do pacote legado. "
+        "Passe o OriginalHash calculado a partir do CTXB ativo para verificar versões "
+        "recentes do TopScreen. "
+        f"Candidatas legadas: {len(hash_candidates)}. Detalhes: {details}."
+    )
 
 
 def patch_topscreen_to_ptbr(pack, backup):
-    raw, e = inspect_topscreen(pack)
-    if e["original"] == O3TU_PTBR_ORIGINAL_HASH:
-        return "already_ptbr", e["index"]
+    raw, e = inspect_topscreen(
+        pack, expected_original_hash=O3TU_OLD_ORIGINAL_HASH, allow_missing=True
+    )
+    if e is None:
+        # A valid O3TU may be active without overriding this game's native
+        # menu_top texture. In that case there is no hash-gate to update.
+        return "not_present", None
 
     if backup.exists():
         raise RuntimeError(
@@ -587,8 +604,8 @@ def patch_topscreen_to_ptbr(pack, backup):
     temp = pack.with_name(pack.name + ".v4.tmp")
     temp.write_bytes(out)
 
-    _, ve = inspect_topscreen(temp)
-    if ve["original"] != O3TU_PTBR_ORIGINAL_HASH:
+    _, ve = inspect_topscreen(temp, expected_original_hash=O3TU_PTBR_ORIGINAL_HASH)
+    if ve is None or ve["original"] != O3TU_PTBR_ORIGINAL_HASH:
         temp.unlink(missing_ok=True)
         raise RuntimeError("Falha ao validar hash-gate PT-BR no O3TU temporário.")
 
@@ -649,20 +666,21 @@ def install():
 
     o3tu = locate_o3tu()
     o3tu_backup = o3tu.with_name(o3tu.name + ".antes_traducao_ptbr_v4")
-    _, o3tu_entry = inspect_topscreen(o3tu)
-    if o3tu_entry["original"] != O3TU_OLD_ORIGINAL_HASH:
-        raise RuntimeError(
-            "O TopScreen já está com o hash-gate PT-BR de um teste anterior.\n"
-            "Para o primeiro teste oficial da V4, restaure o O3TU original "
-            "(OriginalHash b216011e1f24749c) e rode novamente.\n\n"
-            "Isso garante que a V4 consiga criar um backup original e também "
-            "desinstalar tudo de forma totalmente reversível."
-        )
-    print(f"TopScreen: {o3tu}")
-    print(
-        f"[OK] O3TU v2 / entrada #{o3tu_entry['index']} / "
-        f"OriginalHash={o3tu_entry['original']:016x}"
+    _, o3tu_entry = inspect_topscreen(
+        o3tu, expected_original_hash=O3TU_OLD_ORIGINAL_HASH, allow_missing=True
     )
+    print(f"TopScreen O3TU ativo: {o3tu}")
+    if o3tu_entry is None:
+        print(
+            "[INFO] Não há override O3TU para o menu_top nativo desta base; "
+            "a tradução manterá esse arquivo intacto."
+        )
+    else:
+        print(
+            f"[OK] O3TU v2 / entrada #{o3tu_entry['index']} / "
+            f"OriginalHash={o3tu_entry['original']:016x} / "
+            f"ReplacementHash={o3tu_entry['replacement']:016x}"
+        )
 
     print("\n[2/9] Verificando base limpa...")
     size = romfs.stat().st_size
@@ -850,11 +868,12 @@ def install():
 
         print("\n[9/9] Aplicando compatibilidade TopScreen PT-BR...")
         o3tu_mode, o3tu_index = patch_topscreen_to_ptbr(o3tu, o3tu_backup)
-        print(
-            f"[OK] TopScreen entrada #{o3tu_index}: "
-            + ("hash-gate PT-BR aplicado." if o3tu_mode == "patched"
-               else "hash-gate PT-BR já estava aplicado.")
-        )
+        if o3tu_mode == "patched":
+            print(f"[OK] TopScreen entrada #{o3tu_index}: hash-gate PT-BR aplicado.")
+        elif o3tu_mode == "not_present":
+            print("[INFO] O3TU não possui override para este menu_top; nenhum patch foi necessário.")
+        else:
+            print("[OK] Hash-gate PT-BR do TopScreen já estava aplicado.")
 
         final_romfs_hash = sha256_file(romfs)
 
@@ -1344,9 +1363,16 @@ def preflight(require_payload=False):
     original_hash = fnv1a64(menu_texture(menu))
     if original_hash != O3TU_OLD_ORIGINAL_HASH:
         raise RuntimeError(f'OriginalHash menu_top real não confere: {original_hash:016x}')
-    raw, entry = inspect_topscreen(locate_o3tu())
-    if entry['original'] != original_hash or entry['size'] != len(menu_texture(menu)):
-        raise RuntimeError('O3TU não corresponde à textura original do RomFS.')
+    raw, entry = inspect_topscreen(
+        locate_o3tu(), expected_original_hash=original_hash, allow_missing=True
+    )
+    if entry is None:
+        print(
+            '[INFO] O3TU ativo não contém override para o menu_top nativo; '
+            'o arquivo será mantido sem alterações.'
+        )
+    elif entry['size'] != len(menu_texture(menu)):
+        raise RuntimeError('Tamanho do override menu_top não corresponde à textura original do RomFS.')
     missing = [name for name in MENU_SLOT_EU_FILES if ('menu/02_EU_ENGLISH/'+name).lower() not in index]
     if missing:
         raise RuntimeError(f'Menus EUR ausentes: {missing}')
