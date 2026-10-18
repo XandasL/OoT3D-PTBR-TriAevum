@@ -98,7 +98,7 @@ class HdFontDiscoveryTests(unittest.TestCase):
         o3tu = topscreen / "atlas_overrides.o3tu"
         o3tu.write_bytes(b"test-o3tu")
         self.assertIsNone(core.locate_hd_font_pack(o3tu, required=False))
-        with self.assertRaisesRegex(RuntimeError, "Importe novamente o SingleScreen"):
+        with self.assertRaisesRegex(RuntimeError, "ativar fontes HD"):
             core.locate_hd_font_pack(o3tu)
 
     def test_beta_without_hd_pack_keeps_native_font_and_alias_mode(self):
@@ -130,7 +130,7 @@ class HdFontDiscoveryTests(unittest.TestCase):
         topscreen.mkdir(parents=True)
         o3tu = topscreen / "atlas_overrides.o3tu"
         o3tu.write_bytes(b"")
-        with self.assertRaisesRegex(RuntimeError, "Importe novamente o SingleScreen"):
+        with self.assertRaisesRegex(RuntimeError, "ativar fontes HD"):
             core.locate_hd_font_pack(o3tu)
 
 
