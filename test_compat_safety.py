@@ -51,8 +51,12 @@ class Safety(unittest.TestCase):
  def test_beta_qm_tildes_and_other_languages(self):
   original=(Path(__file__).parent/'test-input/TraducaoCompleta/citra/romfs/message/us/us.qm').read_bytes()
   c.EXPECTED_CLEAN_ROMFS_SHA256='011c0b6933f3932c704ff1c6ab562023f407c2929661a6d54ecea1ca81072f99'
+  c.HD_FONT_COVERAGE_ENABLED=False
   legacy=c.convert_qm_us_to_eu(original)
   c.EXPECTED_CLEAN_ROMFS_SHA256=c.BETA_ROMFS_SHA256
+  fallback=c.convert_qm_us_to_eu(original)
+  self.assertEqual(fallback,legacy)  # No HD pack: retain native-font aliases.
+  c.HD_FONT_COVERAGE_ENABLED=True
   normalized=c.convert_qm_us_to_eu(original)
   table_end=16+c.EXPECTED_QM_RECORDS*96
   self.assertEqual(normalized[:table_end],legacy[:table_end])
@@ -70,6 +74,7 @@ class Safety(unittest.TestCase):
     other,n=struct.unpack_from('<II',original,entry+slot*8)
     self.assertEqual(normalized[other:other+n],original[other:other+n])
   self.assertGreater(changes,1000)
+  c.HD_FONT_COVERAGE_ENABLED=False
   c.EXPECTED_CLEAN_ROMFS_SHA256='011c0b6933f3932c704ff1c6ab562023f407c2929661a6d54ecea1ca81072f99'
  def test_tilde_normalization_rejects_unknown_qm(self):
   with self.assertRaises(RuntimeError):c.normalize_ptbr_tildes(b'unknown',b'unknown')
