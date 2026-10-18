@@ -115,9 +115,12 @@ class HdFontDiscoveryTests(unittest.TestCase):
         old_enabled = core.HD_FONT_COVERAGE_ENABLED
         try:
             core.EXPECTED_CLEAN_ROMFS_SHA256 = core.BETA_ROMFS_SHA256
-            core.validate_hd_font(
-                romfs, {"message/eu/ltn16.qbf": {"absolute": 0, "size": len(native)}}
-            )
+            # The active beta.1.1 O3TU path is read from the launch profile;
+            # inject the temporary fixture directly for this focused font test.
+            with patch.object(core, "locate_o3tu", return_value=topscreen / "atlas_overrides.o3tu"):
+                core.validate_hd_font(
+                    romfs, {"message/eu/ltn16.qbf": {"absolute": 0, "size": len(native)}}
+                )
             self.assertEqual(core.PRESERVED_NATIVE_FONT, bytes(native))
             self.assertFalse(core.HD_FONT_COVERAGE_ENABLED)
         finally:
