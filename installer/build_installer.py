@@ -82,10 +82,12 @@ def main():
     parser.add_argument('--prepare-only', action='store_true')
     parser.add_argument('--hd-runtime', type=Path, help='Bundle HD validado; somente Windows x64')
     args = parser.parse_args()
+    hd_runtime_mode = None
     if args.hd_runtime:
         if sys.platform != 'win32':
             raise RuntimeError('O runtime HD opcional foi validado somente no Windows x64.')
-        from hd_textures import validate_bundle
+        from hd_textures import validate_bundle, recipe
+        hd_runtime_mode = recipe().get('runtime_mode', 'bundled')
         validate_bundle(args.hd_runtime)
     if args.payload:
         payload = args.payload.resolve()
@@ -125,7 +127,7 @@ def main():
     subprocess.run([str(binary), '--self-test-report', str(report)], check=True, timeout=120)
     if not json.loads(report.read_text(encoding='utf-8')).get('ok'):
         raise RuntimeError('Autoteste do executável falhou.')
-    if args.hd_runtime:
+    if args.hd_runtime and hd_runtime_mode != 'verified_native_copy':
         source_archive = output/f'OoT3D_PTBR_TriAevum_v{VERSION}_Fontes-HD.zip'
         with zipfile.ZipFile(source_archive, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False) as z:
             for path in sorted(args.hd_runtime.rglob('*')):
@@ -162,10 +164,16 @@ def main():
                 for path in sorted((args.hd_runtime/'LICENSES').rglob('*')):
                     if path.is_file():
                         z.write(path, 'Licencas/componentes/' + path.relative_to(args.hd_runtime/'LICENSES').as_posix())
-                z.writestr('FONTES.txt', 'Fontes correspondentes do runtime HD modificado e seu patch:\n'
-                           'OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip, na mesma release.\n'
-                           'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.1\n'
-                           'Download gratuito e opcional para jogar; licencas acompanham este pacote.\n')
+                if hd_runtime_mode == 'verified_native_copy':
+                    z.writestr('FONTES.txt', 'O launcher HD copia o TriAevum.exe validado desta instalação, sem alterar seus bytes.\\n'
+                               'O instalador não inclui nem substitui o executável original ou DLLs.\\n'
+                               'Fontes correspondentes do runtime oficial beta.1.1:\\n'
+                               'https://github.com/coccofresco/TriAevum/tree/v0.8.0-beta.1.1\\n')
+                else:
+                    z.writestr('FONTES.txt', 'Fontes correspondentes do runtime HD modificado e seu patch:\\n'
+                               'OoT3D_PTBR_TriAevum_v1.2.1_Fontes-HD.zip, na mesma release.\\n'
+                               'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.1\\n'
+                               'Download gratuito e opcional para jogar; licencas acompanham este pacote.\\n')
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         (output/(archive.name+'.sha256')).write_text(digest+'  '+archive.name+'\n', encoding='utf-8')
         print('Pacote:', archive)
