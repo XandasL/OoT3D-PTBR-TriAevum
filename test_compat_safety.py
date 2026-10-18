@@ -55,6 +55,44 @@ class Safety(unittest.TestCase):
    with patch.object(c,'inspect_topscreen',return_value=(b'valid-pack',entry)) as inspect:
     self.assertTrue(c._validate_optional_o3tu_restore(pack,backup,{'topscreen_backup':str(backup)}))
    inspect.assert_called_once_with(backup,expected_original_hash=c.O3TU_OLD_ORIGINAL_HASH,allow_missing=True)
+ def test_active_restore_succeeds_without_unused_o3tu_backup(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder:
+   root=Path(folder)
+   romfs=root/'romfs.bin';romfs.write_bytes(b'translated-romfs')
+   manifest=root/'process-manifest.json';manifest.write_text('{}',encoding='utf-8')
+   pack=root/'atlas_overrides.o3tu';pack.write_bytes(b'active-pack')
+   rb=root/'romfs.bin.antes_traducao_ptbr_v4'
+   with rb.open('wb') as f:f.truncate(c.EXPECTED_CLEAN_ROMFS_SIZE)
+   mb=root/'process-manifest.json.antes_traducao_ptbr_v4'
+   digest=next(iter(c.KNOWN_BASES))
+   manifest_data={'format':'test-manifest','source':{
+    'romfs_image_path':str(romfs),
+    'romfs_image_file_size':c.EXPECTED_CLEAN_ROMFS_SIZE,
+    'romfs_service_size':c.EXPECTED_CLEAN_ROMFS_SIZE,
+    'romfs_service_offset':0}}
+   mb.write_text(json.dumps(manifest_data),encoding='utf-8')
+   marker=root/'traducao_ptbr_v4_instalada.json';marker.write_text('{}',encoding='utf-8')
+   def fake_copy2(source,destination):
+    source=Path(source);destination=Path(destination)
+    destination.write_bytes(b'clean-romfs' if source==rb else source.read_bytes())
+   with patch.object(c,'MARKER',marker), \
+        patch.object(c,'EXPECTED_CLEAN_ROMFS_SHA256',digest), \
+        patch.object(c,'locate_runtime',return_value=(manifest,manifest_data,romfs)), \
+        patch.object(c,'backup_paths',return_value=(rb,mb)), \
+        patch.object(c,'locate_o3tu',return_value=pack), \
+        patch.object(c,'read_marker',return_value={'topscreen_backup':None}), \
+        patch.object(c,'inspect_topscreen',return_value=(b'valid-pack',None)), \
+        patch.object(c,'sha256_file',return_value=digest), \
+        patch.object(c,'validate_copy'), \
+        patch.object(c,'preflight'), \
+        patch.object(c.shutil,'copy2',side_effect=fake_copy2):
+    c.restore()
+   self.assertEqual(romfs.read_bytes(),b'clean-romfs')
+   self.assertEqual(json.loads(manifest.read_text(encoding='utf-8'))['source']['romfs_service_size'],c.EXPECTED_CLEAN_ROMFS_SIZE)
+   self.assertEqual(pack.read_bytes(),b'active-pack')
+   self.assertFalse(rb.exists());self.assertFalse(mb.exists());self.assertFalse(marker.exists())
+   self.assertFalse(Path(str(pack)+'.antes_traducao_ptbr_v4').exists())
  def test_path_escape(self):
   c.BASE=Path(__file__).parent
   with self.assertRaises(RuntimeError):c.contained(c.BASE.parent/'escape')
