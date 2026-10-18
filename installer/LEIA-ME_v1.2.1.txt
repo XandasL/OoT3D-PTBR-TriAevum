@@ -1,10 +1,10 @@
 TRADUÇÃO PT-BR — OCARINA OF TIME 3D / TRIAEVUM
-Instalador v1.2.1 — build para TriAevum v0.8.0-beta.1c.
+Instalador v1.2.1 — teste de compatibilidade com TriAevum v0.8.0-beta.1.1.
 
 ALVO
-TriAevum v0.8.0-beta.1c Windows x64.
-Linux x86_64: AppImage e Flatpak; validação no jogo pendente.
-Base conhecida TriAevum v0.6.0-alpha.2c preservada.
+Texturas HD (Windows): TriAevum v0.8.0-beta.1.1 x64.
+Linux x86_64: AppImage e Flatpak; validação funcional dentro do jogo pendente.
+Base conhecida TriAevum v0.6.0-alpha.2c preservada para a tradução comum.
 Outras ROMs/bases exigem validação; o instalador recusa hashes desconhecidos.
 
 INSTALAÇÃO
@@ -24,7 +24,6 @@ Restaure o original pelo instalador antes de reinstalar.
 FONTE HD E SINGLE SCREEN
 Na base 0.8, a fonte original que ativa a cobertura HD é preservada.
 Os aliases da tradução são convertidos para ã/õ/Ã/Õ sem alterar offsets.
-A fonte HD do runtime é usada em alturas de saída de pelo menos 480 pixels.
 A compatibilidade de menus TopScreen / Single Screen é mantida.
 
 RESTAURAÇÃO
@@ -35,7 +34,6 @@ CRÉDITOS — TRADUÇÃO PT-BR ORIGINAL
 Projeto Zelda Brasil – Heroes of Time
 Catatau Game Dev e Traduções
 Elite dos Quatro Traduções
-JumpManClub Brasil Traduções
 TRADU-ROMS
 
 PORT PARA TRIAEVUM
@@ -48,17 +46,17 @@ The Legend of Zelda pertence aos seus respectivos detentores.
 Este pacote não contém ROM nem executável do jogo.
 
 TEXTURAS HD OPCIONAIS (WINDOWS 0.8)
-Instale a traducao, depois use Adicionar texturas HD. Escolha a pasta
+Instale a tradução, depois use Adicionar texturas HD. Escolha a pasta
 0004000000033500 que contem pack.json do pacote mesclado e validado.
 Abra TriAevum-PTBR-HD.exe diretamente, sem CMD.
-71 correspondencias: 13 menus + 58 areas, bosses e outros graficos.
-Os packs PNG sao externos. Leia TEXTURAS-CREDITOS.md e TEXTURAS-HD.md.
+O launcher é uma cópia byte a byte do TriAevum.exe validado da beta.1.1.
+O executável original e as DLLs não são substituídos.
+71 correspondências: 13 menus + 58 áreas, bosses e outros gráficos.
+Os packs PNG são externos. Leia TEXTURAS-CREDITOS.md e TEXTURAS-HD.md.
 Remover suporte HD desfaz somente os arquivos registrados pelo componente.
 Para atualizar um HD anterior, remova-o com seu instalador anterior primeiro.
 
-NOVIDADES DA 1.2.1
-Compatibilidade com caminhos runtime_dir do novo Forge.
-Runtime HD recompilado sobre beta.1c, preservando suas correções.
-Correção do aviso Navi e 71 correspondências de texturas mantidas.
-Instale em uma pasta nova preparada pelo Forge; não copie o executável HD antigo.
-Copie apenas seus saves da instalação anterior com o jogo fechado.
+NOVIDADES DESTA BUILD DE TESTE
+Compatibilidade de fonte nativa para a beta.1.1 reconhecida.
+O launcher HD não inclui o executável antigo da beta.1c.
+A versão pública e a release 1.2.1 permanecem inalteradas.
