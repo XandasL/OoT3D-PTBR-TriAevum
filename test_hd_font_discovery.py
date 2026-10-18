@@ -29,8 +29,6 @@ class HdFontDiscoveryTests(unittest.TestCase):
                             if not include_tilde_codepoints else set())
         ]
         codes.extend(european)
-        if include_tilde_codepoints:
-            codes.extend([0x00C3, 0x00D5, 0x00E3, 0x00F5])
         while len(codes) < 199:
             candidate = 0x0100 + len(codes)
             if candidate not in codes:
