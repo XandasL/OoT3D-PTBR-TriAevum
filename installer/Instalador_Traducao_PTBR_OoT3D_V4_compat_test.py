@@ -883,7 +883,7 @@ def install():
             "translation_files": 112,
             "font_policy": (
                 "preserve_native_hd_normalized_tildes" if HD_FONT_COVERAGE_ENABLED
-                else "preserve_native_font_legacy_tilde_aliases"
+                else "preserve_native_font_tilde_alias_patch"
                 if EXPECTED_CLEAN_ROMFS_SHA256 == BETA_ROMFS_SHA256
                 else "legacy_translation"
             ),
@@ -1230,9 +1230,179 @@ def normalize_ptbr_tildes(original, converted):
     return out
 
 
+def _qbf_decode_bitmap(bitmap, bpp, width, height):
+    """Decode one native QBF bitmap using its documented linear nibble/byte pixels."""
+    count = width * height
+    if bpp == 4:
+        pixels = []
+        for value in bitmap:
+            pixels.extend((value >> 4, value & 0x0F))
+        return pixels[:count]
+    if bpp == 8:
+        return list(bitmap[:count])
+    raise RuntimeError(f'Profundidade QBF não suportada para fontes nativas: {bpp} bpp.')
+
+
+def _qbf_encode_bitmap(pixels, bpp):
+    if bpp == 8:
+        return bytes(pixels)
+    if bpp != 4 or len(pixels) % 2:
+        raise RuntimeError('Bitmap QBF 4 bpp inválido.')
+    return bytes(((pixels[i] & 0x0F) << 4) | (pixels[i + 1] & 0x0F)
+                 for i in range(0, len(pixels), 2))
+
+
+def _qbf_bbox(pixels, width, height):
+    points = [
+        (x, y) for y in range(height) for x in range(width)
+        if pixels[y * width + x] > 0
+    ]
+    if not points:
+        return None
+    xs = [point[0] for point in points]
+    ys = [point[1] for point in points]
+    return min(xs), min(ys), max(xs) + 1, max(ys) + 1
+
+
+def _qbf_compose_tilde_glyph(base_pixels, tilde_pixels, width, height, uppercase):
+    """Build a vanilla-size accented vowel from its base glyph and native '~' glyph."""
+    body_box = _qbf_bbox(base_pixels, width, height)
+    accent_box = _qbf_bbox(tilde_pixels, width, height)
+    if body_box is None or accent_box is None:
+        raise RuntimeError('A fonte nativa não contém os glifos-base necessários para o til PT-BR.')
+
+    bx0, by0, bx1, by1 = body_box
+    ax0, ay0, ax1, ay1 = accent_box
+    body_width = bx1 - bx0
+    source_width = ax1 - ax0
+    source_height = ay1 - ay0
+    accent_width = max(4, min(width - 2, body_width))
+    accent_height = min(3, max(2, source_height))
+    if accent_width < 1 or accent_height < 1:
+        raise RuntimeError('Dimensões inválidas para compor o til da fonte nativa.')
+
+    # Scale the existing font's tilde bitmap with nearest-neighbour sampling
+    # to keep the original pixel-art look; place it immediately above the vowel.
+    accent_x = max(0, (width - accent_width) // 2)
+    accent_y = max(0, by0 - accent_height - 1)
+    result = list(base_pixels)
+    for y in range(accent_height):
+        source_y = ay0 + min(source_height - 1, (y * source_height) // accent_height)
+        for x in range(accent_width):
+            source_x = ax0 + min(source_width - 1, (x * source_width) // accent_width)
+            value = tilde_pixels[source_y * width + source_x]
+            if value:
+                pos = (accent_y + y) * width + accent_x + x
+                result[pos] = max(result[pos], value)
+    return result
+
+
+def patch_native_font_tilde_aliases(native):
+    """
+    Make the existing ä/ö/Ä/Ö fallback glyphs render as ã/õ/Ã/Õ when no HD
+    coverage pack is imported. Prefer an existing native target glyph; if it
+    is not present, compose the accent from the matching vowel and '~' bitmap.
+    Only QBF glyph bitmaps/alias glyph IDs are changed; the file size is fixed.
+    """
+    data = bytearray(native)
+    if len(data) < 16 or data[:4] != b'QBF1':
+        raise RuntimeError('Fonte QBF nativa inválida; não é possível ajustar os tils PT-BR.')
+
+    char_count, glyph_count = struct.unpack_from('<HH', data, 4)
+    bpp, width, height = data[12], data[13], data[14]
+    if (char_count < 1 or glyph_count < 1 or bpp not in (4, 8)
+            or width < 1 or height < 1):
+        raise RuntimeError('Cabeçalho QBF nativo inválido.')
+    table_start = 16
+    bitmap_start = table_start + char_count * 8
+    bitmap_size = width * height * bpp // 8
+    if bitmap_start > len(data) or bitmap_start + glyph_count * bitmap_size != len(data):
+        raise RuntimeError('Tamanho das tabelas QBF não corresponde ao cabeçalho nativo.')
+
+    rows = {}
+    glyph_users = {}
+    used_glyphs = set()
+    for index in range(char_count):
+        row = table_start + index * 8
+        codepoint, glyph_id = struct.unpack_from('<HH', data, row)
+        if codepoint in rows or glyph_id >= glyph_count:
+            raise RuntimeError('Tabela de caracteres QBF duplicada ou fora dos limites.')
+        rows[codepoint] = {'row': row, 'glyph': glyph_id}
+        glyph_users.setdefault(glyph_id, set()).add(codepoint)
+        used_glyphs.add(glyph_id)
+
+    aliases = (
+        (ord('ä'), ord('ã'), ord('a'), False),
+        (ord('ö'), ord('õ'), ord('o'), False),
+        (ord('Ä'), ord('Ã'), ord('A'), True),
+        (ord('Ö'), ord('Õ'), ord('O'), True),
+    )
+    required = {ord('~')}
+    required.update(item[0] for item in aliases)
+    required.update(item[2] for item in aliases)
+    missing = sorted(required - set(rows))
+    if missing:
+        raise RuntimeError(
+            'Fonte nativa sem caracteres necessários para a correção do til PT-BR: '
+            + ', '.join(f'U+{code:04X}' for code in missing)
+        )
+
+    def bitmap_for(glyph_id):
+        start = bitmap_start + glyph_id * bitmap_size
+        return bytes(data[start:start + bitmap_size])
+
+    def write_bitmap(glyph_id, bitmap):
+        start = bitmap_start + glyph_id * bitmap_size
+        data[start:start + bitmap_size] = bitmap
+
+    tilde_id = rows[ord('~')]['glyph']
+    tilde_pixels = _qbf_decode_bitmap(bitmap_for(tilde_id), bpp, width, height)
+    if _qbf_bbox(tilde_pixels, width, height) is None:
+        raise RuntimeError('O glifo til (~) da fonte nativa está vazio.')
+
+    for alias_code, target_code, base_code, uppercase in aliases:
+        alias_id = rows[alias_code]['glyph']
+        target_id = rows[target_code]['glyph'] if target_code in rows else None
+
+        if target_id is not None and target_id != alias_id:
+            # If the native font already contains a true Portuguese glyph,
+            # copy its bitmap into the alias's existing glyph slot.
+            source_bitmap = bitmap_for(target_id)
+        else:
+            base_id = rows[base_code]['glyph']
+            base_pixels = _qbf_decode_bitmap(bitmap_for(base_id), bpp, width, height)
+            alias_pixels = _qbf_compose_tilde_glyph(
+                base_pixels, tilde_pixels, width, height, uppercase
+            )
+            source_bitmap = _qbf_encode_bitmap(alias_pixels, bpp)
+
+        # Do not overwrite another character if this glyph ID is shared.
+        other_users = glyph_users.get(alias_id, set()) - {alias_code}
+        destination_id = alias_id
+        if other_users:
+            free_ids = [gid for gid in range(glyph_count) if gid not in used_glyphs]
+            if not free_ids:
+                raise RuntimeError(
+                    'Sem glifos QBF livres para corrigir o til sem afetar outros caracteres.'
+                )
+            destination_id = free_ids[0]
+            struct.pack_into('<H', data, rows[alias_code]['row'] + 2, destination_id)
+            glyph_users[alias_id].discard(alias_code)
+            glyph_users.setdefault(destination_id, set()).add(alias_code)
+            rows[alias_code]['glyph'] = destination_id
+            used_glyphs.add(destination_id)
+
+        write_bitmap(destination_id, source_bitmap)
+
+    if len(data) != len(native):
+        raise RuntimeError('A correção da fonte nativa alterou o tamanho do QBF.')
+    return bytes(data)
+
+
 BETA_ROMFS_SHA256 = 'dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56'
 HD_FONT_PACK_SHA256 = '1c49f6d817e9e6a6aed3a47143ad7cba0f0b9cf4f7a5441c9cf99a4c7d8e588e'
 PRESERVED_NATIVE_FONT = None
+NATIVE_FONT_LAYOUT = None
 HD_FONT_COVERAGE_ENABLED = False
 _legacy_prepare_payload = prepare_payload
 
@@ -1241,9 +1411,10 @@ def prepare_payload(item):
     if (EXPECTED_CLEAN_ROMFS_SHA256 == BETA_ROMFS_SHA256
             and item['target'].lower() == 'message/eu/ltn16.qbf'):
         if PRESERVED_NATIVE_FONT is None:
-            raise RuntimeError('Fonte HD não validada; execute preflight antes de preparar payloads.')
+            raise RuntimeError('Fonte nativa não validada; execute preflight antes de preparar payloads.')
         translated = _legacy_prepare_payload(item)
-        if len(translated) != len(PRESERVED_NATIVE_FONT) or translated[:1608] != PRESERVED_NATIVE_FONT[:1608]:
+        reference_layout = NATIVE_FONT_LAYOUT if NATIVE_FONT_LAYOUT is not None else PRESERVED_NATIVE_FONT
+        if len(translated) != len(PRESERVED_NATIVE_FONT) or translated[:1608] != reference_layout[:1608]:
             raise RuntimeError('Mapeamento ou métricas QBF PT-BR diferentes; preservação da fonte recusada.')
         return PRESERVED_NATIVE_FONT
     return _legacy_prepare_payload(item)
@@ -1296,8 +1467,9 @@ def locate_hd_font_pack(o3tu=None, required=True):
 
 def validate_hd_font(romfs, index):
     import zipfile
-    global PRESERVED_NATIVE_FONT, HD_FONT_COVERAGE_ENABLED
+    global PRESERVED_NATIVE_FONT, NATIVE_FONT_LAYOUT, HD_FONT_COVERAGE_ENABLED
     PRESERVED_NATIVE_FONT = None
+    NATIVE_FONT_LAYOUT = None
     HD_FONT_COVERAGE_ENABLED = False
     if EXPECTED_CLEAN_ROMFS_SHA256 != BETA_ROMFS_SHA256:
         return
@@ -1307,13 +1479,15 @@ def validate_hd_font(romfs, index):
         native = f.read(info['size'])
     if native[:4] != b'QBF1' or len(native) != 28232 or struct.unpack_from('<H', native, 4)[0] != 199:
         raise RuntimeError('QBF original inesperada.')
+    NATIVE_FONT_LAYOUT = native
     pack = locate_hd_font_pack(locate_o3tu(), required=False)
     if pack is None:
-        # HD fonts are optional in TriAevum beta.1.1. Preserve the native QBF
-        # and leave the translation's legacy aliases intact for this mode.
-        PRESERVED_NATIVE_FONT = native
+        # Native TriAevum does not include the HD coverage pack. The PT-BR QM
+        # therefore keeps ä/ö/Ä/Ö as codepoint aliases, while their native
+        # QBF bitmaps are adjusted to display the intended tilde accents.
+        PRESERVED_NATIVE_FONT = patch_native_font_tilde_aliases(native)
         HD_FONT_COVERAGE_ENABLED = False
-        print('[INFO] Pacote de cobertura HD ausente; usando fonte nativa e aliases compatíveis.')
+        print('[OK] Sem cobertura HD: fonte nativa preparada para exibir ã/õ/Ã/Õ pelos glifos de fallback.')
         return
     if not pack.is_file():
         raise RuntimeError(f'Pacote de fonte HD inválido: {pack}')
