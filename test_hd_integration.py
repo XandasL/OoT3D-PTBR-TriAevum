@@ -132,6 +132,15 @@ class HDIntegration(unittest.TestCase):
         with self.assertRaises(RuntimeError): self.install()
         self.assertFalse((self.root / hd.RECEIPT).exists())
 
+    def test_native_font_tilde_fallback_is_compatible_with_hd_textures(self):
+        marker = hd.read_json(self.root / 'traducao_ptbr_v4_instalada.json')
+        marker['font_policy'] = 'preserve_native_font_tilde_alias_patch'
+        self.write(self.root, 'traducao_ptbr_v4_instalada.json', hd.encoded_json(marker))
+        result = self.install(dry_run=True)
+        self.assertEqual(result['aliases'], len(hd.recipe()['aliases']))
+        self.assertFalse((self.root / hd.EXE).exists())
+        self.assertFalse((self.root / hd.RECEIPT).exists())
+
     def test_legacy_font_policy_rejected(self):
         marker = hd.read_json(self.root / 'traducao_ptbr_v4_instalada.json')
         marker['font_policy'] = 'replace_original_font'
