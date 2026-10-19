@@ -246,7 +246,7 @@ def navi_backup_key(rules):
 
 
 def _hd_atlas_dimensions(data, label):
-    if len(data) < 33 or data[:8] != b'\\x89PNG\\r\\n\\x1a\\n' or data[12:16] != b'IHDR':
+    if len(data) < 33 or data[:8] != b'\x89PNG\r\n\x1a\n' or data[12:16] != b'IHDR':
         raise RuntimeError(f'PNG inválido para o atlas do HUD: {label}')
     width, height = struct.unpack_from('>II', data, 16)
     if (width <= 512 or height <= 256 or width > 16384 or height > 8192 or
@@ -322,7 +322,7 @@ def _profile_argument_value(args, flag):
 
 
 def _resolve_profile_path(root, value):
-    normalized = value.replace('\\\\', '/')
+    normalized = value.replace('\\', '/')
     for prefix in ('${profile_dir}/', '${runtime_dir}/'):
         if normalized.startswith(prefix):
             return bounded(root, normalized[len(prefix):])
