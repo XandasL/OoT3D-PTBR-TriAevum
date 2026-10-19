@@ -44,7 +44,7 @@ jobs:
       - name: Validate original payload
         run: python installer/build_installer.py --prepare-only --open-font "build/open-font/NotoSans[wdth,wght].ttf"
       - name: QBF unit tests and installed-source checks
-        run: python -m unittest test_qbf_coverage test_open_font_atlas test_open_hd_qbf test_open_font_pack_integration test_compat_safety test_hd_integration -v
+        run: python -m unittest test_qbf_coverage test_open_font_atlas test_open_hd_qbf test_open_font_pack_integration test_font_mode test_compat_safety test_hd_integration -v
       - name: Build experimental Windows EXE
         if: runner.os == 'Windows'
         run: python installer/build_installer.py --open-font "build/open-font/NotoSans[wdth,wght].ttf"
