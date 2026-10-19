@@ -80,8 +80,16 @@ def main():
     parser.add_argument('--payload', type=Path)
     parser.add_argument('--source-zip', type=Path)
     parser.add_argument('--prepare-only', action='store_true')
+    parser.add_argument('--open-font', type=Path, help='Noto Sans TTF/OTF OFL para embutir no EXE')
     parser.add_argument('--hd-runtime', type=Path, help='Bundle HD validado; somente Windows x64')
     args = parser.parse_args()
+    if args.open_font:
+        if not args.open_font.is_file():
+            raise RuntimeError('Arquivo de fonte aberta não encontrado.')
+        from fontTools.ttLib import TTFont
+        with TTFont(str(args.open_font)) as ttf:
+            if not ttf.getBestCmap():
+                raise RuntimeError('Fonte sem cmap Unicode.')
     if args.hd_runtime:
         if sys.platform != 'win32':
             raise RuntimeError('O runtime HD opcional foi validado somente no Windows x64.')
@@ -109,6 +117,10 @@ def main():
     env = os.environ.copy()
     env['OOT3D_PAYLOAD_ROOT'] = str(payload)
     env['OOT3D_BUILD_NAME'] = name
+    if args.open_font:
+        env['OOT3D_OPEN_FONT'] = str(args.open_font.resolve())
+    else:
+        env.pop('OOT3D_OPEN_FONT', None)
     with tempfile.TemporaryDirectory(prefix='hd-deploy-', dir=ROOT/'build') as temporary:
         if args.hd_runtime:
             from hd_textures import prepare_deploy_bundle
