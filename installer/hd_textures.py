@@ -427,6 +427,16 @@ def plan_install(root, selected_pack, bundle):
         if digest(bounded(pack, relative).read_bytes()) != expected:
             raise RuntimeError(f'O pacote não contém a imagem traduzida/TopScreen validada: {relative}')
     changes = []
+    pause_edge = rules.get('pause_edge_overlay')
+    pause_edge_alias = next((item for item in rules['aliases']
+                             if pause_edge and item.get('resource') == pause_edge['resource']), None)
+    if pause_edge and pause_edge_alias is None:
+        raise RuntimeError('Não foi possível identificar o alias HD do painel lateral.')
+    pause_edge_alias_path = ('UI/PTBR_HASHES/' + pause_edge_alias['translated']) if pause_edge_alias else None
+    pause_edge_original_digest = (rules['pack_files']['UI/' + pause_edge_alias['original']]
+                                  if pause_edge_alias else None)
+    pause_edge_source_data = (bounded(pack, pause_edge['source_texture']).read_bytes()
+                              if pause_edge else None)
 
     def add(scope, relative, data, keep=False):
         target = bounded(root if scope == 'install' else pack, relative)
@@ -442,7 +452,12 @@ def plan_install(root, selected_pack, bundle):
                 scope == 'pack' and relative == hud.get('atlas_texture') and
                 _is_hd_atlas_png(before)
             )
-            if not (known_navi or known_hud_atlas):
+            known_pause_edge_alias = (
+                pause_edge_alias_path is not None and scope == 'pack' and
+                relative == pause_edge_alias_path and
+                digest(before) == pause_edge_original_digest
+            )
+            if not (known_navi or known_hud_atlas or known_pause_edge_alias):
                 raise RuntimeError(f'Arquivo existente difere; nada será sobrescrito: {target}')
         changes.append({'scope': scope, 'path': relative, 'data': data, 'before': before,
                         'keep': keep, 'preserve': before == data})
@@ -468,6 +483,10 @@ def plan_install(root, selected_pack, bundle):
             raise RuntimeError(f'Resolução/aspecto inesperado: {source}')
         if rules.get('navi_repair', {}).get('source') == item['original']:
             data = repair_navi_hud(data, rules)
+        if pause_edge and item.get('resource') == pause_edge['resource']:
+            if 'UI/' + item['original'] != pause_edge['target_texture']:
+                raise RuntimeError('A textura-alvo do painel lateral não corresponde ao recurso fixado.')
+            data = patch_topscreen_pause_edge_atlas(data, pause_edge_source_data, pause_edge)
         add('pack', 'UI/PTBR_HASHES/' + item['translated'], data)
 
     profile = read_json(bounded(root, 'TriAevum.launch.json'))
