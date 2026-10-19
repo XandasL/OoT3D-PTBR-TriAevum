@@ -446,6 +446,13 @@ def plan_install(root, selected_pack, bundle):
         if not base_atlas_path.is_file() or canonical(base_atlas_path) == canonical(root / HUD_ATLAS_PATH):
             raise RuntimeError('O caminho do atlas HD custom_ui01 informado pelo perfil não existe ou não é válido.')
         patched_atlas = patch_topscreen_hud_atlas(base_atlas_path.read_bytes(), native_menu_data, overlay)
+        # The TopScreen compositor consumes the explicit profile path, while the
+        # native PauseTouchButton renderer resolves custom_ui01 through Azahar's
+        # texture-pack directory. Install the same verified composite at the
+        # game's original hash path as well, so the pause/inventory labels do not
+        # fall back to the unpatched SingleScreen atlas. This copy is transactional
+        # and is deleted on restore; the external SingleScreen source stays read-only.
+        add('pack', overlay['atlas_texture'], patched_atlas)
         add('install', HUD_ATLAS_PATH, patched_atlas)
         hd_atlas_argument = '${profile_dir}/' + HUD_ATLAS_PATH
         if atlas_flag_index is None:
@@ -510,6 +517,7 @@ def validate_receipt(root):
         allowed_extras.extend((
             {('install', HUD_ATLAS_PATH)},
             {('pack', hud['atlas_texture'])},
+            {('install', HUD_ATLAS_PATH), ('pack', hud['atlas_texture'])},
         ))
     if extra not in allowed_extras:
         raise RuntimeError('O recibo não descreve uma única origem válida para o atlas HD do HUD.')
