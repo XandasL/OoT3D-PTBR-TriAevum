@@ -104,12 +104,13 @@ def build_hd_qbf(native: bytes, font_path: str | Path, *, pixel_size: int = 44) 
         else:
             # Anchor 'ls' gives the font's real baseline. Cropping removes the
             # font-specific negative side bearing, not its typographic height.
-            bounds = font.getbbox(chr(code), anchor="ls")
+            display_char = "-" if code == 0x00AD else chr(code)
+            bounds = font.getbbox(display_char, anchor="ls")
             if bounds is None:
                 raise ValueError(f"Glifo U+{code:04X} sem bbox da fonte")
             x0, y0, x1, y1 = bounds
             shape = Image.new("L", (max(1, x1 - x0), max(1, y1 - y0)), 0)
-            ImageDraw.Draw(shape).text((-x0, -y0), chr(code), font=font,
+            ImageDraw.Draw(shape).text((-x0, -y0), display_char, font=font,
                                        anchor="ls", fill=255)
             bbox = shape.getbbox()
             if bbox is None:
