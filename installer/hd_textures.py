@@ -60,15 +60,6 @@ def recipe():
         for group in ('face_glyphs', 'shoulder_glyphs'):
             if not overlay.get(group):
                 raise RuntimeError('Mapeamento incompleto do atlas de botões do HUD.')
-    pause_edge = rules.get('pause_edge_overlay')
-    if pause_edge:
-        if (pause_edge.get('source_texture') not in rules['pack_files'] or
-                pause_edge.get('target_texture') not in rules['pack_files']):
-            raise RuntimeError('As texturas de origem/destino dos prompts laterais não estão fixadas na receita.')
-        if not any(item.get('resource') == pause_edge.get('resource') for item in rules['aliases']):
-            raise RuntimeError('A textura do painel lateral não está mapeada para um alias HD.')
-        if not pause_edge.get('glyphs') or len(pause_edge['glyphs']) != 4:
-            raise RuntimeError('O mapeamento dos prompts do painel lateral está incompleto.')
     return rules
 
 
@@ -325,61 +316,6 @@ def patch_topscreen_hud_atlas(base_png, native_menu_png, overlay):
     return result
 
 
-def patch_topscreen_pause_edge_atlas(base_png, native_menu_png, overlay):
-    """Composite PS5 prompts into the right-edge strip used by the Inventory/Gear/Map menu."""
-    from PIL import Image
-
-    base_width, base_height = _png_dimensions(base_png, overlay['target_texture'])
-    source_width, source_height = _hd_atlas_dimensions(native_menu_png, overlay['source_texture'])
-    if (base_width <= 256 or base_height <= 256 or base_width % 256 or
-            base_height % 256 or base_width != base_height):
-        raise RuntimeError('Resolução/aspecto inesperado para o atlas do painel lateral.')
-    target_scale = base_width // 256
-    source_scale_x = source_width // 512
-    source_scale_y = source_height // 256
-    if source_scale_x != source_scale_y:
-        raise RuntimeError('Escala inconsistente na textura de botões do PlayStation.')
-
-    try:
-        base_image = Image.open(io.BytesIO(base_png)).convert('RGBA')
-        source_image = Image.open(io.BytesIO(native_menu_png)).convert('RGBA')
-    except Exception as exc:
-        raise RuntimeError(f'Não foi possível decodificar os atlas dos prompts laterais: {exc}') from exc
-    if base_image.size != (base_width, base_height) or source_image.size != (source_width, source_height):
-        raise RuntimeError('Dimensões reais dos atlas não correspondem aos PNGs.')
-
-    for item in overlay['glyphs']:
-        sx, sy, sw, sh = item['source']
-        tx, ty, tw, th = item['target']
-        if (min(sx, sy, tx, ty) < 0 or min(sw, sh, tw, th) <= 0 or
-                sx + sw > 512 or sy + sh > 256 or
-                tx + tw > 256 or ty + th > 256):
-            raise RuntimeError(f'Retângulo de prompt lateral fora dos limites: {item.get("name", "glyph")}')
-        source_box = (sx * source_scale_x, sy * source_scale_y,
-                      (sx + sw) * source_scale_x, (sy + sh) * source_scale_y)
-        target_size = (tw * target_scale, th * target_scale)
-        target_position = (tx * target_scale, ty * target_scale)
-        glyph = source_image.crop(source_box)
-        if item.get('preserve_aspect'):
-            glyph.thumbnail(target_size, Image.Resampling.LANCZOS)
-            cell = Image.new('RGBA', target_size, (0, 0, 0, 0))
-            cell.alpha_composite(glyph, ((target_size[0] - glyph.width) // 2,
-                                         (target_size[1] - glyph.height) // 2))
-            glyph = cell
-        elif glyph.size != target_size:
-            glyph = glyph.resize(target_size, Image.Resampling.LANCZOS)
-        # This strip is rendered by the native pause-edge presenter; keep its
-        # stone texture and blend only the transparent prompt artwork over it.
-        base_image.alpha_composite(glyph, target_position)
-
-    output = io.BytesIO()
-    base_image.save(output, format='PNG', optimize=True)
-    result = output.getvalue()
-    if _png_dimensions(result, 'painel lateral preparado') != (base_width, base_height):
-        raise RuntimeError('O atlas preparado do painel lateral mudou de resolução.')
-    return result
-
-
 def _profile_argument_value(args, flag):
     positions = [index for index, value in enumerate(args) if value == flag]
     if len(positions) > 1:
@@ -427,16 +363,6 @@ def plan_install(root, selected_pack, bundle):
         if digest(bounded(pack, relative).read_bytes()) != expected:
             raise RuntimeError(f'O pacote não contém a imagem traduzida/TopScreen validada: {relative}')
     changes = []
-    pause_edge = rules.get('pause_edge_overlay')
-    pause_edge_alias = next((item for item in rules['aliases']
-                             if pause_edge and item.get('resource') == pause_edge['resource']), None)
-    if pause_edge and pause_edge_alias is None:
-        raise RuntimeError('Não foi possível identificar o alias HD do painel lateral.')
-    pause_edge_alias_path = ('UI/PTBR_HASHES/' + pause_edge_alias['translated']) if pause_edge_alias else None
-    pause_edge_original_digest = (rules['pack_files']['UI/' + pause_edge_alias['original']]
-                                  if pause_edge_alias else None)
-    pause_edge_source_data = (bounded(pack, pause_edge['source_texture']).read_bytes()
-                              if pause_edge else None)
 
     def add(scope, relative, data, keep=False):
         target = bounded(root if scope == 'install' else pack, relative)
@@ -452,12 +378,7 @@ def plan_install(root, selected_pack, bundle):
                 scope == 'pack' and relative == hud.get('atlas_texture') and
                 _is_hd_atlas_png(before)
             )
-            known_pause_edge_alias = (
-                pause_edge_alias_path is not None and scope == 'pack' and
-                relative == pause_edge_alias_path and
-                digest(before) == pause_edge_original_digest
-            )
-            if not (known_navi or known_hud_atlas or known_pause_edge_alias):
+            if not (known_navi or known_hud_atlas):
                 raise RuntimeError(f'Arquivo existente difere; nada será sobrescrito: {target}')
         changes.append({'scope': scope, 'path': relative, 'data': data, 'before': before,
                         'keep': keep, 'preserve': before == data})
@@ -483,10 +404,6 @@ def plan_install(root, selected_pack, bundle):
             raise RuntimeError(f'Resolução/aspecto inesperado: {source}')
         if rules.get('navi_repair', {}).get('source') == item['original']:
             data = repair_navi_hud(data, rules)
-        if pause_edge and item.get('resource') == pause_edge['resource']:
-            if 'UI/' + item['original'] != pause_edge['target_texture']:
-                raise RuntimeError('A textura-alvo do painel lateral não corresponde ao recurso fixado.')
-            data = patch_topscreen_pause_edge_atlas(data, pause_edge_source_data, pause_edge)
         add('pack', 'UI/PTBR_HASHES/' + item['translated'], data)
 
     profile = read_json(bounded(root, 'TriAevum.launch.json'))
@@ -561,13 +478,6 @@ def validate_receipt(root):
         ('install', HUD_ATLAS_PATH),
         ('pack', hud['atlas_texture']),
     } if hud else set()
-    pause_edge = rules.get('pause_edge_overlay')
-    pause_edge_alias = next((item for item in rules['aliases']
-                             if pause_edge and item.get('resource') == pause_edge['resource']), None)
-    pause_edge_alias_key = (('pack', 'UI/PTBR_HASHES/' + pause_edge_alias['translated'])
-                            if pause_edge_alias else None)
-    pause_edge_original_digest = (rules['pack_files']['UI/' + pause_edge_alias['original']]
-                                  if pause_edge_alias else None)
     allowed = required | optional
     transaction = state.get('transaction', '')
     if len(transaction) != 32 or any(c not in '0123456789abcdef' for c in transaction):
@@ -588,8 +498,6 @@ def validate_receipt(root):
                 valid_owner = row['before_sha256'] == rules['pack_files']['UI/' + rules['navi_repair']['source']]
             if hud and key == ('pack', hud['atlas_texture']):
                 valid_owner = _is_hd_atlas_png(backup.read_bytes())
-            if (pause_edge_alias_key and key == pause_edge_alias_key):
-                valid_owner = row['before_sha256'] == pause_edge_original_digest
             if (not valid_owner or
                     row['backup'] != f'data/mods/ptbr-hd/backups/{transaction}/{index}.bin' or
                     digest(backup.read_bytes()) != row['before_sha256']):
