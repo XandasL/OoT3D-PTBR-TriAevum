@@ -521,9 +521,27 @@ def inspect_topscreen(pack):
         if e["original"] in (O3TU_OLD_ORIGINAL_HASH, O3TU_PTBR_ORIGINAL_HASH)
     ]
     if len(candidates) != 1:
+        # No mutation: provide a compact, deterministic fingerprint so that a
+        # newer/different Forge texture pack can be classified safely.
+        # Do not infer identity from payload size or entry ordering.
+        fingerprint = hashlib.sha256(raw).hexdigest()
+        known_replacements = [e for e in entries
+                              if e["replacement"] == O3TU_ENGLISH_REPLACEMENT_HASH]
+        entry_preview = ", ".join(
+            f"#{e['index']}:original={e['original']:016x}/replacement={e['replacement']:016x}"
+            for e in entries[:12]
+        ) or "(nenhuma entrada)"
         raise RuntimeError(
-            "Não consegui identificar unicamente a entrada inglesa menu_top "
-            "do TopScreen. A instalação foi cancelada."
+            "TopScreen O3TU diferente da variante validada; "
+            "nenhuma entrada menu_top identificada unicamente. "
+            "A instalação foi cancelada sem alterar arquivos.\\n"
+            f"Arquivo: {pack}\\n"
+            f"SHA-256: {fingerprint}\\n"
+            f"Overrides: {count}; candidatos por original: {len(candidates)}; "
+            f"candidatos pelo replacement inglês: {len(known_replacements)}\\n"
+            f"Primeiras entradas: {entry_preview}\\n"
+            "Envie apenas este trecho do log para identificar a variante. "
+            "Não substitua o O3TU manualmente nem ignore a validação."
         )
     e = candidates[0]
     calculated = fnv1a64(e["payload"])
