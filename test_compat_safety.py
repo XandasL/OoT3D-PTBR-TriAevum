@@ -14,6 +14,19 @@ class Safety(unittest.TestCase):
   raw=b'O3TU'+struct.pack('<IIIQQI',2,1,0,1,2,1)+b'x'
   _,_,n,e=c.parse_o3tu_entries(raw)
   with self.assertRaises(RuntimeError):c.validate_o3tu_complete(raw,e,n)
+ def test_unrecognized_o3tu_shows_read_only_fingerprint(self):
+  import hashlib
+  with tempfile.TemporaryDirectory() as folder:
+   payload=b'not-the-expected-english-menu'
+   fnv=c.fnv1a64(payload)
+   raw=b'O3TU'+struct.pack('<III',2,1,0)+struct.pack('<QQI',0x1234567890,fnv,len(payload))+payload
+   path=Path(folder)/'atlas_overrides.o3tu';path.write_bytes(raw)
+   with self.assertRaisesRegex(RuntimeError,'TopScreen O3TU diferente') as caught:
+    c.inspect_topscreen(path)
+   self.assertIn(hashlib.sha256(raw).hexdigest(),str(caught.exception))
+   self.assertIn('Overrides: 1',str(caught.exception))
+   self.assertIn('1234567890',str(caught.exception))
+   self.assertEqual(path.read_bytes(),raw)
  def test_o3tu_truncated_profile(self):
   raw=b'O3TU'+struct.pack('<III',2,0,1)
   with self.assertRaises(RuntimeError):c.validate_o3tu_complete(raw,[],1)
