@@ -1,0 +1,123 @@
+name: TEMP — inspect SingleScreen HD UI atlas
+on:
+  push:
+    branches:
+      - test/beta-1.1-hd-font-detection
+    paths:
+      - .github/workflows/analyze-singlescreen-ui-atlas.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - name: Download public SingleScreen archive and inspect the HD UI atlas
+        shell: bash
+        run: |
+          python -m pip install --quiet pillow requests
+          python - <<'PY'
+          import base64, hashlib, io, json, sys, zipfile
+          from pathlib import PurePosixPath
+          import requests
+          from PIL import Image, ImageDraw
+
+          session = requests.Session()
+          session.headers.update({"User-Agent": "OoT3D-PTBR-TriAevum atlas compatibility investigation"})
+          metadata_urls = [
+              "https://gamebanana.com/apiv11/Mod/695893?_csvProperties=_aFiles",
+              "https://gamebanana.com/apiv10/Mod/695893?_csvProperties=_aFiles",
+              "https://gamebanana.com/apiv7/Mod/695893?_csvProperties=_aFiles",
+          ]
+          metadata = None
+          errors = []
+          for url in metadata_urls:
+              try:
+                  response = session.get(url, timeout=45)
+                  response.raise_for_status()
+                  obj = response.json()
+                  if isinstance(obj, dict) and obj.get("_aFiles"):
+                      metadata = obj
+                      print("METADATA_ENDPOINT=" + url)
+                      break
+                  errors.append(url + " returned no _aFiles")
+              except Exception as exc:
+                  errors.append(url + ": " + str(exc))
+          if metadata is None:
+              print("METADATA_ERROR=" + json.dumps(errors))
+              sys.exit(2)
+          files = metadata["_aFiles"]
+          if isinstance(files, dict):
+              files = list(files.values())
+          candidates = []
+          for item in files:
+              if not isinstance(item, dict):
+                  continue
+              name = str(item.get("_sFile") or item.get("_sFileName") or item.get("_sName") or "")
+              url = str(item.get("_sDownloadUrl") or item.get("_sUrl") or "")
+              print("FILE_ITEM=" + json.dumps({"name": name, "url": url, "keys": sorted(item.keys())}))
+              if name.lower().endswith(".zip") and url:
+                  candidates.append((name, url, item))
+          chosen = next((entry for entry in candidates if "singlescreen_31" in entry[0].lower()), None)
+          if chosen is None:
+              chosen = next((entry for entry in candidates if "singlescreen_30" in entry[0].lower()), None)
+          if chosen is None:
+              print("DOWNLOAD_URL_NOT_FOUND")
+              sys.exit(3)
+          name, url, item = chosen
+          print("CHOSEN_FILE=" + json.dumps({"name":name,"url":url,"metadata":item}))
+          archive = "/tmp/singlescreen.zip"
+          with session.get(url, stream=True, timeout=(60,240)) as response:
+              response.raise_for_status()
+              size=0
+              digest=hashlib.sha256()
+              with open(archive,"wb") as handle:
+                  for chunk in response.iter_content(1024*1024):
+                      if chunk:
+                          handle.write(chunk); digest.update(chunk); size+=len(chunk)
+              print("DOWNLOADED_BYTES="+str(size))
+              print("DOWNLOADED_SHA256="+digest.hexdigest())
+          member_candidates = [
+              "SingleScreen_3.1/EUR/Emulator/load/textures/0004000000033600/UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png",
+              "SingleScreen_3.0/EUR/Emulator/load/textures/0004000000033600/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png",
+          ]
+          previews=[]
+          with zipfile.ZipFile(archive) as z:
+              names=set(z.namelist())
+              print("ARCHIVE_ENTRIES="+str(len(names)))
+              member=next((p for p in member_candidates if p in names),None)
+              if not member:
+                  for p in sorted(names):
+                      if p.endswith("tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png"):
+                          member=p; break
+              print("ATLAS_MEMBER="+str(member))
+              if not member:
+                  print("MEMBER_NOT_FOUND")
+                  sys.exit(4)
+              raw=z.read(member)
+              atlas=Image.open(io.BytesIO(raw)).convert("RGBA")
+              print("ATLAS_META="+json.dumps({"member":member,"size":atlas.size,"bytes":len(raw),"sha256":hashlib.sha256(raw).hexdigest()}))
+              sx=atlas.width/512.0; sy=atlas.height/256.0
+              def preview(label, crop=None, grid=True, max_size=(1024,512)):
+                  im=atlas.copy()
+                  if crop:
+                      box=tuple(int(round(n*v)) for n,v in zip((sx,sy,sx,sy),crop))
+                      im=im.crop(box)
+                  if grid:
+                      draw=ImageDraw.Draw(im)
+                      for x in range(0,im.width,max(1,int(round(16*sx)))):
+                          draw.line((x,0,x,im.height),fill=(0,255,255,200),width=1)
+                      for y in range(0,im.height,max(1,int(round(16*sy)))):
+                          draw.line((0,y,im.width,y),fill=(0,255,255,200),width=1)
+                  im.thumbnail(max_size,Image.Resampling.LANCZOS)
+                  output=io.BytesIO(); im.convert("RGB").save(output,format="JPEG",quality=65,optimize=True)
+                  previews.append((label,base64.b64encode(output.getvalue()).decode("ascii")))
+              preview("ATLAS_FULL",max_size=(1024,512))
+              preview("ATLAS_RIGHT_STRIP",crop=(400,0,512,256),max_size=(672,1536))
+              preview("ATLAS_BUTTON_ROWS",crop=(128,112,256,176),max_size=(768,384))
+              preview("ATLAS_BOTTOM_RIGHT",crop=(160,192,256,256),max_size=(768,512))
+              preview("ATLAS_BUTTONS_AND_LABELS",crop=(176,200,256,256),max_size=(768,672))
+              for label, encoded in previews:
+                  print("PREVIEW_"+label+"="+encoded)
+          PY
