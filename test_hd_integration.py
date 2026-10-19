@@ -33,8 +33,8 @@ def hud_overlay_recipe():
         'atlas_texture': 'UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png',
         'native_texture': 'UI/tex1_512x256_BB00B25B152582B6_4_mip0.png',
         'face_glyphs': [
-            {'name': 'X-to-Square', 'source': [158, 142, 16, 16], 'target': [207, 227, 16, 16]},
-            {'name': 'Y-to-Triangle', 'source': [158, 158, 16, 16], 'target': [226, 227, 16, 16]},
+            {'name': 'X-to-Triangle', 'source': [158, 142, 16, 16], 'target': [207, 227, 16, 16]},
+            {'name': 'Y-to-Square', 'source': [158, 158, 16, 16], 'target': [226, 227, 16, 16]},
             {'name': 'B-to-Circle', 'source': [158, 126, 16, 16], 'target': [363, 225, 16, 16]},
         ],
         'shoulder_glyphs': [
@@ -397,7 +397,7 @@ class HDRecipeV12(unittest.TestCase):
         self.assertIn(overlay['native_texture'], rules['pack_files'])
         self.assertEqual(
             [item['name'] for item in overlay['face_glyphs']],
-            ['X-to-Square', 'Y-to-Triangle', 'B-to-Circle'],
+            ['X-to-Triangle', 'Y-to-Square', 'B-to-Circle'],
         )
         self.assertEqual(
             [item['name'] for item in overlay['shoulder_glyphs']],
