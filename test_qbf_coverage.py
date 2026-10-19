@@ -12,6 +12,7 @@ spec.loader.exec_module(module)
 
 
 def fake_qbf(codes):
+    codes = list(codes)
     raw = bytearray(16 + 8 * len(codes))
     raw[:4] = b"QBF1"
     struct.pack_into("<H", raw, 4, len(codes))
