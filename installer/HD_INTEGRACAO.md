@@ -20,11 +20,11 @@ Antes de qualquer gravação, o instalador confere o SHA-256 do executável e da
 
 Na beta.1.1, o TopScreen desenha os botões do HUD a partir do atlas `custom_ui01` do SingleScreen 3.0, em vez das regiões correspondentes de `menu_top_parts00` usadas pelo layout PS5. Por isso, apenas substituir os aliases HD nativos não garante que todos os símbolos sejam apresentados no HUD.
 
-O componente HD agora compõe as células de glifos do atlas HD com as imagens PS5 verificadas de `menu_top_parts00`: X vira triângulo, Y vira quadrado, B mantém o círculo, e os indicadores ZR/ZL são substituídos por R1/L1. Os círculos de fundo, D-pad, itens, contadores e demais regiões do atlas não são alterados por esse mapeamento.
+O componente HD agora compõe nove regiões específicas do atlas HD com as imagens PS5 verificadas de `menu_top_parts00`: X vira triângulo, Y vira quadrado, B mantém o círculo, e ZR/ZL passam a R1/L1 nas posições do HUD. O mapa cobre também as cópias separadas de X/Y usadas nas legendas da tela de inventário e as regiões R1/L1 usadas pelas dicas laterais. Os círculos de fundo, D-pad, itens, contadores e demais regiões do atlas não são alterados por esse mapeamento.
 
 Se o atlas HD estiver dentro do pack escolhido, a imagem composta é aplicada ali com backup transacional. Caso contrário, o instalador gera uma cópia própria em `data/mods/ptbr-hd/ui_atlas_hd.png` e redireciona somente o perfil HD para ela; o atlas importado pelo Forge e o executável oficial permanecem intactos. **A alteração é reversível**, e o recibo registra o arquivo criado/substituído para que a remoção restaure o estado anterior.
 
-Essa composição agora possui testes automatizados de retângulos, preservação dos pixels fora das células e restauração. A verificação definitiva de aparência depende também de teste visual dentro do jogo; esta branch continua sendo uma build de teste.
+Essa composição agora possui testes automatizados para as posições do HUD e do menu de inventário, preservação dos pixels fora das células e restauração. A verificação definitiva de aparência depende também de teste visual dentro do jogo; esta branch continua sendo uma build de teste.
 
 ## Arquivos e restauração
 
