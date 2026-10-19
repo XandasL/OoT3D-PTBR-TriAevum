@@ -42,6 +42,35 @@ class Safety(unittest.TestCase):
   self.assertEqual(c.prepare_payload(item),native)
   c.EXPECTED_CLEAN_ROMFS_SHA256='011c0b6933f3932c704ff1c6ab562023f407c2929661a6d54ecea1ca81072f99'
   self.assertEqual(c.prepare_payload(item),item['source'].read_bytes())
+ def test_missing_hd_font_reports_expected_path(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder:
+   root=Path(folder)
+   romfs=root/'romfs.bin'
+   native=bytearray(28232)
+   native[:4]=b'QBF1'
+   struct.pack_into('<H',native,4,199)
+   romfs.write_bytes(native)
+   with patch.object(c,'EXPECTED_CLEAN_ROMFS_SHA256',c.BETA_ROMFS_SHA256), patch.object(c,'locate_o3tu',return_value=root/'pack.o3tu'), patch.object(c,'contained',side_effect=lambda path:path):
+    with self.assertRaisesRegex(RuntimeError,'não encontrado') as caught:
+     c.validate_hd_font(romfs,{'message/eu/ltn16.qbf':{'absolute':0,'size':28232}})
+    self.assertIn('font_coverage.zip',str(caught.exception))
+    self.assertIsNone(c.PRESERVED_NATIVE_FONT)
+ def test_mismatched_hd_font_reports_incompatible_hash(self):
+  from unittest.mock import patch
+  with tempfile.TemporaryDirectory() as folder:
+   root=Path(folder)
+   romfs=root/'romfs.bin'
+   native=bytearray(28232)
+   native[:4]=b'QBF1'
+   struct.pack_into('<H',native,4,199)
+   romfs.write_bytes(native)
+   (root/'font_coverage.zip').write_bytes(b'wrong hash')
+   with patch.object(c,'EXPECTED_CLEAN_ROMFS_SHA256',c.BETA_ROMFS_SHA256), patch.object(c,'locate_o3tu',return_value=root/'pack.o3tu'), patch.object(c,'contained',side_effect=lambda path:path):
+    with self.assertRaisesRegex(RuntimeError,'incompatível') as caught:
+     c.validate_hd_font(romfs,{'message/eu/ltn16.qbf':{'absolute':0,'size':28232}})
+    self.assertIn('SHA-256',str(caught.exception))
+    self.assertIsNone(c.PRESERVED_NATIVE_FONT)
  def test_beta_font_mapping_change_rejected(self):
   c.EXPECTED_CLEAN_ROMFS_SHA256=c.BETA_ROMFS_SHA256;c.PRESERVED_NATIVE_FONT=b'x'*28232
   with tempfile.TemporaryDirectory() as folder:
