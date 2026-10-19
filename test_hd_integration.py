@@ -237,8 +237,17 @@ class HDIntegration(unittest.TestCase):
             # Only the verified gameplay HUD cells belong in custom_ui01.
             for x, y in ((214, 234), (233, 234), (370, 233), (55, 239), (253, 235)):
                 self.assertEqual(image.getpixel((x * 2, y * 2)), (255, 0, 0, 255))
+        # The same patch must be visible to the native pause-menu texture resolver,
+        # not just the custom TopScreen renderer's private atlas argument.
+        overlay = self.rules['hud_atlas_overlay']
+        pack_atlas_path = self.pack / overlay['atlas_texture']
+        self.assertTrue(pack_atlas_path.is_file())
+        with Image.open(pack_atlas_path) as decoded:
+            self.assertEqual(decoded.convert('RGBA').getpixel((214 * 2, 234 * 2)), (255, 0, 0, 255))
+            self.assertEqual(decoded.convert('RGBA').getpixel((10, 10)), (0, 0, 255, 255))
         hd.restore(self.root)
         self.assertFalse(patched_path.exists())
+        self.assertFalse(pack_atlas_path.exists())
         self.assertEqual((self.root / self.hd_atlas_relative).read_bytes(), self.hd_source_atlas)
 
     def test_pack_custom_ui_atlas_composite_is_restored_without_touching_original_atlas(self):
