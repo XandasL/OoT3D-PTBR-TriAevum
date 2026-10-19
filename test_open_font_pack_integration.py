@@ -58,16 +58,48 @@ class OpenFontPackIntegrationTests(unittest.TestCase):
                 self.assertEqual(hd[16:40], native[16:40])
                 # The generated glyph for A must contain opaque coverage.
                 self.assertTrue(any(hd[16 + 24 + 2048:16 + 24 + 4096]))
-                # Ink placement must remain in the original cell extent x=3..10,
-                # y=4..12 (scaled 4x) rather than arbitrary cell centering.
+                # Global baseline remains stable; no glyph is expanded
+                # anisotropically to match a native ink rectangle.
                 alpha = [v for byte in hd[16 + 24 + 2048:16 + 24 + 4096]
                          for v in (byte >> 4, byte & 15)]
                 locations = [(i % 64, i // 64) for i, v in enumerate(alpha) if v]
                 self.assertGreater(len(locations), 0)
                 self.assertGreaterEqual(min(x for x, y in locations), 12)
-                self.assertLess(max(x for x, y in locations), 44)
-                self.assertGreaterEqual(min(y for x, y in locations), 16)
-                self.assertLess(max(y for x, y in locations), 52)
+                self.assertLess(max(x for x, y in locations), 64)
+                self.assertGreaterEqual(min(y for x, y in locations), 0)
+                self.assertLess(max(y for x, y in locations), 64)
+
+    def test_uniform_em_keeps_i_narrower_than_m(self):
+        from build_open_hd_qbf import build_hd_qbf
+        candidates = list((ROOT / "build" / "open-font").glob("*.ttf"))
+        if not candidates:
+            self.skipTest("Requires official font downloaded by the workflow")
+        codes = (65, 72, 105, 109)  # A H i m
+        native = bytearray(16 + len(codes) * 8 + len(codes) * 128)
+        native[:4] = b"QBF1"
+        struct.pack_into("<HHH", native, 4, len(codes), len(codes), 65)
+        native[12:16] = bytes((4, 16, 16, 2))
+        for idx, code in enumerate(codes):
+            struct.pack_into("<HH", native, 16 + idx * 8, code, idx)
+            # Deliberately equal native rectangle dimensions for all letters.
+            for y in range(4, 12):
+                for x in range(3, 10):
+                    offset = 16 + len(codes) * 8 + idx * 128 + (16 * y + x) // 2
+                    native[offset] |= 0x0F if x % 2 else 0xF0
+        hd = build_hd_qbf(bytes(native), candidates[0])
+        def ink_box(index):
+            start = 16 + len(codes) * 8 + index * 2048
+            alphas = [value for byte in hd[start:start + 2048]
+                      for value in (byte >> 4, byte & 15)]
+            points = [(p % 64, p // 64) for p, v in enumerate(alphas) if v]
+            return (min(x for x, y in points), min(y for x, y in points),
+                    max(x for x, y in points) + 1, max(y for x, y in points) + 1)
+        a, h, i, m = (ink_box(n) for n in range(4))
+        self.assertLess(i[2] - i[0], m[2] - m[0])
+        self.assertLess(i[2] - i[0], h[2] - h[0])
+        self.assertLess(abs((a[3] - a[1]) - (h[3] - h[1])), 8)
+        self.assertEqual(a[3], h[3])  # shared typographic baseline
+
 
 
 if __name__ == "__main__":
