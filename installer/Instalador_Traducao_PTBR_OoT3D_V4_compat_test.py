@@ -1212,8 +1212,20 @@ def validate_hd_font(romfs, index):
     if native[:4] != b'QBF1' or len(native) != 28232 or struct.unpack_from('<H', native, 4)[0] != 199:
         raise RuntimeError('QBF original inesperada.')
     pack = contained(locate_o3tu().parent / 'font_coverage.zip')
-    if not pack.is_file() or sha256_file(pack) != HD_FONT_PACK_SHA256:
-        raise RuntimeError('Pacote de fonte HD ausente ou diferente da base 0.8 analisada.')
+    if not pack.is_file():
+        raise RuntimeError(
+            f'Pacote de fonte HD não encontrado: {pack}. '
+            'Esta base beta requer font_coverage.zip junto ao arquivo O3TU; '
+            'confira se a distribuição TriAevum inclui esse arquivo. '
+            'Nenhum arquivo do jogo foi alterado.'
+        )
+    if sha256_file(pack) != HD_FONT_PACK_SHA256:
+        raise RuntimeError(
+            f'Pacote de fonte HD incompatível: {pack}. '
+            'O SHA-256 não corresponde à base 0.8 validada; '
+            'use a distribuição compatível, sem substituir a fonte por um arquivo desconhecido. '
+            'Nenhum arquivo do jogo foi alterado.'
+        )
     with zipfile.ZipFile(pack) as z:
         manifest = json.loads(z.read('manifest.json'))
         if manifest.get('format') != 'oot3d_qbf_coverage_v1':
