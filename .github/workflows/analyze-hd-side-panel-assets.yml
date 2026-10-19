@@ -141,6 +141,9 @@ jobs:
               item_icons = chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png")
               add_preview("ITEM_I_SOURCE_QUAD_5", item_icons, native_size=(512,512), crop=(368,200,420,252), grid=True, max_size=(624,624))
               add_preview("ITEM_II_SOURCE_QUAD_6", item_icons, native_size=(512,512), crop=(410,200,462,252), grid=True, max_size=(624,624))
+              add_preview("ITEM_I_ACTUAL_UV_REGION", item_icons, native_size=(512,512), crop=(368,408,420,492), grid=True, max_size=(624,1008))
+              add_preview("ITEM_II_ACTUAL_UV_REGION", item_icons, native_size=(512,512), crop=(410,408,462,492), grid=True, max_size=(624,1008))
+              add_preview("ITEM_LABEL_SOURCE_UV_REGION", item_icons, native_size=(512,512), crop=(368,408,472,512), grid=True, max_size=(832,832))
               add_preview("ITEM_I_SOURCE_CONTEXT", item_icons, native_size=(512,512), crop=(352,176,480,272), grid=True, max_size=(768,576))
               for label, encoded in previews:
                   print("PREVIEW_" + label + "=" + encoded)
