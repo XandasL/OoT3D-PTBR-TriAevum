@@ -133,6 +133,5 @@ jobs:
               add_preview("ITEM_ICON_FULL", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), grid=True, max_size=(384,384))
               add_preview("ITEM_ICON_CELLS", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(352,176,480,272), grid=True, max_size=(384,288))
               for label, encoded in previews:
-              for label, encoded in previews:
                   print("PREVIEW_" + label + "=" + encoded)
           PY
