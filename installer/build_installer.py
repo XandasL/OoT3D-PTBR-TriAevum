@@ -86,6 +86,9 @@ def main():
     if args.open_font:
         if not args.open_font.is_file():
             raise RuntimeError('Arquivo de fonte aberta não encontrado.')
+        license_file = args.open_font.with_name('OFL.txt')
+        if not license_file.is_file():
+            raise RuntimeError('Inclua OFL.txt oficial ao lado da Noto Sans antes do build.')
         from fontTools.ttLib import TTFont
         with TTFont(str(args.open_font)) as ttf:
             if not ttf.getBestCmap():
