@@ -497,9 +497,9 @@ class App(tk.Tk):
         chosen = "Original do jogo" if self.selected_font_mode == "original" else "Noto Sans HD experimental"
         if not messagebox.askyesno(
             "Tradução e fonte PT-BR",
-            "Se a tradução já estiver instalada, apenas a fonte será alterada.\\n"
-            "Caso contrário, serão criados backups e instalada a tradução.\\n\\n"
-            f"Fonte escolhida: {chosen}.\\n\\n"
+            "Se a tradução já estiver instalada, apenas a fonte será alterada.\n"
+            "Caso contrário, serão criados backups e instalada a tradução.\n\n"
+            f"Fonte escolhida: {chosen}.\n\n"
             "Deseja continuar?"
         ):
             self.write_log("Operação cancelada pelo usuário.")
