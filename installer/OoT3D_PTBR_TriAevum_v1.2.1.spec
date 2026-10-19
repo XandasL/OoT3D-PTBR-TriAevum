@@ -23,7 +23,7 @@ a = Analysis(
            (str(payload), 'TraducaoCompleta/citra/romfs'),
            (str(root / 'hd_textures.py'), '.'), (str(root / 'hd-recipe.json'), '.'), (str(root / 'navi-hud-overlay.png'), '.')] + extra_hd,
     hiddenimports=['hashlib', 'json', 'shutil', 'struct', 'time', 'zipfile', 'argparse',
-                   'csv', 'subprocess', 'tempfile', 'uuid', 'PIL.Image', 'PIL.PngImagePlugin'],
+                   'csv', 'subprocess', 'tempfile', 'uuid', 'PIL.Image', 'PIL.ImageDraw', 'PIL.ImageFont', 'PIL.PngImagePlugin', 'fontTools.ttLib'],
     hookspath=[], hooksconfig={}, runtime_hooks=[], excludes=[], noarchive=False, optimize=0,
 )
 pyz = PYZ(a.pure)
