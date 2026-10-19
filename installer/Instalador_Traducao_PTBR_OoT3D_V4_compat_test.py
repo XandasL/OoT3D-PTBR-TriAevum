@@ -512,10 +512,22 @@ def parse_o3tu_entries(raw):
     return version, count, profiles, entries
 
 
+# Confirmed empty override index in TriAevum v0.8.0-beta.1.1 on 2026-10-19.
+# Its profile payload remains verified structurally; never treat other empty packs
+# as safe without a verified exact file identity.
+KNOWN_EMPTY_TOPSCREEN_O3TU_SHA256 = frozenset({
+    '13ace413af089274e7fa3907f2b5adda73ab199d0624572a260127cb545d7c22',
+})
+
+
 def inspect_topscreen(pack):
     raw = pack.read_bytes()
     version, count, profiles, entries = parse_o3tu_entries(raw)
     validate_o3tu_complete(raw, entries, profiles)
+    if count == 0 and hashlib.sha256(raw).hexdigest() in KNOWN_EMPTY_TOPSCREEN_O3TU_SHA256:
+        # There is no menu_top override and consequently no O3TU hash gate
+        # to change. This pack must be preserved bit-for-bit.
+        return raw, None
     candidates = [
         e for e in entries
         if e["original"] in (O3TU_OLD_ORIGINAL_HASH, O3TU_PTBR_ORIGINAL_HASH)
@@ -643,7 +655,7 @@ def install():
     o3tu = locate_o3tu()
     o3tu_backup = o3tu.with_name(o3tu.name + ".antes_traducao_ptbr_v4")
     _, o3tu_entry = inspect_topscreen(o3tu)
-    if o3tu_entry["original"] != O3TU_OLD_ORIGINAL_HASH:
+    if o3tu_entry is not None and o3tu_entry["original"] != O3TU_OLD_ORIGINAL_HASH:
         raise RuntimeError(
             "O TopScreen já está com o hash-gate PT-BR de um teste anterior.\n"
             "Para o primeiro teste oficial da V4, restaure o O3TU original "
@@ -652,10 +664,13 @@ def install():
             "desinstalar tudo de forma totalmente reversível."
         )
     print(f"TopScreen: {o3tu}")
-    print(
-        f"[OK] O3TU v2 / entrada #{o3tu_entry['index']} / "
-        f"OriginalHash={o3tu_entry['original']:016x}"
-    )
+    if o3tu_entry is None:
+        print('[OK] O3TU beta.1.1 sem overrides; manteremos esse arquivo intocado.')
+    else:
+        print(
+            f"[OK] O3TU v2 / entrada #{o3tu_entry['index']} / "
+            f"OriginalHash={o3tu_entry['original']:016x}"
+        )
 
     print("\n[2/9] Verificando base limpa...")
     size = romfs.stat().st_size
@@ -842,12 +857,21 @@ def install():
         os.replace(temp_manifest, manifest)
 
         print("\n[9/9] Aplicando compatibilidade TopScreen PT-BR...")
-        o3tu_mode, o3tu_index = patch_topscreen_to_ptbr(o3tu, o3tu_backup)
-        print(
-            f"[OK] TopScreen entrada #{o3tu_index}: "
-            + ("hash-gate PT-BR aplicado." if o3tu_mode == "patched"
-               else "hash-gate PT-BR já estava aplicado.")
-        )
+        if o3tu_entry is None:
+            o3tu_mode, o3tu_index = 'no_overrides', None
+            # Validate identity again to guard replacement between preflight
+            # and commit. Zero-entry packs are not modified or backed up.
+            _, final_o3tu_entry = inspect_topscreen(o3tu)
+            if final_o3tu_entry is not None:
+                raise RuntimeError('O3TU alterado durante instalação; operação cancelada.')
+            print('[OK] O3TU sem overrides preservado sem alterações.')
+        else:
+            o3tu_mode, o3tu_index = patch_topscreen_to_ptbr(o3tu, o3tu_backup)
+            print(
+                f"[OK] TopScreen entrada #{o3tu_index}: "
+                + ("hash-gate PT-BR aplicado." if o3tu_mode == "patched"
+                   else "hash-gate PT-BR já estava aplicado.")
+            )
 
         final_romfs_hash = sha256_file(romfs)
 
@@ -861,8 +885,9 @@ def install():
             "ignored_scene_fazer": 85,
             "topscreen_o3tu": str(o3tu),
             "topscreen_backup": str(o3tu_backup) if o3tu_backup.exists() else None,
-            "topscreen_original_hash_ptbr": f"{O3TU_PTBR_ORIGINAL_HASH:016x}",
+            "topscreen_original_hash_ptbr": f"{O3TU_PTBR_ORIGINAL_HASH:016x}" if o3tu_index is not None else None,
             "topscreen_entry": o3tu_index,
+            "topscreen_mode": o3tu_mode,
             "same_size_replacements": same_size_count,
             "relocated_replacements": relocated_count,
             "original_romfs_size": EXPECTED_CLEAN_ROMFS_SIZE,
@@ -893,7 +918,7 @@ def install():
         print("Recursos base       : 112")
         print("Espelhos menu EUR   : 14")
         print(f"Operações RomFS     : {len(items)}")
-        print(f"TopScreen hash-gate : {O3TU_PTBR_ORIGINAL_HASH:016x}")
+        print("TopScreen hash-gate : " + (f"{O3TU_PTBR_ORIGINAL_HASH:016x}" if o3tu_index is not None else "não aplicável (zero overrides)"))
         print(f"Mesmo tamanho       : {same_size_count}")
         print(f"Realocados          : {relocated_count}")
         print(f"RomFS original      : {human(EXPECTED_CLEAN_ROMFS_SIZE)} bytes")
@@ -1318,8 +1343,10 @@ def preflight(require_payload=False):
     if original_hash != O3TU_OLD_ORIGINAL_HASH:
         raise RuntimeError(f'OriginalHash menu_top real não confere: {original_hash:016x}')
     raw, entry = inspect_topscreen(locate_o3tu())
-    if entry['original'] != original_hash or entry['size'] != len(menu_texture(menu)):
+    if entry is not None and (entry['original'] != original_hash or entry['size'] != len(menu_texture(menu))):
         raise RuntimeError('O3TU não corresponde à textura original do RomFS.')
+    if entry is None:
+        print('[OK] O3TU beta.1.1 sem entradas; compatibilidade menu_top via RomFS, sem alterar overrides.')
     missing = [name for name in MENU_SLOT_EU_FILES if ('menu/02_EU_ENGLISH/'+name).lower() not in index]
     if missing:
         raise RuntimeError(f'Menus EUR ausentes: {missing}')
@@ -1345,8 +1372,14 @@ def restore():
     rb, mb = backup_paths(romfs, manifest)
     pack = locate_o3tu()
     pb = pack.with_name(pack.name + '.antes_traducao_ptbr_v4')
-    if not all(p.is_file() for p in (rb, mb, pb)):
-        raise RuntimeError('Backups completos obrigatórios para restauração.')
+    if not rb.is_file() or not mb.is_file():
+        raise RuntimeError('Backups RomFS/manifest obrigatórios para restauração.')
+    _, current_o3tu_entry = inspect_topscreen(pack)
+    if current_o3tu_entry is None:
+        if pb.exists():
+            raise RuntimeError('O3TU sem overrides possui backup inesperado; restauração recusada.')
+    elif not pb.is_file():
+        raise RuntimeError('Backup O3TU obrigatório para restauração da variante com overrides.')
     digest = sha256_file(rb)
     if digest not in KNOWN_BASES or rb.stat().st_size != EXPECTED_CLEAN_ROMFS_SIZE:
         raise RuntimeError('Backup RomFS desconhecido ou corrompido.')
@@ -1355,20 +1388,25 @@ def restore():
         raise RuntimeError('Manifesto backup não corresponde à instalação.')
     if any(bm['source'].get(k) != EXPECTED_CLEAN_ROMFS_SIZE for k in ('romfs_image_file_size','romfs_service_size')) or bm['source'].get('romfs_service_offset') != 0:
         raise RuntimeError('Manifesto backup inválido.')
-    _, e = inspect_topscreen(pb)
-    if e['original'] != O3TU_OLD_ORIGINAL_HASH:
-        raise RuntimeError('Backup O3TU não é original.')
+    if current_o3tu_entry is not None:
+        _, e = inspect_topscreen(pb)
+        if e is None or e['original'] != O3TU_OLD_ORIGINAL_HASH:
+            raise RuntimeError('Backup O3TU não é original.')
     EXPECTED_CLEAN_ROMFS_SHA256 = digest
     # Retain backups until all three restored files have been verified.
     shutil.copy2(rb, romfs)
     shutil.copy2(mb, manifest)
-    shutil.copy2(pb, pack)
-    for original, backup in ((romfs, rb), (manifest, mb), (pack, pb)):
+    if current_o3tu_entry is not None:
+        shutil.copy2(pb, pack)
+    pairs = [(romfs, rb), (manifest, mb)]
+    if current_o3tu_entry is not None:
+        pairs.append((pack, pb))
+    for original, backup in pairs:
         validate_copy(original, backup)
     preflight()
     MARKER.unlink(missing_ok=True)
     for backup in (rb, mb, pb):
-        backup.unlink()
+        backup.unlink(missing_ok=True)
     print('[OK] Original restaurado e validado.')
 
 
