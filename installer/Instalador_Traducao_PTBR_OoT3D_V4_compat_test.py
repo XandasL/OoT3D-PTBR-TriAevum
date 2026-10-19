@@ -1253,11 +1253,10 @@ def validate_hd_font(romfs, index):
         OPEN_FONT_PACK_SHA256 = hashlib.sha256(content).hexdigest()
     elif pack.is_file() and sha256_file(pack) == HD_FONT_PACK_SHA256:
         content = pack.read_bytes()
+    elif not pack.is_file():
+        raise RuntimeError(f'Pacote de fonte HD não encontrado: {pack}. Nenhum arquivo alterado.')
     else:
-        raise RuntimeError(
-            'Fonte HD indisponível: instalador sem Noto Sans embutida e '
-            'font_coverage.zip legado ausente/incompatível. Nenhum arquivo alterado.'
-        )
+        raise RuntimeError(f'Pacote de fonte HD incompatível: {pack}. SHA-256 não corresponde à base validada. Nenhum arquivo alterado.')
     with zipfile.ZipFile(io.BytesIO(content)) as z:
         manifest = json.loads(z.read('manifest.json'))
         if manifest.get('format') != 'oot3d_qbf_coverage_v1':
