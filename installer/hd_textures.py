@@ -366,7 +366,12 @@ def plan_install(root, selected_pack, bundle):
             repair = rules.get('navi_repair')
             known_navi = ((scope, relative) == navi_backup_key(rules) and
                           digest(before) == rules['pack_files']['UI/' + repair['source']])
-            if not known_navi:
+            hud = rules.get('hud_atlas_overlay', {})
+            known_hud_atlas = (
+                scope == 'pack' and relative == hud.get('atlas_texture') and
+                _is_hd_atlas_png(before)
+            )
+            if not (known_navi or known_hud_atlas):
                 raise RuntimeError(f'Arquivo existente difere; nada será sobrescrito: {target}')
         changes.append({'scope': scope, 'path': relative, 'data': data, 'before': before,
                         'keep': keep, 'preserve': before == data})
@@ -379,6 +384,7 @@ def plan_install(root, selected_pack, bundle):
     else:
         for name in rules['runtime_files']:
             add('install', name, bounded(bundle, name).read_bytes())
+
     for item in rules['aliases']:
         source = bounded(pack, 'UI/' + item['original'])
         data = source.read_bytes()
@@ -392,14 +398,54 @@ def plan_install(root, selected_pack, bundle):
         if rules.get('navi_repair', {}).get('source') == item['original']:
             data = repair_navi_hud(data, rules)
         add('pack', 'UI/PTBR_HASHES/' + item['translated'], data)
+
     profile = read_json(bounded(root, 'TriAevum.launch.json'))
     if profile.get('format') != 'oot3d_native_game_launch_profile_v1':
         raise RuntimeError('Perfil de lançamento desconhecido.')
-    args = profile['arguments']
-    if args.count('--config') != 1:
-        raise RuntimeError('O perfil precisa de uma única opção --config para isolar as preferências HD.')
-    index = args.index('--config')
-    args[index + 1] = '${profile_dir}/' + CONFIG
+    args = profile.get('arguments')
+    if not isinstance(args, list) or any(not isinstance(item, str) for item in args):
+        raise RuntimeError('Argumentos do perfil de lançamento inválidos.')
+    config_positions = [i for i, value in enumerate(args) if value == '--config']
+    if len(config_positions) != 1 or config_positions[0] + 1 >= len(args):
+        raise RuntimeError('O perfil precisa de uma única opção --config com caminho para isolar as preferências HD.')
+    args[config_positions[0] + 1] = '${profile_dir}/' + CONFIG
+
+    # SingleScreen 3.0 draws the HUD glyphs from custom_ui01 rather than the
+    # translated native menu_top_parts00 atlas. Build a reversible composite
+    # so its X/Y/B and ZL/ZR cells use the verified PlayStation-layout glyphs.
+    overlay = rules.get('hud_atlas_overlay')
+    if not overlay:
+        raise RuntimeError('A receita não define o mapeamento de glifos do HUD PS.')
+    native_menu_data = bounded(pack, overlay['native_texture']).read_bytes()
+    pack_atlas = bounded(pack, overlay['atlas_texture'])
+    if pack_atlas.is_file():
+        # If the selected pack already contains custom_ui01's texture hash, it
+        # wins over --topscreen-ui-atlas-hd. Patch that exact file and preserve
+        # the original bytes in the normal transaction backup.
+        base_atlas_data = pack_atlas.read_bytes()
+        patched_atlas = patch_topscreen_hud_atlas(base_atlas_data, native_menu_data, overlay)
+        add('pack', overlay['atlas_texture'], patched_atlas)
+    else:
+        # Otherwise use the HD atlas imported by Forge. The new copy belongs
+        # to this optional HD install; the original SingleScreen file is read-only.
+        atlas_flag_index, atlas_flag_value = _profile_argument_value(args, '--topscreen-ui-atlas-hd')
+        if atlas_flag_value is None:
+            raise RuntimeError(
+                'Não encontrei o atlas HD custom_ui01 do SingleScreen. Importe o atlas HD '
+                'SingleScreen 3.0/3.1 pelo Forge ou inclua UI/' +
+                Path(overlay['atlas_texture']).name + ' no pacote selecionado.'
+            )
+        base_atlas_path = _resolve_profile_path(root, atlas_flag_value)
+        if not base_atlas_path.is_file() or canonical(base_atlas_path) == canonical(root / HUD_ATLAS_PATH):
+            raise RuntimeError('O caminho do atlas HD custom_ui01 informado pelo perfil não existe ou não é válido.')
+        patched_atlas = patch_topscreen_hud_atlas(base_atlas_path.read_bytes(), native_menu_data, overlay)
+        add('install', HUD_ATLAS_PATH, patched_atlas)
+        hd_atlas_argument = '${profile_dir}/' + HUD_ATLAS_PATH
+        if atlas_flag_index is None:
+            args.extend(['--topscreen-ui-atlas-hd', hd_atlas_argument])
+        else:
+            args[atlas_flag_index + 1] = hd_atlas_argument
+
     add('install', PROFILE, encoded_json(profile))
     own_config = bounded(root, CONFIG)
     config = read_json(own_config if own_config.is_file() else bounded(root, 'data/config/TriAevum.json'))
@@ -415,11 +461,17 @@ def validate_receipt(root):
     if state.get('format') != FORMAT or state.get('state') not in ('installing', 'installed'):
         raise RuntimeError('Recibo HD desconhecido; restauração cancelada.')
     pack = canonical(state['pack_root'])
-    allowed = {('install', name) for name in rules['runtime_files']}
+    required = {('install', name) for name in rules['runtime_files']}
     if rules.get('runtime_mode') == NATIVE_RUNTIME_MODE:
-        allowed.add(('install', EXE))
-    allowed |= {('install', PROFILE), ('install', CONFIG)}
-    allowed |= {('pack', 'UI/PTBR_HASHES/' + item['translated']) for item in rules['aliases']}
+        required.add(('install', EXE))
+    required |= {('install', PROFILE), ('install', CONFIG)}
+    required |= {('pack', 'UI/PTBR_HASHES/' + item['translated']) for item in rules['aliases']}
+    hud = rules.get('hud_atlas_overlay', {})
+    optional = {
+        ('install', HUD_ATLAS_PATH),
+        ('pack', hud['atlas_texture']),
+    } if hud else set()
+    allowed = required | optional
     transaction = state.get('transaction', '')
     if len(transaction) != 32 or any(c not in '0123456789abcdef' for c in transaction):
         raise RuntimeError('Identificador de transação HD inválido.')
@@ -437,12 +489,23 @@ def validate_receipt(root):
             valid_owner = key == ('install', CONFIG)
             if key == navi_backup_key(rules):
                 valid_owner = row['before_sha256'] == rules['pack_files']['UI/' + rules['navi_repair']['source']]
+            if hud and key == ('pack', hud['atlas_texture']):
+                valid_owner = _is_hd_atlas_png(backup.read_bytes())
             if (not valid_owner or
                     row['backup'] != f'data/mods/ptbr-hd/backups/{transaction}/{index}.bin' or
                     digest(backup.read_bytes()) != row['before_sha256']):
                 raise RuntimeError('Backup HD inválido.')
-    if seen != allowed:
+    if not required.issubset(seen):
         raise RuntimeError('Recibo HD incompleto.')
+    extra = seen - required
+    allowed_extras = [set()]
+    if hud:
+        allowed_extras.extend((
+            {('install', HUD_ATLAS_PATH)},
+            {('pack', hud['atlas_texture'])},
+        ))
+    if extra not in allowed_extras:
+        raise RuntimeError('O recibo não descreve uma única origem válida para o atlas HD do HUD.')
     return state, pack
 
 
