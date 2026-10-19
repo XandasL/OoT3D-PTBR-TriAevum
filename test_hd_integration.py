@@ -1,4 +1,5 @@
 import importlib.util
+import io
 import json
 from pathlib import Path
 import struct
@@ -6,6 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import zlib
+from PIL import Image
 
 spec = importlib.util.spec_from_file_location('hd', Path(__file__).parent / 'installer/hd_textures.py')
 hd = importlib.util.module_from_spec(spec)
@@ -17,6 +19,29 @@ def png():
         return struct.pack('>I', len(data)) + name + data + struct.pack('>I', zlib.crc32(name + data))
     return (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', 8, 8, 8, 6, 0, 0, 0)) +
             chunk(b'IDAT', zlib.compress((b'\0' + b'\xff' * 32) * 8)) + chunk(b'IEND', b''))
+
+
+def atlas_png(color=(0, 0, 255, 255), size=(1024, 512)):
+    image = Image.new('RGBA', size, color)
+    output = io.BytesIO()
+    image.save(output, format='PNG')
+    return output.getvalue()
+
+
+def hud_overlay_recipe():
+    return {
+        'atlas_texture': 'UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png',
+        'native_texture': 'UI/tex1_512x256_BB00B25B152582B6_4_mip0.png',
+        'face_glyphs': [
+            {'name': 'X-to-Square', 'source': [158, 142, 16, 16], 'target': [207, 227, 16, 16]},
+            {'name': 'Y-to-Triangle', 'source': [158, 158, 16, 16], 'target': [226, 227, 16, 16]},
+            {'name': 'B-to-Circle', 'source': [158, 126, 16, 16], 'target': [363, 225, 16, 16]},
+        ],
+        'shoulder_glyphs': [
+            {'name': 'ZR-to-R1', 'source': [440, 190, 17, 11], 'target': [47, 231, 16, 16], 'preserve_aspect': True},
+            {'name': 'ZL-to-L1', 'source': [440, 201, 17, 11], 'target': [245, 227, 16, 16], 'preserve_aspect': True},
+        ],
+    }
 
 
 class HDIntegration(unittest.TestCase):
@@ -36,9 +61,16 @@ class HDIntegration(unittest.TestCase):
         self.write(self.root, 'shaderc_shared.dll', b'original-dll')
         self.write(self.root, 'data/config/TriAevum.json', hd.encoded_json({
             'CVars': {'': {'Example': 3}}, 'Graphics': {'Custom': 42}}))
+        self.hd_atlas_relative = 'data/mods/topscreen/fixture/ui_atlas_hd.png'
+        self.hd_native_atlas_relative = 'UI/tex1_512x256_BB00B25B152582B6_4_mip0.png'
+        self.hd_native_atlas = atlas_png((255, 0, 0, 255))
+        self.hd_source_atlas = atlas_png((0, 0, 255, 255))
+        self.write(self.root, self.hd_atlas_relative, self.hd_source_atlas)
         self.write(self.root, 'TriAevum.launch.json', hd.encoded_json({
             'format': 'oot3d_native_game_launch_profile_v1',
-            'arguments': ['--config', '${profile_dir}/data/config/TriAevum.json', '--save-data', '${profile_dir}/data/savedata']}))
+            'arguments': ['--config', '${profile_dir}/data/config/TriAevum.json',
+                          '--save-data', '${profile_dir}/data/savedata',
+                          '--topscreen-ui-atlas-hd', '${profile_dir}/' + self.hd_atlas_relative]}))
         self.write(self.root, 'data/savedata/save00.bin', b'untouched-save')
         self.write(self.root, 'romfs.bin', b'translated-romfs')
         self.write(self.root, 'traducao_ptbr_v4_instalada.json', hd.encoded_json({
@@ -48,6 +80,7 @@ class HDIntegration(unittest.TestCase):
             'romfs_path': str(self.root / 'romfs.bin'), 'installed_romfs_sha256': hd.digest(b'translated-romfs')}))
         self.write(self.pack, 'pack.json', hd.encoded_json({'options': {'use_new_hash': False, 'flip_png_files': True}}))
         self.write(self.pack, 'UI/original.png', png())
+        self.write(self.pack, self.hd_native_atlas_relative, self.hd_native_atlas)
         self.write(self.bundle, hd.EXE, b'patched-runtime')
         self.write(self.bundle, 'source/TriAevum-source.zip', b'upstream-source')
         self.write(self.bundle, 'source/menus-HD.patch', b'local-patch')
@@ -58,8 +91,12 @@ class HDIntegration(unittest.TestCase):
                       'runtime_files': {hd.EXE: hd.digest(b'patched-runtime')},
                       'source_files': {'source/TriAevum-source.zip': hd.digest(b'upstream-source'),
                                        'source/menus-HD.patch': hd.digest(b'local-patch')},
-                      'pack_files': {'UI/original.png': hd.digest(png())},
-                      'aliases': [{'original': 'original.png', 'translated': 'ptbr.png', 'native_size': [2, 2]}]}
+                      'pack_files': {
+                          'UI/original.png': hd.digest(png()),
+                          self.hd_native_atlas_relative: hd.digest(self.hd_native_atlas),
+                      },
+                      'aliases': [{'original': 'original.png', 'translated': 'ptbr.png', 'native_size': [2, 2]}],
+                      'hud_atlas_overlay': hud_overlay_recipe()}
         self.write(self.bundle, 'manifest.json', hd.encoded_json({'format': 'oot3d_ptbr_hd_runtime_v1', 'files': self.rules['runtime_files']}))
         self.recipe_patch = patch.object(hd, 'recipe', return_value=self.rules)
         self.recipe_patch.start(); self.addCleanup(self.recipe_patch.stop)
@@ -100,12 +137,14 @@ class HDIntegration(unittest.TestCase):
         profile = hd.read_json(self.root / 'TriAevum.launch.json')
         profile['arguments'] = ['--config', '${runtime_dir}/data/config/TriAevum.json',
                                 '--title-plugin', '${runtime_dir}/private-plugins/new-title.dll',
-                                '--save-data', '${runtime_dir}/data/savedata']
+                                '--save-data', '${runtime_dir}/data/savedata',
+                                '--topscreen-ui-atlas-hd', '${runtime_dir}/' + self.hd_atlas_relative]
         self.write(self.root, 'TriAevum.launch.json', hd.encoded_json(profile))
         self.install()
         actual = hd.read_json(self.root / hd.PROFILE)['arguments']
-        self.assertEqual(actual[2:], profile['arguments'][2:])
         self.assertEqual(actual[:2], ['--config', '${profile_dir}/' + hd.CONFIG])
+        self.assertEqual(actual[2:6], profile['arguments'][2:6])
+        self.assertEqual(actual[6:], ['--topscreen-ui-atlas-hd', '${profile_dir}/' + hd.HUD_ATLAS_PATH])
 
     def test_existing_alias_is_not_owned(self):
         self.write(self.pack, 'UI/PTBR_HASHES/ptbr.png', png())
@@ -183,6 +222,35 @@ class HDIntegration(unittest.TestCase):
         self.assertFalse((self.root / hd.RECEIPT).exists())
         self.assertFalse((self.root / hd.EXE).exists())
         self.assert_originals()
+
+    def test_hud_atlas_composite_maps_all_face_and_shoulder_glyphs_and_restores(self):
+        self.install()
+        args = hd.read_json(self.root / hd.PROFILE)['arguments']
+        index = args.index('--topscreen-ui-atlas-hd')
+        self.assertEqual(args[index + 1], '${profile_dir}/' + hd.HUD_ATLAS_PATH)
+        patched_path = self.root / hd.HUD_ATLAS_PATH
+        self.assertTrue(patched_path.is_file())
+        with Image.open(patched_path) as decoded:
+            image = decoded.convert('RGBA')
+            # The blue base survives outside glyph cells; red comes from source atlas.
+            self.assertEqual(image.getpixel((10, 10)), (0, 0, 255, 255))
+            for x, y in ((214, 234), (233, 234), (370, 233), (55, 239), (253, 235)):
+                self.assertEqual(image.getpixel((x * 2, y * 2)), (255, 0, 0, 255))
+        hd.restore(self.root)
+        self.assertFalse(patched_path.exists())
+        self.assertEqual((self.root / self.hd_atlas_relative).read_bytes(), self.hd_source_atlas)
+
+    def test_pack_custom_ui_atlas_composite_is_restored_without_touching_original_atlas(self):
+        overlay = self.rules['hud_atlas_overlay']
+        atlas_path = self.pack / overlay['atlas_texture']
+        self.write(self.pack, overlay['atlas_texture'], atlas_png((0, 0, 255, 255)))
+        before = atlas_path.read_bytes()
+        self.install()
+        with Image.open(atlas_path) as decoded:
+            self.assertEqual(decoded.convert('RGBA').getpixel((214 * 2, 234 * 2)), (255, 0, 0, 255))
+        self.assertEqual((self.root / self.hd_atlas_relative).read_bytes(), self.hd_source_atlas)
+        hd.restore(self.root)
+        self.assertEqual(atlas_path.read_bytes(), before)
 
     def test_duplicate_config_flag_rejected(self):
         profile = hd.read_json(self.root / 'TriAevum.launch.json')
