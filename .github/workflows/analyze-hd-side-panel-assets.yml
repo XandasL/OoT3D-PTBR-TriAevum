@@ -125,12 +125,11 @@ jobs:
                   im.thumbnail(max_size, Image.Resampling.LANCZOS)
                   b=io.BytesIO(); im.convert("RGB").save(b,format="JPEG",quality=62,optimize=True)
                   previews.append((label,base64.b64encode(b.getvalue()).decode("ascii")))
-              add_preview("TOP_MENU_FACE_SOURCE", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(128,112,192,176), grid=True, max_size=(768,768))
-              add_preview("TOP_MENU_SHOULDER_SOURCE", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(416,176,480,224), grid=True, max_size=(768,576))
-              add_preview("TOP_MENU_PANEL_ASSETS", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(400,0,512,160), grid=True, max_size=(672,960))
-              add_preview("TOP_MENU_BOTTOM_ASSETS", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(384,144,512,256), grid=True, max_size=(768,672))
-              add_preview("ITEM_ICON_SOURCE_ASSETS", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(384,240,512,512), grid=True, max_size=(768,1632))
-              add_preview("ITEM_ICON_PROMPTS", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(416,320,512,480), grid=True, max_size=(768,960))
+              add_preview("ITEM_ICON_BUTTON_REGION", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(320,160,512,320), grid=True, max_size=(1152,960))
+              add_preview("ITEM_ICON_PROMPT_SOURCE", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(352,240,512,480), grid=True, max_size=(960,1440))
+              add_preview("ITEM_ICON_TOP_RIGHT", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(352,128,512,288), grid=True, max_size=(960,960))
+              add_preview("TOP_MENU_INTERIOR", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(112,112,224,208), grid=True, max_size=(896,768))
+              add_preview("TOP_MENU_SIDE_LABELS", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(432,0,512,256), grid=True, max_size=(480,1536))
               for label, encoded in previews:
                   print("PREVIEW_" + label + "=" + encoded)
           PY
