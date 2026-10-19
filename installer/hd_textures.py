@@ -57,7 +57,7 @@ def recipe():
             raise RuntimeError('A textura nativa usada para mapear o HUD PS não está fixada na receita.')
         if not overlay.get('atlas_texture', '').startswith('UI/') or not overlay['atlas_texture'].endswith('.png'):
             raise RuntimeError('Caminho do atlas SingleScreen inválido.')
-        for group in ('face_glyphs', 'shoulder_glyphs'):
+        for group in ('face_glyphs', 'shoulder_glyphs', 'pause_menu_glyphs'):
             if not overlay.get(group):
                 raise RuntimeError('Mapeamento incompleto do atlas de botões do HUD.')
     return rules
@@ -278,7 +278,7 @@ def patch_topscreen_hud_atlas(base_png, native_menu_png, overlay):
 
     # All source/destination rectangles are expressed in the 512x256 native atlas grid.
     # The source cells contain the PS-layout variants from the user-supplied, hash-pinned pack.
-    for group in ('face_glyphs', 'shoulder_glyphs'):
+    for group in ('face_glyphs', 'shoulder_glyphs', 'pause_menu_glyphs'):
         for item in overlay[group]:
             sx, sy, sw, sh = item['source']
             tx, ty, tw, th = item['target']
