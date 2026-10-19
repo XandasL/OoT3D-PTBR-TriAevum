@@ -20,6 +20,7 @@ a = Analysis(
     pathex=[str(root)], binaries=[],
     datas=[(str(root / 'Instalador_Traducao_PTBR_OoT3D_V4_compat_test.py'), '.'),
            (str(root / 'payload-manifest.json'), '.'),
+           (str(root / 'font_mode.py'), '.'),
            (str(payload), 'TraducaoCompleta/citra/romfs'),
            (str(root / 'hd_textures.py'), '.'), (str(root / 'hd-recipe.json'), '.'), (str(root / 'navi-hud-overlay.png'), '.')] + extra_hd,
     hiddenimports=['hashlib', 'json', 'shutil', 'struct', 'time', 'zipfile', 'argparse',
