@@ -69,6 +69,19 @@ class OpenFontPackIntegrationTests(unittest.TestCase):
                 self.assertGreaterEqual(min(y for x, y in locations), 0)
                 self.assertLess(max(y for x, y in locations), 64)
 
+    def test_compact_profile_scales_all_glyphs_equally(self):
+        from PIL import Image
+        from build_open_hd_qbf import _compact_mask, COMPACT_X_SCALE
+        a = Image.new("L", (40, 32), 255)
+        b = Image.new("L", (10, 32), 255)
+        compact_a = _compact_mask(a)
+        compact_b = _compact_mask(b)
+        self.assertEqual(compact_a.height, a.height)
+        self.assertEqual(compact_b.height, b.height)
+        self.assertAlmostEqual(compact_a.width / a.width, COMPACT_X_SCALE, delta=.03)
+        self.assertAlmostEqual(compact_b.width / b.width, COMPACT_X_SCALE, delta=.03)
+        self.assertGreater(compact_a.width, compact_b.width)
+
     def test_uniform_em_keeps_i_narrower_than_m(self):
         from build_open_hd_qbf import build_hd_qbf
         candidates = list((ROOT / "build" / "open-font").glob("*.ttf"))
