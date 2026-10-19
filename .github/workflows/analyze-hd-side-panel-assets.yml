@@ -1,0 +1,132 @@
+name: TEMP — inspect UI/MENU source textures
+on:
+  push:
+    branches:
+      - test/beta-1.1-hd-font-detection
+    paths:
+      - .github/workflows/analyze-hd-side-panel-assets.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - name: Fetch public mod metadata and inspect atlas pixels
+        shell: bash
+        run: |
+          python -m pip install --quiet pillow requests
+          python - <<'PY'
+          import base64, hashlib, io, json, os, re, sys, time, zipfile
+          from pathlib import PurePosixPath
+          import requests
+          from PIL import Image, ImageDraw
+
+          s = requests.Session()
+          s.headers.update({"User-Agent": "OoT3D-PTBR-TriAevum texture compatibility investigation"})
+          meta_urls = [
+              "https://gamebanana.com/apiv11/Mod/725250?_csvProperties=_aFiles",
+              "https://gamebanana.com/apiv10/Mod/725250?_csvProperties=_aFiles",
+              "https://gamebanana.com/apiv7/Mod/725250?_csvProperties=_aFiles",
+          ]
+          metadata = None
+          errors = []
+          for url in meta_urls:
+              try:
+                  r = s.get(url, timeout=45)
+                  r.raise_for_status()
+                  candidate = r.json()
+                  files = candidate.get("_aFiles") if isinstance(candidate, dict) else None
+                  if files:
+                      metadata = candidate
+                      print("METADATA_ENDPOINT=" + url)
+                      break
+                  errors.append(url + " did not expose _aFiles")
+              except Exception as exc:
+                  errors.append(url + ": " + str(exc))
+          if metadata is None:
+              print("METADATA_ERROR=" + json.dumps(errors))
+              sys.exit(2)
+
+          files = metadata["_aFiles"]
+          if isinstance(files, dict):
+              files = list(files.values())
+          candidates = []
+          for item in files:
+              if not isinstance(item, dict):
+                  continue
+              name = str(item.get("_sFile") or item.get("_sFileName") or item.get("_sName") or "")
+              url = str(item.get("_sDownloadUrl") or item.get("_sUrl") or "")
+              print("FILE_ITEM=" + json.dumps({"name": name, "url": url, "keys": sorted(item.keys())}))
+              if name.lower().endswith(".zip") and ("ui_ocarina" in name.lower() or "725250" in url or True):
+                  candidates.append((name, url, item))
+          chosen = next((x for x in candidates if x[0].lower() == "ui_ocarina_of_time_3d.zip"), None)
+          if chosen is None:
+              chosen = next((x for x in candidates if x[1]), None)
+          if chosen is None or not chosen[1]:
+              print("DOWNLOAD_URL_NOT_FOUND")
+              sys.exit(3)
+          name, url, item = chosen
+          print("CHOSEN_FILE=" + json.dumps({"name": name, "url": url, "metadata": item}))
+          outzip = "/tmp/ui_ocarina_of_time_3d.zip"
+          with s.get(url, stream=True, timeout=(60, 240)) as r:
+              r.raise_for_status()
+              size = 0
+              h = hashlib.sha256()
+              with open(outzip, "wb") as f:
+                  for chunk in r.iter_content(1024 * 1024):
+                      if chunk:
+                          f.write(chunk); h.update(chunk); size += len(chunk)
+              print("DOWNLOADED_BYTES=" + str(size))
+              print("DOWNLOADED_SHA256=" + h.hexdigest())
+          target_basenames = {
+              "tex1_256x256_18DDBB03B81C1D60_13_mip0.png",
+              "tex1_512x256_BB00B25B152582B6_4_mip0.png",
+              "tex1_512x512_962F45C78450C392_0_mip0.png",
+              "tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png",
+          }
+          with zipfile.ZipFile(outzip) as z:
+              members = [i for i in z.infolist() if not i.is_dir()]
+              matches = [i.filename for i in members if PurePosixPath(i.filename).name in target_basenames]
+              print("ARCHIVE_MEMBER_COUNT=" + str(len(members)))
+              print("TARGET_MEMBERS=" + json.dumps(matches))
+              for target in target_basenames:
+                  opts = [i.filename for i in members if PurePosixPath(i.filename).name == target]
+                  if not opts:
+                      print("MISSING_TARGET=" + target)
+              # Prefer the exact game-title folder used by the user's 4K pack, otherwise first match.
+              def choose(name):
+                  opts = [p for p in matches if PurePosixPath(p).name == name]
+                  return next((p for p in opts if "0004000000033600" in p), opts[0] if opts else None)
+              chosen_paths = {n: choose(n) for n in target_basenames}
+              for k, v in chosen_paths.items():
+                  print("SELECTED_MEMBER=" + json.dumps({"name": k, "path": v}))
+              previews = []
+              def add_preview(label, member, crop=None, grid=False, max_size=(256,256)):
+                  if not member: return
+                  raw = z.read(member)
+                  im = Image.open(io.BytesIO(raw)).convert("RGBA")
+                  print("IMAGE_META=" + json.dumps({"label":label, "path":member, "size":im.size, "bytes":len(raw), "sha256":hashlib.sha256(raw).hexdigest()}))
+                  native = im.size[0] / 256.0
+                  if crop:
+                      box = tuple(int(round(v*native)) for v in crop)
+                      im = im.crop(box)
+                  if grid:
+                      # grid is only to annotate the thumbnail for inspection, not a modified asset.
+                      draw = ImageDraw.Draw(im)
+                      for x in range(0, im.width, max(1,int(round(16*native)))):
+                          draw.line((x,0,x,im.height), fill=(0,255,255,160), width=1)
+                      for y in range(0, im.height, max(1,int(round(16*native)))):
+                          draw.line((0,y,im.width,y), fill=(0,255,255,160), width=1)
+                  im.thumbnail(max_size, Image.Resampling.LANCZOS)
+                  b=io.BytesIO(); im.convert("RGB").save(b,format="JPEG",quality=65,optimize=True)
+                  previews.append((label,base64.b64encode(b.getvalue()).decode("ascii")))
+              add_preview("ITEM_PAGE_RIGHT_STRIP", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), crop=(192,0,256,256), max_size=(160,512))
+              add_preview("ITEM_PAGE_FULL", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), grid=True, max_size=(360,360))
+              add_preview("TOP_MENU_FULL", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), grid=True, max_size=(512,256))
+              add_preview("ITEM_ICON_FOCUSED", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), crop=(352,176,480,272), grid=True, max_size=(384,288))
+              add_preview("CUSTOM_UI_FOCUSED", chosen_paths.get("tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png"), crop=(176,208,256,256), grid=True, max_size=(320,192))
+              for label, encoded in previews:
+                  print("PREVIEW_" + label + "=" + encoded)
+          PY
