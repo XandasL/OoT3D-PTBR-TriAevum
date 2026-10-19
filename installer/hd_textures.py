@@ -561,6 +561,13 @@ def validate_receipt(root):
         ('install', HUD_ATLAS_PATH),
         ('pack', hud['atlas_texture']),
     } if hud else set()
+    pause_edge = rules.get('pause_edge_overlay')
+    pause_edge_alias = next((item for item in rules['aliases']
+                             if pause_edge and item.get('resource') == pause_edge['resource']), None)
+    pause_edge_alias_key = (('pack', 'UI/PTBR_HASHES/' + pause_edge_alias['translated'])
+                            if pause_edge_alias else None)
+    pause_edge_original_digest = (rules['pack_files']['UI/' + pause_edge_alias['original']]
+                                  if pause_edge_alias else None)
     allowed = required | optional
     transaction = state.get('transaction', '')
     if len(transaction) != 32 or any(c not in '0123456789abcdef' for c in transaction):
@@ -581,6 +588,8 @@ def validate_receipt(root):
                 valid_owner = row['before_sha256'] == rules['pack_files']['UI/' + rules['navi_repair']['source']]
             if hud and key == ('pack', hud['atlas_texture']):
                 valid_owner = _is_hd_atlas_png(backup.read_bytes())
+            if (pause_edge_alias_key and key == pause_edge_alias_key):
+                valid_owner = row['before_sha256'] == pause_edge_original_digest
             if (not valid_owner or
                     row['backup'] != f'data/mods/ptbr-hd/backups/{transaction}/{index}.bin' or
                     digest(backup.read_bytes()) != row['before_sha256']):
