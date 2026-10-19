@@ -103,30 +103,36 @@ jobs:
               for k, v in chosen_paths.items():
                   print("SELECTED_MEMBER=" + json.dumps({"name": k, "path": v}))
               previews = []
-              def add_preview(label, member, crop=None, grid=False, max_size=(256,256)):
+              def add_preview(label, member, native_size=(256,256), crop=None, grid=False, max_size=(256,256)):
                   if not member: return
                   raw = z.read(member)
                   im = Image.open(io.BytesIO(raw)).convert("RGBA")
-                  print("IMAGE_META=" + json.dumps({"label":label, "path":member, "size":im.size, "bytes":len(raw), "sha256":hashlib.sha256(raw).hexdigest()}))
-                  native = im.size[0] / 256.0
+                  print("IMAGE_META=" + json.dumps({"label":label, "path":member, "size":im.size, "bytes":len(raw), "sha256":hashlib.sha256(raw).hexdigest(), "native_size":native_size}))
+                  sx = im.width / float(native_size[0])
+                  sy = im.height / float(native_size[1])
+                  crop_left = crop[0] if crop else 0
+                  crop_top = crop[1] if crop else 0
                   if crop:
-                      box = tuple(int(round(v*native)) for v in crop)
+                      box = (int(round(crop[0]*sx)), int(round(crop[1]*sy)),
+                             int(round(crop[2]*sx)), int(round(crop[3]*sy)))
                       im = im.crop(box)
                   if grid:
-                      # grid is only to annotate the thumbnail for inspection, not a modified asset.
                       draw = ImageDraw.Draw(im)
-                      for x in range(0, im.width, max(1,int(round(16*native)))):
-                          draw.line((x,0,x,im.height), fill=(0,255,255,160), width=1)
-                      for y in range(0, im.height, max(1,int(round(16*native)))):
-                          draw.line((0,y,im.width,y), fill=(0,255,255,160), width=1)
+                      for x in range(0, im.width, max(1,int(round(16*sx)))):
+                          draw.line((x,0,x,im.height), fill=(0,255,255,200), width=1)
+                      for y in range(0, im.height, max(1,int(round(16*sy)))):
+                          draw.line((0,y,im.width,y), fill=(0,255,255,200), width=1)
                   im.thumbnail(max_size, Image.Resampling.LANCZOS)
-                  b=io.BytesIO(); im.convert("RGB").save(b,format="JPEG",quality=65,optimize=True)
+                  b=io.BytesIO(); im.convert("RGB").save(b,format="JPEG",quality=62,optimize=True)
                   previews.append((label,base64.b64encode(b.getvalue()).decode("ascii")))
-              add_preview("ITEM_PAGE_RIGHT_STRIP", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), crop=(192,0,256,256), max_size=(160,512))
-              add_preview("ITEM_PAGE_FULL", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), grid=True, max_size=(360,360))
-              add_preview("TOP_MENU_FULL", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), grid=True, max_size=(512,256))
-              add_preview("ITEM_ICON_FOCUSED", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), crop=(352,176,480,272), grid=True, max_size=(384,288))
-              add_preview("CUSTOM_UI_FOCUSED", chosen_paths.get("tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png"), crop=(176,208,256,256), grid=True, max_size=(320,192))
+              add_preview("ITEM_PAGE_RIGHT_STRIP", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), native_size=(256,256), crop=(192,0,256,256), max_size=(160,512))
+              add_preview("ITEM_PAGE_FULL", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), native_size=(256,256), grid=True, max_size=(360,360))
+              add_preview("TOP_MENU_FULL", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), grid=True, max_size=(512,256))
+              add_preview("TOP_MENU_RIGHT_PANEL", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(400,0,512,256), grid=True, max_size=(320,512))
+              add_preview("TOP_MENU_BUTTONS", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(352,160,512,256), grid=True, max_size=(480,288))
+              add_preview("ITEM_ICON_FULL", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), grid=True, max_size=(384,384))
+              add_preview("ITEM_ICON_CELLS", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(352,176,480,272), grid=True, max_size=(384,288))
+              for label, encoded in previews:
               for label, encoded in previews:
                   print("PREVIEW_" + label + "=" + encoded)
           PY
