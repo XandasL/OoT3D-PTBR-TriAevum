@@ -85,6 +85,9 @@ jobs:
               "tex1_512x256_BB00B25B152582B6_4_mip0.png",
               "tex1_512x512_962F45C78450C392_0_mip0.png",
               "tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png",
+              "tex1_512x256_1B1E40F8F6E53947_13_mip0.png",
+              "tex1_256x256_B643C054F4538362_4_mip0.png",
+              "tex1_256x256_D6B04AFDACA985EF_13_mip0.png",
           }
           with zipfile.ZipFile(outzip) as z:
               members = [i for i in z.infolist() if not i.is_dir()]
