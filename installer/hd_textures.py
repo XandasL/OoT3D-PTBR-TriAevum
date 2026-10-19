@@ -57,9 +57,18 @@ def recipe():
             raise RuntimeError('A textura nativa usada para mapear o HUD PS não está fixada na receita.')
         if not overlay.get('atlas_texture', '').startswith('UI/') or not overlay['atlas_texture'].endswith('.png'):
             raise RuntimeError('Caminho do atlas SingleScreen inválido.')
-        for group in ('face_glyphs', 'shoulder_glyphs', 'pause_menu_glyphs'):
+        for group in ('face_glyphs', 'shoulder_glyphs'):
             if not overlay.get(group):
                 raise RuntimeError('Mapeamento incompleto do atlas de botões do HUD.')
+    pause_edge = rules.get('pause_edge_overlay')
+    if pause_edge:
+        if (pause_edge.get('source_texture') not in rules['pack_files'] or
+                pause_edge.get('target_texture') not in rules['pack_files']):
+            raise RuntimeError('As texturas de origem/destino dos prompts laterais não estão fixadas na receita.')
+        if not any(item.get('resource') == pause_edge.get('resource') for item in rules['aliases']):
+            raise RuntimeError('A textura do painel lateral não está mapeada para um alias HD.')
+        if not pause_edge.get('glyphs') or len(pause_edge['glyphs']) != 4:
+            raise RuntimeError('O mapeamento dos prompts do painel lateral está incompleto.')
     return rules
 
 
@@ -245,10 +254,17 @@ def navi_backup_key(rules):
     return ('pack', 'UI/PTBR_HASHES/' + repair['translated']) if repair else None
 
 
-def _hd_atlas_dimensions(data, label):
+def _png_dimensions(data, label):
     if len(data) < 33 or data[:8] != b'\x89PNG\r\n\x1a\n' or data[12:16] != b'IHDR':
-        raise RuntimeError(f'PNG inválido para o atlas do HUD: {label}')
+        raise RuntimeError(f'PNG inválido: {label}')
     width, height = struct.unpack_from('>II', data, 16)
+    if width <= 0 or height <= 0 or width > 16384 or height > 16384:
+        raise RuntimeError(f'Resolução PNG inválida: {label}')
+    return width, height
+
+
+def _hd_atlas_dimensions(data, label):
+    width, height = _png_dimensions(data, label)
     if (width <= 512 or height <= 256 or width > 16384 or height > 8192 or
             width % 512 or height % 256 or width != height * 2):
         raise RuntimeError(f'Resolução/aspecto inesperado para o atlas do HUD: {label}')
@@ -278,7 +294,7 @@ def patch_topscreen_hud_atlas(base_png, native_menu_png, overlay):
 
     # All source/destination rectangles are expressed in the 512x256 native atlas grid.
     # The source cells contain the PS-layout variants from the user-supplied, hash-pinned pack.
-    for group in ('face_glyphs', 'shoulder_glyphs', 'pause_menu_glyphs'):
+    for group in ('face_glyphs', 'shoulder_glyphs'):
         for item in overlay[group]:
             sx, sy, sw, sh = item['source']
             tx, ty, tw, th = item['target']
@@ -306,6 +322,61 @@ def patch_topscreen_hud_atlas(base_png, native_menu_png, overlay):
     base_image.save(output, format='PNG', optimize=True)
     result = output.getvalue()
     _hd_atlas_dimensions(result, 'HUD atlas preparado')
+    return result
+
+
+def patch_topscreen_pause_edge_atlas(base_png, native_menu_png, overlay):
+    """Composite PS5 prompts into the right-edge strip used by the Inventory/Gear/Map menu."""
+    from PIL import Image
+
+    base_width, base_height = _png_dimensions(base_png, overlay['target_texture'])
+    source_width, source_height = _hd_atlas_dimensions(native_menu_png, overlay['source_texture'])
+    if (base_width <= 256 or base_height <= 256 or base_width % 256 or
+            base_height % 256 or base_width != base_height):
+        raise RuntimeError('Resolução/aspecto inesperado para o atlas do painel lateral.')
+    target_scale = base_width // 256
+    source_scale_x = source_width // 512
+    source_scale_y = source_height // 256
+    if source_scale_x != source_scale_y:
+        raise RuntimeError('Escala inconsistente na textura de botões do PlayStation.')
+
+    try:
+        base_image = Image.open(io.BytesIO(base_png)).convert('RGBA')
+        source_image = Image.open(io.BytesIO(native_menu_png)).convert('RGBA')
+    except Exception as exc:
+        raise RuntimeError(f'Não foi possível decodificar os atlas dos prompts laterais: {exc}') from exc
+    if base_image.size != (base_width, base_height) or source_image.size != (source_width, source_height):
+        raise RuntimeError('Dimensões reais dos atlas não correspondem aos PNGs.')
+
+    for item in overlay['glyphs']:
+        sx, sy, sw, sh = item['source']
+        tx, ty, tw, th = item['target']
+        if (min(sx, sy, tx, ty) < 0 or min(sw, sh, tw, th) <= 0 or
+                sx + sw > 512 or sy + sh > 256 or
+                tx + tw > 256 or ty + th > 256):
+            raise RuntimeError(f'Retângulo de prompt lateral fora dos limites: {item.get("name", "glyph")}')
+        source_box = (sx * source_scale_x, sy * source_scale_y,
+                      (sx + sw) * source_scale_x, (sy + sh) * source_scale_y)
+        target_size = (tw * target_scale, th * target_scale)
+        target_position = (tx * target_scale, ty * target_scale)
+        glyph = source_image.crop(source_box)
+        if item.get('preserve_aspect'):
+            glyph.thumbnail(target_size, Image.Resampling.LANCZOS)
+            cell = Image.new('RGBA', target_size, (0, 0, 0, 0))
+            cell.alpha_composite(glyph, ((target_size[0] - glyph.width) // 2,
+                                         (target_size[1] - glyph.height) // 2))
+            glyph = cell
+        elif glyph.size != target_size:
+            glyph = glyph.resize(target_size, Image.Resampling.LANCZOS)
+        # This strip is rendered by the native pause-edge presenter; keep its
+        # stone texture and blend only the transparent prompt artwork over it.
+        base_image.alpha_composite(glyph, target_position)
+
+    output = io.BytesIO()
+    base_image.save(output, format='PNG', optimize=True)
+    result = output.getvalue()
+    if _png_dimensions(result, 'painel lateral preparado') != (base_width, base_height):
+        raise RuntimeError('O atlas preparado do painel lateral mudou de resolução.')
     return result
 
 
