@@ -44,21 +44,6 @@ def hud_overlay_recipe():
     }
 
 
-def pause_edge_recipe(source_texture='UI/tex1_512x256_BB00B25B152582B6_4_mip0.png'):
-    return {
-        'resource': 'menu_item_parts00.ctxb',
-        'target_texture': 'UI/menu_item.png',
-        'source_texture': source_texture,
-        'glyphs': [
-            {'name': 'R1-top-edge', 'source': [440, 190, 17, 11], 'target': [233, 8, 16, 10], 'preserve_aspect': True},
-            {'name': 'Triangle-edge', 'source': [158, 142, 16, 16], 'target': [238, 65, 12, 12]},
-            {'name': 'Square-edge', 'source': [158, 158, 16, 16], 'target': [243, 118, 10, 12]},
-            {'name': 'L1-bottom-edge', 'source': [440, 201, 17, 11], 'target': [233, 195, 16, 10], 'preserve_aspect': True},
-        ],
-    }
-
-
-
 class HDIntegration(unittest.TestCase):
     def setUp(self):
         test_root = Path(__file__).resolve().parent / 'build/hd-tests'
@@ -268,48 +253,6 @@ class HDIntegration(unittest.TestCase):
         hd.restore(self.root)
         self.assertEqual(atlas_path.read_bytes(), before)
 
-    def _enable_pause_edge_fixture(self, preexisting_alias=False):
-        item_png = atlas_png((0, 0, 255, 255), size=(1024, 1024))
-        item_path = 'UI/menu_item.png'
-        alias_path = 'UI/PTBR_HASHES/menu_item_translated.png'
-        self.write(self.pack, item_path, item_png)
-        self.rules['pack_files'][item_path] = hd.digest(item_png)
-        self.rules['aliases'].append({
-            'resource': 'menu_item_parts00.ctxb',
-            'original': 'menu_item.png',
-            'translated': 'menu_item_translated.png',
-            'native_size': [256, 256],
-        })
-        self.rules['pause_edge_overlay'] = pause_edge_recipe(self.hd_native_atlas_relative)
-        self.pause_edge_item_png = item_png
-        self.pause_edge_alias_path = self.pack / alias_path
-        if preexisting_alias:
-            # Simulate the unpatched alias left by the previous HD installer.
-            self.write(self.pack, alias_path, item_png)
-
-    def test_pause_edge_prompts_are_composited_into_inventory_texture_alias(self):
-        self._enable_pause_edge_fixture(preexisting_alias=False)
-        self.install()
-        with Image.open(self.pause_edge_alias_path) as decoded:
-            image = decoded.convert('RGBA')
-            # The source atlas is red; only the four prompt cells should change.
-            for x, y in ((241, 13), (244, 71), (248, 124), (241, 200)):
-                self.assertEqual(image.getpixel((x * 4, y * 4)), (255, 0, 0, 255))
-            self.assertEqual(image.getpixel((100 * 4, 100 * 4)), (0, 0, 255, 255))
-        # The base menu-item PNG is never patched in place.
-        self.assertEqual((self.pack / 'UI/menu_item.png').read_bytes(), self.pause_edge_item_png)
-        hd.restore(self.root)
-        self.assertFalse(self.pause_edge_alias_path.exists())
-        self.assertEqual((self.pack / 'UI/menu_item.png').read_bytes(), self.pause_edge_item_png)
-
-    def test_pause_edge_overlay_upgrades_and_restores_preexisting_menu_item_alias(self):
-        self._enable_pause_edge_fixture(preexisting_alias=True)
-        before = self.pause_edge_alias_path.read_bytes()
-        self.install()
-        self.assertNotEqual(self.pause_edge_alias_path.read_bytes(), before)
-        hd.restore(self.root)
-        self.assertEqual(self.pause_edge_alias_path.read_bytes(), before)
-
     def test_duplicate_config_flag_rejected(self):
         profile = hd.read_json(self.root / 'TriAevum.launch.json')
         profile['arguments'] += ['--config', 'other.json']
@@ -461,17 +404,7 @@ class HDRecipeV12(unittest.TestCase):
             [item['name'] for item in overlay['shoulder_glyphs']],
             ['ZR-to-R1', 'ZL-to-L1'],
         )
-        self.assertNotIn('pause_menu_glyphs', overlay)
         self.assertEqual(overlay['atlas_texture'], 'UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png')
-        pause_edge = rules['pause_edge_overlay']
-        self.assertEqual(pause_edge['resource'], 'menu_item_parts00.ctxb')
-        self.assertEqual(pause_edge['target_texture'], 'UI/tex1_256x256_18DDBB03B81C1D60_13_mip0.png')
-        self.assertEqual(
-            [item['name'] for item in pause_edge['glyphs']],
-            ['R1-top-edge', 'Triangle-edge', 'Square-edge', 'L1-bottom-edge'],
-        )
-        self.assertIn(pause_edge['target_texture'], rules['pack_files'])
-        self.assertIn(pause_edge['source_texture'], rules['pack_files'])
 
     def test_beta11_native_runtime_is_pinned(self):
         rules = hd.recipe()
