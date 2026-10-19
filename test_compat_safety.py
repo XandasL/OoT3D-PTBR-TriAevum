@@ -27,6 +27,31 @@ class Safety(unittest.TestCase):
    self.assertIn('Overrides: 1',str(caught.exception))
    self.assertIn('1234567890',str(caught.exception))
    self.assertEqual(path.read_bytes(),raw)
+ def test_fingerprint_pinned_empty_o3tu_is_read_only(self):
+  from unittest.mock import patch
+  import hashlib
+  raw=b'O3TU'+struct.pack('<III',2,0,0)
+  sha=hashlib.sha256(raw).hexdigest()
+  with tempfile.TemporaryDirectory() as folder:
+   o3tu=Path(folder)/'atlas_overrides.o3tu'
+   o3tu.write_bytes(raw)
+   with patch.object(c,'KNOWN_EMPTY_TOPSCREEN_O3TU_SHA256',frozenset({sha})):
+    found, entry=c.inspect_topscreen(o3tu)
+    self.assertEqual(found,raw)
+    self.assertIsNone(entry)
+    self.assertEqual(o3tu.read_bytes(),raw)
+
+ def test_unknown_empty_o3tu_still_rejected(self):
+  from unittest.mock import patch
+  raw=b'O3TU'+struct.pack('<III',2,0,0)
+  with tempfile.TemporaryDirectory() as folder:
+   o3tu=Path(folder)/'atlas_overrides.o3tu'
+   o3tu.write_bytes(raw)
+   with patch.object(c,'KNOWN_EMPTY_TOPSCREEN_O3TU_SHA256',frozenset()):
+    with self.assertRaisesRegex(RuntimeError,'TopScreen O3TU diferente'):
+     c.inspect_topscreen(o3tu)
+   self.assertEqual(o3tu.read_bytes(),raw)
+
  def test_o3tu_truncated_profile(self):
   raw=b'O3TU'+struct.pack('<III',2,0,1)
   with self.assertRaises(RuntimeError):c.validate_o3tu_complete(raw,[],1)
