@@ -188,7 +188,7 @@ class App(tk.Tk):
             buttons.columnconfigure(col, weight=1)
 
         self.install_btn = ttk.Button(
-            buttons, text="Instalar tradução", command=self.install_translation
+            buttons, text="Instalar / atualizar fonte HD", command=self.install_translation
         )
         self.install_btn.grid(row=0, column=0, sticky="ew", padx=(0, 6))
 
@@ -504,7 +504,11 @@ class App(tk.Tk):
             self.configure_core_paths()
 
             with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
-                result = self.core.install()
+                if self.core.is_v4_installed():
+                    print('[INFO] Tradução já instalada; atualizando somente a fonte HD.')
+                    result = self.core.upgrade_open_font()
+                else:
+                    result = self.core.install()
 
             stdout_text = stdout_buffer.getvalue()
             stderr_text = stderr_buffer.getvalue()
