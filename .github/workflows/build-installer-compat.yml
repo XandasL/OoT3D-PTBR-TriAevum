@@ -1,4 +1,4 @@
-name: Build instalador PT-BR v1.2.1 e atualizar a release
+name: Build instalador PT-BR v1.2.1 (release somente draft)
 on:
   workflow_dispatch:
   push:
@@ -84,7 +84,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
   attach-draft:
-    name: Atualizar pacotes da release 1.2.1 (preservar publicação)
+    name: Atualizar pacotes somente se a release 1.2.1 for draft
     needs: build
     runs-on: ubuntu-22.04
     permissions:
@@ -104,6 +104,8 @@ jobs:
           set -euo pipefail
           RELEASE_ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.tag_name == "1.2.1") | .id' | head -n 1)
           test -n "$RELEASE_ID" || { echo "Release 1.2.1 nao encontrada"; exit 1; }
+          IS_DRAFT=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID" --jq '.draft')
+          test "$IS_DRAFT" = "true" || { echo "Release 1.2.1 publicada: assets imutaveis. Crie uma nova versao."; exit 1; }
           test "$(find release-assets -maxdepth 1 -name '*.zip' | wc -l)" -eq 4
           for file in release-assets/*.zip; do
             name=$(basename "$file")
