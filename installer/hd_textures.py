@@ -20,6 +20,7 @@ FORMAT = 'oot3d_ptbr_hd_install_v1'
 DEPLOY_FORMAT = 'oot3d_ptbr_hd_runtime_deploy_v1'
 SOURCE_DOWNLOAD = 'https://github.com/coccofresco/TriAevum/tree/v0.8.0-beta.1.1'
 NATIVE_RUNTIME_MODE = 'verified_native_copy'
+HUD_ATLAS_PATH = 'data/mods/ptbr-hd/ui_atlas_hd.png'
 
 
 def digest(data):
@@ -50,6 +51,15 @@ def recipe():
         for name in (item['original'], item['translated']):
             if '/' in name or '\\' in name or not name.endswith('.png'):
                 raise RuntimeError('Nome de alias inválido na receita HD.')
+    overlay = rules.get('hud_atlas_overlay')
+    if overlay:
+        if overlay.get('native_texture') not in rules['pack_files']:
+            raise RuntimeError('A textura nativa usada para mapear o HUD PS não está fixada na receita.')
+        if not overlay.get('atlas_texture', '').startswith('UI/') or not overlay['atlas_texture'].endswith('.png'):
+            raise RuntimeError('Caminho do atlas SingleScreen inválido.')
+        for group in ('face_glyphs', 'shoulder_glyphs'):
+            if not overlay.get(group):
+                raise RuntimeError('Mapeamento incompleto do atlas de botões do HUD.')
     return rules
 
 
@@ -233,6 +243,107 @@ def repair_navi_hud(data, rules):
 def navi_backup_key(rules):
     repair = rules.get('navi_repair')
     return ('pack', 'UI/PTBR_HASHES/' + repair['translated']) if repair else None
+
+
+def _hd_atlas_dimensions(data, label):
+    if len(data) < 33 or data[:8] != b'\\x89PNG\\r\\n\\x1a\\n' or data[12:16] != b'IHDR':
+        raise RuntimeError(f'PNG inválido para o atlas do HUD: {label}')
+    width, height = struct.unpack_from('>II', data, 16)
+    if (width <= 512 or height <= 256 or width > 16384 or height > 8192 or
+            width % 512 or height % 256 or width != height * 2):
+        raise RuntimeError(f'Resolução/aspecto inesperado para o atlas do HUD: {label}')
+    return width, height
+
+
+def patch_topscreen_hud_atlas(base_png, native_menu_png, overlay):
+    """Copy PlayStation HUD glyphs from the native menu atlas into SingleScreen's 3.0 HD atlas."""
+    from PIL import Image
+
+    base_width, base_height = _hd_atlas_dimensions(base_png, 'SingleScreen custom_ui01')
+    source_width, source_height = _hd_atlas_dimensions(native_menu_png, overlay['native_texture'])
+    target_scale_x = base_width // 512
+    target_scale_y = base_height // 256
+    source_scale_x = source_width // 512
+    source_scale_y = source_height // 256
+    if target_scale_x != target_scale_y or source_scale_x != source_scale_y:
+        raise RuntimeError('Escala inconsistente nos atlas usados pelos botões do HUD.')
+
+    try:
+        base_image = Image.open(io.BytesIO(base_png)).convert('RGBA')
+        source_image = Image.open(io.BytesIO(native_menu_png)).convert('RGBA')
+    except Exception as exc:
+        raise RuntimeError(f'Não foi possível decodificar os atlas do HUD: {exc}') from exc
+    if base_image.size != (base_width, base_height) or source_image.size != (source_width, source_height):
+        raise RuntimeError('Dimensões reais dos atlas não correspondem ao PNG.')
+
+    # All source/destination rectangles are expressed in the 512x256 native atlas grid.
+    # The source cells contain the PS-layout variants from the user-supplied, hash-pinned pack.
+    for group in ('face_glyphs', 'shoulder_glyphs'):
+        for item in overlay[group]:
+            sx, sy, sw, sh = item['source']
+            tx, ty, tw, th = item['target']
+            if (min(sx, sy, tx, ty) < 0 or min(sw, sh, tw, th) <= 0 or
+                    sx + sw > 512 or sy + sh > 256 or tx + tw > 512 or ty + th > 256):
+                raise RuntimeError(f'Retângulo de botão fora dos limites: {item.get("name", group)}')
+            source_box = (sx * source_scale_x, sy * source_scale_y,
+                          (sx + sw) * source_scale_x, (sy + sh) * source_scale_y)
+            target_size = (tw * target_scale_x, th * target_scale_y)
+            target_position = (tx * target_scale_x, ty * target_scale_y)
+            glyph = source_image.crop(source_box)
+            if item.get('preserve_aspect'):
+                glyph.thumbnail(target_size, Image.Resampling.LANCZOS)
+                cell = Image.new('RGBA', target_size, (0, 0, 0, 0))
+                cell.alpha_composite(glyph, ((target_size[0] - glyph.width) // 2,
+                                             (target_size[1] - glyph.height) // 2))
+                glyph = cell
+            elif glyph.size != target_size:
+                glyph = glyph.resize(target_size, Image.Resampling.LANCZOS)
+            # Replace the complete glyph cell, including its transparent pixels,
+            # so the stock X/Y/ZL/ZR art cannot bleed through underneath.
+            base_image.paste(glyph, target_position)
+
+    output = io.BytesIO()
+    base_image.save(output, format='PNG', optimize=True)
+    result = output.getvalue()
+    _hd_atlas_dimensions(result, 'HUD atlas preparado')
+    return result
+
+
+def _profile_argument_value(args, flag):
+    positions = [index for index, value in enumerate(args) if value == flag]
+    if len(positions) > 1:
+        raise RuntimeError(f'O perfil contém mais de uma opção {flag}.')
+    if not positions:
+        return None, None
+    index = positions[0]
+    if index + 1 >= len(args):
+        raise RuntimeError(f'A opção {flag} não possui um caminho.')
+    return index, args[index + 1]
+
+
+def _resolve_profile_path(root, value):
+    normalized = value.replace('\\\\', '/')
+    for prefix in ('${profile_dir}/', '${runtime_dir}/'):
+        if normalized.startswith(prefix):
+            return bounded(root, normalized[len(prefix):])
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        return bounded(root, value)
+    resolved = canonical(candidate)
+    if not resolved.is_relative_to(canonical(root)):
+        raise RuntimeError('O atlas HD do HUD precisa pertencer à instalação TriAevum.')
+    return resolved
+
+
+def _is_hd_atlas_png(data):
+    try:
+        _hd_atlas_dimensions(data, 'atlas existente')
+        from PIL import Image
+        with Image.open(io.BytesIO(data)) as image:
+            image.verify()
+        return True
+    except Exception:
+        return False
 
 
 def plan_install(root, selected_pack, bundle):
