@@ -270,6 +270,7 @@ class HDIntegration(unittest.TestCase):
         self.assertFalse((self.root / hd.EXE).exists())
         self.assertFalse((self.pack / 'UI/PTBR_HASHES/ptbr.png').exists())
         self.assertFalse((self.root / hd.RECEIPT).exists())
+        self.assertFalse((self.root / hd.HUD_ATLAS_PATH).exists())
 
     def test_existing_config_is_recovered_after_final_write_failure(self):
         before = hd.encoded_json({'Graphics': {'Favorite': 123}})
@@ -392,6 +393,17 @@ class HDRecipeV12(unittest.TestCase):
         for alias in rules['aliases']:
             self.assertIn('UI/' + alias['original'], rules['pack_files'])
             self.assertEqual(len(rules['pack_files']['UI/' + alias['original']]), 64)
+        overlay = rules['hud_atlas_overlay']
+        self.assertIn(overlay['native_texture'], rules['pack_files'])
+        self.assertEqual(
+            [item['name'] for item in overlay['face_glyphs']],
+            ['X-to-Square', 'Y-to-Triangle', 'B-to-Circle'],
+        )
+        self.assertEqual(
+            [item['name'] for item in overlay['shoulder_glyphs']],
+            ['ZR-to-R1', 'ZL-to-L1'],
+        )
+        self.assertEqual(overlay['atlas_texture'], 'UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png')
 
     def test_beta11_native_runtime_is_pinned(self):
         rules = hd.recipe()
