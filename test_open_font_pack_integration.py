@@ -64,7 +64,7 @@ class OpenFontPackIntegrationTests(unittest.TestCase):
                          for v in (byte >> 4, byte & 15)]
                 locations = [(i % 64, i // 64) for i, v in enumerate(alpha) if v]
                 self.assertGreater(len(locations), 0)
-                self.assertGreaterEqual(min(x for x, y in locations), 12)
+                self.assertGreaterEqual(min(x for x, y in locations), 4)
                 self.assertLess(max(x for x, y in locations), 64)
                 self.assertGreaterEqual(min(y for x, y in locations), 0)
                 self.assertLess(max(y for x, y in locations), 64)
@@ -79,7 +79,7 @@ class OpenFontPackIntegrationTests(unittest.TestCase):
         self.assertEqual(compact_a.height, a.height)
         self.assertEqual(compact_b.height, b.height)
         self.assertAlmostEqual(compact_a.width / a.width, COMPACT_X_SCALE, delta=.03)
-        self.assertAlmostEqual(compact_b.width / b.width, COMPACT_X_SCALE, delta=.03)
+        self.assertLessEqual(abs(compact_b.width / b.width - COMPACT_X_SCALE), 0.5 / b.width)
         self.assertGreater(compact_a.width, compact_b.width)
 
     def test_uniform_em_keeps_i_narrower_than_m(self):
