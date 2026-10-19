@@ -745,5 +745,90 @@
       2048
     ]
   },
-  "runtime_mode": "verified_native_copy"
+  "runtime_mode": "verified_native_copy",
+  "hud_atlas_overlay": {
+    "atlas_texture": "UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png",
+    "native_texture": "UI/tex1_512x256_BB00B25B152582B6_4_mip0.png",
+    "face_glyphs": [
+      {
+        "name": "X-to-Square",
+        "source": [
+          158,
+          142,
+          16,
+          16
+        ],
+        "target": [
+          207,
+          227,
+          16,
+          16
+        ]
+      },
+      {
+        "name": "Y-to-Triangle",
+        "source": [
+          158,
+          158,
+          16,
+          16
+        ],
+        "target": [
+          226,
+          227,
+          16,
+          16
+        ]
+      },
+      {
+        "name": "B-to-Circle",
+        "source": [
+          158,
+          126,
+          16,
+          16
+        ],
+        "target": [
+          363,
+          225,
+          16,
+          16
+        ]
+      }
+    ],
+    "shoulder_glyphs": [
+      {
+        "name": "ZR-to-R1",
+        "source": [
+          440,
+          190,
+          17,
+          11
+        ],
+        "target": [
+          47,
+          231,
+          16,
+          16
+        ],
+        "preserve_aspect": true
+      },
+      {
+        "name": "ZL-to-L1",
+        "source": [
+          440,
+          201,
+          17,
+          11
+        ],
+        "target": [
+          245,
+          227,
+          16,
+          16
+        ],
+        "preserve_aspect": true
+      }
+    ]
+  }
 }
