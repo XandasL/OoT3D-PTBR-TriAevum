@@ -4,6 +4,14 @@ from pathlib import Path
 root = Path(SPECPATH)
 payload = Path(os.environ['OOT3D_PAYLOAD_ROOT']).resolve()
 extra_hd = []
+open_font = os.environ.get('OOT3D_OPEN_FONT')
+if open_font:
+    font_path = Path(open_font).resolve()
+    if not font_path.is_file():
+        raise RuntimeError('Fonte aberta selecionada não encontrada')
+    extra_hd.append((str(font_path), 'open-font'))
+    extra_hd.append((str(root / 'prepare_open_font_pack.py'), '.'))
+    extra_hd.append((str(root / 'build_open_hd_qbf.py'), '.'))
 if os.environ.get('OOT3D_HD_BUNDLE'):
     extra_hd.append((os.environ['OOT3D_HD_BUNDLE'], 'hd-runtime'))
 a = Analysis(
