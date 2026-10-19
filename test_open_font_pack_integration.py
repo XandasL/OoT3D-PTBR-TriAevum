@@ -22,6 +22,17 @@ def synthetic_native():
     for i, (code, index) in enumerate(directory):
         struct.pack_into("<HH", result, 16 + i * 8, code, index)
         result[16 + i * 8 + 4:16 + i * 8 + 8] = bytes((1, 2, 3, 4))
+    # Source alpha occupies x=3..10, y=4..12 for each mapped glyph.
+    # Spatial provenance, not artwork, is needed for alignment regression.
+    directory_end = 16 + len(directory) * 8
+    for index in range(3):
+        for y in range(4, 13):
+            for x in range(3, 11):
+                p = directory_end + index * 128 + (y * 16 + x) // 2
+                if x % 2:
+                    result[p] |= 0x0F
+                else:
+                    result[p] |= 0xF0
     return bytes(result)
 
 
@@ -47,6 +58,16 @@ class OpenFontPackIntegrationTests(unittest.TestCase):
                 self.assertEqual(hd[16:40], native[16:40])
                 # The generated glyph for A must contain opaque coverage.
                 self.assertTrue(any(hd[16 + 24 + 2048:16 + 24 + 4096]))
+                # Ink placement must remain in the original cell extent x=3..10,
+                # y=4..12 (scaled 4x) rather than arbitrary cell centering.
+                alpha = [v for byte in hd[16 + 24 + 2048:16 + 24 + 4096]
+                         for v in (byte >> 4, byte & 15)]
+                locations = [(i % 64, i // 64) for i, v in enumerate(alpha) if v]
+                self.assertGreater(len(locations), 0)
+                self.assertGreaterEqual(min(x for x, y in locations), 12)
+                self.assertLess(max(x for x, y in locations), 44)
+                self.assertGreaterEqual(min(y for x, y in locations), 16)
+                self.assertLess(max(y for x, y in locations), 52)
 
 
 if __name__ == "__main__":
