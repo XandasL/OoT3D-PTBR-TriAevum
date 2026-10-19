@@ -158,6 +158,8 @@ class App(tk.Tk):
         self.payload_dir: Path | None = None
         self.core = None
         self.selected_root = None
+        self.font_mode_var = tk.StringVar(value="original")
+        self.selected_font_mode = "original"
 
         self.columnconfigure(0, weight=1)
         # Somente a linha do log expande verticalmente.
@@ -188,7 +190,7 @@ class App(tk.Tk):
             buttons.columnconfigure(col, weight=1)
 
         self.install_btn = ttk.Button(
-            buttons, text="Instalar / atualizar fonte HD", command=self.install_translation
+            buttons, text="Instalar / aplicar fonte", command=self.install_translation
         )
         self.install_btn.grid(row=0, column=0, sticky="ew", padx=(0, 6))
 
@@ -211,6 +213,17 @@ class App(tk.Tk):
             self.hd_install_btn.configure(state="disabled")
         if sys.platform != "win32":
             self.hd_restore_btn.configure(state="disabled")
+
+        font_select = ttk.LabelFrame(buttons, text="Fonte dos textos", padding=(10, 6))
+        font_select.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(8, 0))
+        self.original_font_radio = ttk.Radiobutton(
+            font_select, text="Original do jogo (sem substituição HD)",
+            variable=self.font_mode_var, value="original")
+        self.original_font_radio.grid(row=0, column=0, sticky="w", padx=(4, 14))
+        self.noto_font_radio = ttk.Radiobutton(
+            font_select, text="Noto Sans HD (experimental)",
+            variable=self.font_mode_var, value="hd")
+        self.noto_font_radio.grid(row=0, column=1, sticky="w")
 
         status_frame = ttk.LabelFrame(self, text="Status", padding=(12, 8))
         status_frame.grid(row=2, column=0, sticky="ew", padx=18, pady=(2, 8))
@@ -421,6 +434,8 @@ class App(tk.Tk):
         self.install_btn.configure(state=state)
         self.restore_btn.configure(state=state)
         self.status_btn.configure(state=state)
+        self.original_font_radio.configure(state=state)
+        self.noto_font_radio.configure(state=state)
         self.hd_install_btn.configure(state="normal" if not busy and sys.platform == "win32" and hd_bundle() else "disabled")
         self.hd_restore_btn.configure(state="normal" if not busy and sys.platform == "win32" else "disabled")
 
@@ -475,14 +490,19 @@ class App(tk.Tk):
             )
             return
 
+        self.selected_font_mode = self.font_mode_var.get()
+        if self.selected_font_mode not in ("original", "hd"):
+            messagebox.showerror("Fonte", "Selecione uma opção de fonte válida.")
+            return
+        chosen = "Original do jogo" if self.selected_font_mode == "original" else "Noto Sans HD experimental"
         if not messagebox.askyesno(
-            "Instalar tradução PT-BR",
-            "O instalador validará a base original, criará backups "
-            "e aplicará a tradução PT-BR completa + compatibilidade TopScreen.\n\n"
-            "A instalação pode levar alguns minutos. Aguarde até a conclusão.\n\n"
+            "Tradução e fonte PT-BR",
+            "Se a tradução já estiver instalada, apenas a fonte será alterada.\\n"
+            "Caso contrário, serão criados backups e instalada a tradução.\\n\\n"
+            f"Fonte escolhida: {chosen}.\\n\\n"
             "Deseja continuar?"
         ):
-            self.write_log("Instalação cancelada pelo usuário.")
+            self.write_log("Operação cancelada pelo usuário.")
             return
 
         self.set_operation_buttons(True)
@@ -505,9 +525,10 @@ class App(tk.Tk):
 
             with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
                 if self.core.is_v4_installed():
-                    print('[INFO] Tradução já instalada; atualizando somente a fonte HD.')
-                    result = self.core.upgrade_open_font()
+                    print('[INFO] Tradução já instalada; alterando somente a fonte.')
+                    result = self.core.set_font_mode(self.selected_font_mode)
                 else:
+                    self.core.FONT_MODE_OPTION = self.selected_font_mode
                     result = self.core.install()
 
             stdout_text = stdout_buffer.getvalue()
