@@ -41,13 +41,22 @@ def hud_overlay_recipe():
             {'name': 'ZR-to-R1', 'source': [440, 190, 17, 11], 'target': [47, 231, 16, 16], 'preserve_aspect': True},
             {'name': 'ZL-to-L1', 'source': [440, 201, 17, 11], 'target': [245, 227, 16, 16], 'preserve_aspect': True},
         ],
-        'pause_menu_glyphs': [
-            {'name': 'Pause-X-to-Triangle', 'source': [158, 142, 16, 16], 'target': [116, 89, 32, 32]},
-            {'name': 'Pause-Y-to-Square', 'source': [158, 158, 16, 16], 'target': [151, 89, 32, 32]},
-            {'name': 'Pause-ZL-to-L1', 'source': [440, 201, 17, 11], 'target': [462, 108, 37, 28], 'preserve_aspect': True},
-            {'name': 'Pause-ZR-to-R1', 'source': [440, 190, 17, 11], 'target': [240, 117, 37, 28], 'preserve_aspect': True},
+    }
+
+
+def pause_edge_recipe(source_texture='UI/tex1_512x256_BB00B25B152582B6_4_mip0.png'):
+    return {
+        'resource': 'menu_item_parts00.ctxb',
+        'target_texture': 'UI/menu_item.png',
+        'source_texture': source_texture,
+        'glyphs': [
+            {'name': 'R1-top-edge', 'source': [440, 190, 17, 11], 'target': [233, 8, 16, 10], 'preserve_aspect': True},
+            {'name': 'Triangle-edge', 'source': [158, 142, 16, 16], 'target': [238, 65, 12, 12]},
+            {'name': 'Square-edge', 'source': [158, 158, 16, 16], 'target': [243, 118, 10, 12]},
+            {'name': 'L1-bottom-edge', 'source': [440, 201, 17, 11], 'target': [233, 195, 16, 10], 'preserve_aspect': True},
         ],
     }
+
 
 
 class HDIntegration(unittest.TestCase):
@@ -240,11 +249,8 @@ class HDIntegration(unittest.TestCase):
             image = decoded.convert('RGBA')
             # The blue base survives outside glyph cells; red comes from source atlas.
             self.assertEqual(image.getpixel((10, 10)), (0, 0, 255, 255))
-            # Gameplay HUD glyph cells and the separate pause/inventory glyph cells.
-            for x, y in (
-                (214, 234), (233, 234), (370, 233), (55, 239), (253, 235),
-                (124, 97), (159, 97), (480, 122), (258, 130),
-            ):
+            # Only the verified gameplay HUD cells belong in custom_ui01.
+            for x, y in ((214, 234), (233, 234), (370, 233), (55, 239), (253, 235)):
                 self.assertEqual(image.getpixel((x * 2, y * 2)), (255, 0, 0, 255))
         hd.restore(self.root)
         self.assertFalse(patched_path.exists())
@@ -413,11 +419,17 @@ class HDRecipeV12(unittest.TestCase):
             [item['name'] for item in overlay['shoulder_glyphs']],
             ['ZR-to-R1', 'ZL-to-L1'],
         )
-        self.assertEqual(
-            [item['name'] for item in overlay['pause_menu_glyphs']],
-            ['Pause-X-to-Triangle', 'Pause-Y-to-Square', 'Pause-ZL-to-L1', 'Pause-ZR-to-R1'],
-        )
+        self.assertNotIn('pause_menu_glyphs', overlay)
         self.assertEqual(overlay['atlas_texture'], 'UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png')
+        pause_edge = rules['pause_edge_overlay']
+        self.assertEqual(pause_edge['resource'], 'menu_item_parts00.ctxb')
+        self.assertEqual(pause_edge['target_texture'], 'UI/tex1_256x256_18DDBB03B81C1D60_13_mip0.png')
+        self.assertEqual(
+            [item['name'] for item in pause_edge['glyphs']],
+            ['R1-top-edge', 'Triangle-edge', 'Square-edge', 'L1-bottom-edge'],
+        )
+        self.assertIn(pause_edge['target_texture'], rules['pack_files'])
+        self.assertIn(pause_edge['source_texture'], rules['pack_files'])
 
     def test_beta11_native_runtime_is_pinned(self):
         rules = hd.recipe()
