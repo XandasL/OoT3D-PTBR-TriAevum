@@ -125,11 +125,11 @@ jobs:
                   im.thumbnail(max_size, Image.Resampling.LANCZOS)
                   b=io.BytesIO(); im.convert("RGB").save(b,format="JPEG",quality=62,optimize=True)
                   previews.append((label,base64.b64encode(b.getvalue()).decode("ascii")))
-              add_preview("ITEM_ICON_BUTTON_REGION", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(320,160,512,320), grid=True, max_size=(1152,960))
-              add_preview("ITEM_ICON_PROMPT_SOURCE", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(352,240,512,480), grid=True, max_size=(960,1440))
-              add_preview("ITEM_ICON_TOP_RIGHT", chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png"), native_size=(512,512), crop=(352,128,512,288), grid=True, max_size=(960,960))
-              add_preview("TOP_MENU_INTERIOR", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(112,112,224,208), grid=True, max_size=(896,768))
-              add_preview("TOP_MENU_SIDE_LABELS", chosen_paths.get("tex1_512x256_BB00B25B152582B6_4_mip0.png"), native_size=(512,256), crop=(432,0,512,256), grid=True, max_size=(480,1536))
+              add_preview("EQUIP_PAGE_FULL", next((p for p in matches if PurePosixPath(p).name=="tex1_512x256_1B1E40F8F6E53947_13_mip0.png"),None), native_size=(512,256), grid=True, max_size=(1024,512))
+              add_preview("EQUIP_PAGE_RIGHT", next((p for p in matches if PurePosixPath(p).name=="tex1_512x256_1B1E40F8F6E53947_13_mip0.png"),None), native_size=(512,256), crop=(368,0,512,256), grid=True, max_size=(720,1280))
+              add_preview("HUD_ALL_FULL", next((p for p in matches if PurePosixPath(p).name=="tex1_256x256_B643C054F4538362_4_mip0.png"),None), native_size=(256,256), grid=True, max_size=(512,512))
+              add_preview("OPTIONS_PAGE_FULL", next((p for p in matches if PurePosixPath(p).name=="tex1_256x256_D6B04AFDACA985EF_13_mip0.png"),None), native_size=(256,256), grid=True, max_size=(512,512))
+              add_preview("ITEM_PAGE_FULL", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), native_size=(256,256), grid=True, max_size=(512,512))
               for label, encoded in previews:
                   print("PREVIEW_" + label + "=" + encoded)
           PY
