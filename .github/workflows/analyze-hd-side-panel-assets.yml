@@ -138,6 +138,10 @@ jobs:
               add_preview("HUD_ALL_BOTTOM_RIGHT", hud_all, native_size=(256,256), crop=(128,128,256,256), grid=True, max_size=(768,768))
               add_preview("OPTIONS_PAGE_FULL", next((p for p in matches if PurePosixPath(p).name=="tex1_256x256_D6B04AFDACA985EF_13_mip0.png"),None), native_size=(256,256), grid=True, max_size=(512,512))
               add_preview("ITEM_PAGE_FULL", chosen_paths.get("tex1_256x256_18DDBB03B81C1D60_13_mip0.png"), native_size=(256,256), grid=True, max_size=(512,512))
+              item_icons = chosen_paths.get("tex1_512x512_962F45C78450C392_0_mip0.png")
+              add_preview("ITEM_I_SOURCE_QUAD_5", item_icons, native_size=(512,512), crop=(368,200,420,252), grid=True, max_size=(624,624))
+              add_preview("ITEM_II_SOURCE_QUAD_6", item_icons, native_size=(512,512), crop=(410,200,462,252), grid=True, max_size=(624,624))
+              add_preview("ITEM_I_SOURCE_CONTEXT", item_icons, native_size=(512,512), crop=(352,176,480,272), grid=True, max_size=(768,576))
               for label, encoded in previews:
                   print("PREVIEW_" + label + "=" + encoded)
           PY
