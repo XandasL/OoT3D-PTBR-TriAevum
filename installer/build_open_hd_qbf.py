@@ -52,7 +52,7 @@ def build_hd_qbf(native: bytes, font_path: str | Path, *, pixel_size: int = 48) 
         cmap = tt.getBestCmap()
         if not cmap:
             raise ValueError("Fonte TTF/OTF sem cmap Unicode")
-        missing = [f"U+{code:04X}" for code, _ in entries if code not in cmap]
+        missing = [f"U+{code:04X}" for code, _ in entries if code not in cmap and code != 0x25C6]
         if missing:
             raise ValueError("Fonte aberta não cobre os códigos QBF: " + ", ".join(missing))
     finally:
@@ -66,12 +66,18 @@ def build_hd_qbf(native: bytes, font_path: str | Path, *, pixel_size: int = 48) 
         glyph = chr(code)
         image = Image.new("L", (64, 64), 0)
         draw = ImageDraw.Draw(image)
-        bounds = draw.textbbox((0, 0), glyph, font=font, anchor="lt")
+        if code == 0x25C6 and code not in cmap:
+            # Unicode BLACK DIAMOND is a geometric shape, not game artwork.
+            draw.polygon([(32, 11), (53, 32), (32, 53), (11, 32)], fill=255)
+            bounds = (0, 0, 0, 0)
+        else:
+            bounds = draw.textbbox((0, 0), glyph, font=font, anchor="lt")
         w, h = bounds[2] - bounds[0], bounds[3] - bounds[1]
         if w > 64 or h > 64:
             raise ValueError(f"Glifo U+{code:04X} excede 64x64")
-        draw.text(((64 - w) // 2, (64 - h) // 2), glyph,
-                  font=font, anchor="lt", fill=255)
+        if code != 0x25C6 or code in cmap:
+            draw.text(((64 - w) // 2, (64 - h) // 2), glyph,
+                      font=font, anchor="lt", fill=255)
         pixels = image.tobytes()
         bitmap = bytes(((pixels[i] >> 4) << 4) | (pixels[i + 1] >> 4)
                        for i in range(0, len(pixels), 2))
