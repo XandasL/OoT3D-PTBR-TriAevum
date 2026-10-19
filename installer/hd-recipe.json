@@ -751,7 +751,7 @@
     "native_texture": "UI/tex1_512x256_BB00B25B152582B6_4_mip0.png",
     "face_glyphs": [
       {
-        "name": "X-to-Square",
+        "name": "X-to-Triangle",
         "source": [
           158,
           142,
@@ -766,7 +766,7 @@
         ]
       },
       {
-        "name": "Y-to-Triangle",
+        "name": "Y-to-Square",
         "source": [
           158,
           158,
