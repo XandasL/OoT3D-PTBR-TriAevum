@@ -10,6 +10,7 @@ if open_font:
     if not font_path.is_file():
         raise RuntimeError('Fonte aberta selecionada não encontrada')
     extra_hd.append((str(font_path), 'open-font'))
+    extra_hd.append((str(font_path.with_name('OFL.txt')), 'open-font'))
     extra_hd.append((str(root / 'prepare_open_font_pack.py'), '.'))
     extra_hd.append((str(root / 'build_open_hd_qbf.py'), '.'))
 if os.environ.get('OOT3D_HD_BUNDLE'):
