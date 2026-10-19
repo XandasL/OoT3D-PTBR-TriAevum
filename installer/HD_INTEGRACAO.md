@@ -16,16 +16,16 @@ A beta.1.1 já tem o resolvedor de texturas personalizadas para a interface. Par
 
 Antes de qualquer gravação, o instalador confere o SHA-256 do executável e das dependências, valida os 112 recursos da tradução, os 14 espelhos de menu, as 126 operações e a integridade do RomFS. O launcher usa um perfil e uma configuração separados para apontar ao pack de texturas escolhido; o executável original, o perfil original e as DLLs ficam intactos. O caminho de saves do perfil original é preservado.
 
-## Compatibilidade do HUD PS com SingleScreen 3.0
+## Compatibilidade dos prompts PS5 no HUD e no inventário
 
-Na beta.1.1, o TopScreen desenha os botões do HUD a partir do atlas `custom_ui01` do SingleScreen 3.0, em vez das regiões correspondentes de `menu_top_parts00` usadas pelo layout PS5. Por isso, apenas substituir os aliases HD nativos não garante que todos os símbolos sejam apresentados no HUD.
+Na beta.1.1, o HUD de gameplay usa o atlas `custom_ui01` do SingleScreen 3.0. Essa parte já está corrigida e deve permanecer inalterada: X/Y/B e ZL/ZR são compostos nas células correspondentes do atlas HD.
 
-O componente HD agora compõe nove regiões específicas do atlas HD com as imagens PS5 verificadas de `menu_top_parts00`: X vira triângulo, Y vira quadrado, B mantém o círculo, e ZR/ZL passam a R1/L1 nas posições do HUD. O mapa cobre também as cópias separadas de X/Y usadas nas legendas da tela de inventário e as regiões R1/L1 usadas pelas dicas laterais. Os círculos de fundo, D-pad, itens, contadores e demais regiões do atlas não são alterados por esse mapeamento.
+A coluna lateral do inventário é diferente. O renderer do TopScreen usa o recurso `menu_item_parts00.ctxb` para as faixas laterais da página de pausa; os quatro prompts da referência do autor não usam as posições das dicas de navegação ou do controle “View Model” do atlas `custom_ui01`. Por isso, a tentativa anterior colocou L1/R1 em locais errados e foi removida.
 
-Se o atlas HD estiver dentro do pack escolhido, a imagem composta é aplicada ali com backup transacional. Caso contrário, o instalador gera uma cópia própria em `data/mods/ptbr-hd/ui_atlas_hd.png` e redireciona somente o perfil HD para ela; o atlas importado pelo Forge e o executável oficial permanecem intactos. **A alteração é reversível**, e o recibo registra o arquivo criado/substituído para que a remoção restaure o estado anterior.
+A correção atual compõe R1, triângulo, quadrado e L1 na cópia HD do alias de `menu_item_parts00.ctxb`, dentro da faixa lateral usada pela página de inventário. Ela não grava o PNG original do pack. Se existir um alias anterior que seja exatamente a cópia original validada, o instalador o atualiza com backup transacional; ao remover o HD, o recibo restaura esse alias à versão anterior. Um alias modificado de outra forma é recusado.
 
-Essa composição agora possui testes automatizados para as posições do HUD e do menu de inventário, preservação dos pixels fora das células e restauração. A verificação definitiva de aparência depende também de teste visual dentro do jogo; esta branch continua sendo uma build de teste.
-
+Os testes automatizados cobrem as células da composição, a preservação do restante da imagem, o upgrade de um alias original preexistente e a restauração. A posição final ainda precisa ser confirmada visualmente no jogo; esta branch continua sendo uma build de teste.
+ 
 ## Arquivos e restauração
 
 Os 71 aliases em `UI/PTBR_HASHES` correspondem a 13 menus/HUD e 58 gráficos de áreas, bosses e outros recursos. As imagens originais do pack permanecem intactas. Arquivos idênticos preexistentes são preservados durante a remoção; conflitos desconhecidos são recusados antes de gravar.
