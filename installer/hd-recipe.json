@@ -829,56 +829,15 @@
         ],
         "preserve_aspect": true
       }
-    ],
-    "pause_menu_glyphs": [
+    ]
+  },
+  "pause_edge_overlay": {
+    "resource": "menu_item_parts00.ctxb",
+    "target_texture": "UI/tex1_256x256_18DDBB03B81C1D60_13_mip0.png",
+    "source_texture": "UI/tex1_512x256_BB00B25B152582B6_4_mip0.png",
+    "glyphs": [
       {
-        "name": "Pause-X-to-Triangle",
-        "source": [
-          158,
-          142,
-          16,
-          16
-        ],
-        "target": [
-          116,
-          89,
-          32,
-          32
-        ]
-      },
-      {
-        "name": "Pause-Y-to-Square",
-        "source": [
-          158,
-          158,
-          16,
-          16
-        ],
-        "target": [
-          151,
-          89,
-          32,
-          32
-        ]
-      },
-      {
-        "name": "Pause-ZL-to-L1",
-        "source": [
-          440,
-          201,
-          17,
-          11
-        ],
-        "target": [
-          462,
-          108,
-          37,
-          28
-        ],
-        "preserve_aspect": true
-      },
-      {
-        "name": "Pause-ZR-to-R1",
+        "name": "R1-top-edge",
         "source": [
           440,
           190,
@@ -886,10 +845,56 @@
           11
         ],
         "target": [
-          240,
-          117,
-          37,
-          28
+          233,
+          8,
+          16,
+          10
+        ],
+        "preserve_aspect": true
+      },
+      {
+        "name": "Triangle-edge",
+        "source": [
+          158,
+          142,
+          16,
+          16
+        ],
+        "target": [
+          238,
+          65,
+          12,
+          12
+        ]
+      },
+      {
+        "name": "Square-edge",
+        "source": [
+          158,
+          158,
+          16,
+          16
+        ],
+        "target": [
+          243,
+          118,
+          10,
+          12
+        ]
+      },
+      {
+        "name": "L1-bottom-edge",
+        "source": [
+          440,
+          201,
+          17,
+          11
+        ],
+        "target": [
+          233,
+          195,
+          16,
+          10
         ],
         "preserve_aspect": true
       }
