@@ -42,7 +42,7 @@ jobs:
               print(name, len(path.read_bytes()), hashlib.sha256(path.read_bytes()).hexdigest())
           assert b'SIL OPEN FONT LICENSE' in (folder / 'OFL.txt').read_bytes().upper()
       - name: QBF unit tests and installed-source checks
-        run: python -m unittest test_qbf_coverage test_open_font_atlas test_open_hd_qbf test_compat_safety test_hd_integration -v
+        run: python -m unittest test_qbf_coverage test_open_font_atlas test_open_hd_qbf test_open_font_pack_integration test_compat_safety test_hd_integration -v
       - name: Validate original payload
         run: python installer/build_installer.py --prepare-only --open-font "build/open-font/NotoSans[wdth,wght].ttf"
       - name: Build experimental Windows EXE
