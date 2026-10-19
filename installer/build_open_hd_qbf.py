@@ -56,16 +56,32 @@ def native_ink_bounds(native: bytes, glyph_index: int, glyph_count: int):
             max(x for x, _ in occupied) + 1, max(y for _, y in occupied) + 1)
 
 
-def build_hd_qbf(native: bytes, font_path: str | Path, *, pixel_size: int = 44) -> bytes:
-    """Render Noto Sans at one common font scale and baseline.
+# Experimental compact profile; common geometry for every Latin glyph.
+# Never scale individual glyphs to their native ink rectangles.
+COMPACT_X_SCALE = 0.84
+COMPACT_PIXEL_SIZE = 44
+COMPACT_BASELINE = 52
 
-    Native QBF provides *horizontal origin only*. The shared baseline and
-    a single TTF pixel size preserve typographic proportions: scaling every
-    glyph to its 16x16 native ink rectangle made "i", "m" and capitals
-    wildly different in apparent size. Runtime retains native advance widths.
+
+def _compact_mask(mask, *, width_scale=COMPACT_X_SCALE):
+    """Compress all glyphs horizontally by the same constant ratio."""
+    from PIL import Image
+    if not 0.5 <= width_scale <= 1.0:
+        raise ValueError("Invalid horizontal font scale")
+    width = max(1, round(mask.width * width_scale))
+    return mask.resize((width, mask.height), Image.Resampling.LANCZOS)
+
+
+def build_hd_qbf(native: bytes, font_path: str | Path,
+                 *, pixel_size: int = COMPACT_PIXEL_SIZE,
+                 width_scale: float = COMPACT_X_SCALE) -> bytes:
+    """One scale, one baseline, native horizontal metrics, no extra outline.
+
+    The game already renders foreground and shadow from its own text pipeline.
+    Our replacement must only supply grayscale coverage for each glyph.
     """
-    if not 8 <= pixel_size <= 60:
-        raise ValueError("pixel_size fora do intervalo 8..60")
+    if not 8 <= pixel_size <= 60 or not 0.5 <= width_scale <= 1.0:
+        raise ValueError("Font profile parameters out of bounds")
     entries, glyph_count = parse_native(native)
     try:
         from PIL import Image, ImageDraw, ImageFont
@@ -77,7 +93,8 @@ def build_hd_qbf(native: bytes, font_path: str | Path, *, pixel_size: int = 44) 
         cmap = tt.getBestCmap()
         if not cmap:
             raise ValueError("Fonte TTF/OTF sem cmap Unicode")
-        missing = [f"U+{code:04X}" for code, _ in entries if code not in cmap and code != 0x25C6]
+        missing = [f"U+{code:04X}" for code, _ in entries
+                   if code not in cmap and code != 0x25C6]
         if missing:
             raise ValueError("Fonte aberta não cobre os códigos QBF: " + ", ".join(missing))
     finally:
@@ -88,46 +105,51 @@ def build_hd_qbf(native: bytes, font_path: str | Path, *, pixel_size: int = 44) 
     output[13:15] = bytes((64, 64))
     bitmaps = [bytes(2048) for _ in range(glyph_count)]
     filled = {}
-    baseline = 52  # Native 16px Latin font baseline around row 13, at 4x.
-    for code, index in entries:
+    for record, (code, index) in enumerate(entries):
         ink = native_ink_bounds(native, index, glyph_count)
         if ink is None:
-            continue  # Spaces remain transparent, never fabricate ink.
-        left, _, _, _ = ink
-        origin_x = 4 * left
+            continue  # Native spaces remain transparent.
+        # QBF1 metric fields: horizontal offset and logical width. All
+        # advances stay byte-identical to the native original at runtime.
+        metric_x = native[16 + record * 8 + 4]
+        metric_width = native[16 + record * 8 + 5]
+        if metric_x >= 16 or metric_width > 16:
+            raise ValueError(f"Invalid native QBF metrics U+{code:04X}")
+        origin_x = 4 * metric_x
         image = Image.new("L", (64, 64), 0)
-        if code == 0x25C6 and code not in cmap:
-            # Geometric fallback with one fixed em size (no native rectangle stretching).
-            shape = Image.new("L", (28, 28), 0)
-            ImageDraw.Draw(shape).polygon([(14, 0), (27, 14), (14, 27), (0, 14)], fill=255)
-            x, y = origin_x, baseline - 28
+        if code == 0x25C6:
+            # Use a fixed-size Unicode geometric primitive if needed.
+            shape = Image.new("L", (32, 32), 0)
+            ImageDraw.Draw(shape).polygon(
+                [(16, 0), (31, 16), (16, 31), (0, 16)], fill=255)
+            x, y = 0, COMPACT_BASELINE - 32
         else:
-            # Anchor 'ls' gives the font's real baseline. Cropping removes the
-            # font-specific negative side bearing, not its typographic height.
-            display_char = "-" if code == 0x00AD else chr(code)
-            bounds = font.getbbox(display_char, anchor="ls")
+            glyph = "-" if code == 0x00AD else chr(code)
+            bounds = font.getbbox(glyph, anchor="ls")
             if bounds is None:
-                raise ValueError(f"Glifo U+{code:04X} sem bbox da fonte")
+                raise ValueError(f"No Unicode outline for U+{code:04X}")
             x0, y0, x1, y1 = bounds
-            shape = Image.new("L", (max(1, x1 - x0), max(1, y1 - y0)), 0)
-            ImageDraw.Draw(shape).text((-x0, -y0), display_char, font=font,
-                                       anchor="ls", fill=255)
-            bbox = shape.getbbox()
+            full = Image.new("L", (max(1, x1 - x0), max(1, y1 - y0)), 0)
+            ImageDraw.Draw(full).text((-x0, -y0), glyph,
+                                       font=font, anchor="ls", fill=255)
+            bbox = full.getbbox()
             if bbox is None:
-                raise ValueError(f"Glifo não-vazio U+{code:04X} ficou vazio")
-            # Keep actual ascent/descent, including punctuation and accents.
-            x, y = origin_x + bbox[0], baseline + y0 + bbox[1]
-            shape = shape.crop(bbox)
+                raise ValueError(f"Nonblank native glyph U+{code:04X} has no ink")
+            # Preserve vertical baseline, accent heights and descenders.
+            # Only horizontal scale is applied, *globally*, not per codepoint.
+            shape = _compact_mask(full.crop(bbox), width_scale=width_scale)
+            x, y = origin_x, COMPACT_BASELINE + y0 + bbox[1]
         if x < 0 or y < 0 or x + shape.width > 64 or y + shape.height > 64:
             raise ValueError(
-                f"U+{code:04X} não cabe em 64x64 com a escala uniforme "
-                f"{pixel_size}: origem=({x},{y}), tamanho={shape.size}")
+                f"Glyph U+{code:04X} outside 64x64 coverage: "
+                f"position={(x, y)}, shape={shape.size}; "
+                f"native width={metric_width}")
         image.paste(shape, (x, y))
         pixels = image.tobytes()
         bitmap = bytes(((pixels[i] >> 4) << 4) | (pixels[i + 1] >> 4)
                        for i in range(0, len(pixels), 2))
         if index in filled and filled[index] != bitmap:
-            raise ValueError("Índice QBF compartilhado por glifos incompatíveis")
+            raise ValueError("Native QBF aliases map to incompatible outlines")
         filled[index] = bitmap
         bitmaps[index] = bitmap
     output.extend(b"".join(bitmaps))
