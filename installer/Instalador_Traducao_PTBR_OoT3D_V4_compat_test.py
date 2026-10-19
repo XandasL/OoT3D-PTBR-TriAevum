@@ -1199,10 +1199,42 @@ def prepare_payload(item):
     return _legacy_prepare_payload(item)
 
 
+OPEN_FONT_PACK_TO_INSTALL = None
+OPEN_FONT_PACK_SHA256 = None
+
+
+def _bundled_noto_font():
+    """Locate only a deliberately bundled OFL font; never fetch at runtime."""
+    import sys
+    resource_root = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent))
+    folder = resource_root / 'open-font'
+    found = [p for p in folder.glob('*.ttf') if p.is_file()]
+    if len(found) != 1 or not (folder / 'OFL.txt').is_file():
+        return None
+    return found[0]
+
+
+def _local_noto_pack(native):
+    """Build temporary archive, then retain bytes until install is committed."""
+    import sys
+    import tempfile
+    folder = Path(__file__).resolve().parent
+    if str(folder) not in sys.path:
+        sys.path.insert(0, str(folder))
+    from prepare_open_font_pack import prepare_local_font_pack
+    with tempfile.TemporaryDirectory(prefix='ptbr-noto-qbf-') as temporary:
+        output = Path(temporary) / 'font_coverage.zip'
+        prepare_local_font_pack(native, _bundled_noto_font(), output)
+        return output.read_bytes()
+
+
 def validate_hd_font(romfs, index):
+    import io
     import zipfile
-    global PRESERVED_NATIVE_FONT
+    global PRESERVED_NATIVE_FONT, OPEN_FONT_PACK_TO_INSTALL, OPEN_FONT_PACK_SHA256
     PRESERVED_NATIVE_FONT = None
+    OPEN_FONT_PACK_TO_INSTALL = None
+    OPEN_FONT_PACK_SHA256 = None
     if EXPECTED_CLEAN_ROMFS_SHA256 != BETA_ROMFS_SHA256:
         return
     info = index['message/eu/ltn16.qbf']
@@ -1212,21 +1244,21 @@ def validate_hd_font(romfs, index):
     if native[:4] != b'QBF1' or len(native) != 28232 or struct.unpack_from('<H', native, 4)[0] != 199:
         raise RuntimeError('QBF original inesperada.')
     pack = contained(locate_o3tu().parent / 'font_coverage.zip')
-    if not pack.is_file():
+    noto = _bundled_noto_font()
+    if noto is not None:
+        # Prefer independently generated OFL coverage even when old SingleScreen
+        # packs are present. Preflight is read-only: persist only after install.
+        content = _local_noto_pack(native)
+        OPEN_FONT_PACK_TO_INSTALL = content
+        OPEN_FONT_PACK_SHA256 = hashlib.sha256(content).hexdigest()
+    elif pack.is_file() and sha256_file(pack) == HD_FONT_PACK_SHA256:
+        content = pack.read_bytes()
+    else:
         raise RuntimeError(
-            f'Pacote de fonte HD não encontrado: {pack}. '
-            'Esta base beta requer font_coverage.zip junto ao arquivo O3TU; '
-            'confira se a distribuição TriAevum inclui esse arquivo. '
-            'Nenhum arquivo do jogo foi alterado.'
+            'Fonte HD indisponível: instalador sem Noto Sans embutida e '
+            'font_coverage.zip legado ausente/incompatível. Nenhum arquivo alterado.'
         )
-    if sha256_file(pack) != HD_FONT_PACK_SHA256:
-        raise RuntimeError(
-            f'Pacote de fonte HD incompatível: {pack}. '
-            'O SHA-256 não corresponde à base 0.8 validada; '
-            'use a distribuição compatível, sem substituir a fonte por um arquivo desconhecido. '
-            'Nenhum arquivo do jogo foi alterado.'
-        )
-    with zipfile.ZipFile(pack) as z:
+    with zipfile.ZipFile(io.BytesIO(content)) as z:
         manifest = json.loads(z.read('manifest.json'))
         if manifest.get('format') != 'oot3d_qbf_coverage_v1':
             raise RuntimeError('Manifesto da fonte HD inválido.')
@@ -1248,7 +1280,8 @@ def validate_hd_font(romfs, index):
         if not {ord(ch) for ch in 'áàâãéêíóôõúüçÁÀÂÃÉÊÍÓÔÕÚÜÇ'} <= hd_codes:
             raise RuntimeError('Acentos PT-BR ausentes na fonte HD.')
     PRESERVED_NATIVE_FONT = native
-    print('[OK] Fonte original EUR preservada para manter cobertura HD 4x e acentos PT-BR.')
+    print('[OK] Fonte original EUR preservada; cobertura HD Noto Sans validada.' if noto
+          else '[OK] Fonte original EUR preservada; pacote HD legado validado.')
 
 
 def preflight(require_payload=False):
@@ -1345,3 +1378,65 @@ if __name__ == '__main__':
     MARKER = BASE / 'traducao_ptbr_v4_instalada.json'
     TRAD_ROOT = options.payload.resolve() if options.payload else BASE / 'TraducaoCompleta/citra/romfs'
     globals()[options.action]()
+
+
+# Integracao experimental de cobertura Noto Sans com backup reversivel.
+_install_before_noto = install
+_restore_before_noto = restore
+
+
+def install():
+    """Install game translation first; publish new HD pack only after success."""
+    _install_before_noto()
+    if OPEN_FONT_PACK_TO_INSTALL is None:
+        return
+    import os
+    import tempfile
+    pack = contained(locate_o3tu().parent / 'font_coverage.zip')
+    receipt = contained(pack.with_name('font_coverage.ptbr-noto.json'))
+    if receipt.exists():
+        raise RuntimeError('Recibo Noto Sans anterior existente; não sobrescrito.')
+    old_backup = None
+    if pack.exists():
+        old_backup = contained(pack.with_name('font_coverage.ptbr-noto.backup.zip'))
+        if old_backup.exists():
+            raise RuntimeError('Backup da fonte HD anterior já existe.')
+        shutil.copy2(pack, old_backup)
+        validate_copy(pack, old_backup)
+    temp = pack.with_name(pack.name + '.ptbr.tmp')
+    try:
+        temp.write_bytes(OPEN_FONT_PACK_TO_INSTALL)
+        if sha256_file(temp) != OPEN_FONT_PACK_SHA256:
+            raise RuntimeError('Falha ao gravar cobertura Noto Sans.')
+        os.replace(temp, pack)
+        receipt.write_text(json.dumps({
+            'format': 'ptbr-noto-font-v1',
+            'sha256': OPEN_FONT_PACK_SHA256,
+            'had_original': old_backup is not None,
+        }, indent=2), encoding='utf-8')
+    finally:
+        temp.unlink(missing_ok=True)
+    print('[OK] Fonte HD Noto Sans instalada localmente; restauração disponível.')
+
+
+def restore():
+    """Restore original game and any replaced font pack when provenance matches."""
+    pack = contained(locate_o3tu().parent / 'font_coverage.zip')
+    receipt = contained(pack.with_name('font_coverage.ptbr-noto.json'))
+    metadata = None
+    if receipt.is_file():
+        metadata = json.loads(receipt.read_text(encoding='utf-8'))
+        if metadata.get('format') != 'ptbr-noto-font-v1' or not pack.is_file() or sha256_file(pack) != metadata.get('sha256'):
+            raise RuntimeError('Fonte Noto Sans alterada externamente; restauração recusada.')
+        if metadata.get('had_original') and not pack.with_name('font_coverage.ptbr-noto.backup.zip').is_file():
+            raise RuntimeError('Backup anterior da fonte HD ausente.')
+    _restore_before_noto()
+    if metadata is not None:
+        if metadata.get('had_original'):
+            import os
+            backup = contained(pack.with_name('font_coverage.ptbr-noto.backup.zip'))
+            os.replace(backup, pack)
+        else:
+            pack.unlink()
+        receipt.unlink()
+        print('[OK] Pacote HD anterior restaurado (ou Noto Sans removida).')
