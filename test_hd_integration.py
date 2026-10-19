@@ -268,6 +268,48 @@ class HDIntegration(unittest.TestCase):
         hd.restore(self.root)
         self.assertEqual(atlas_path.read_bytes(), before)
 
+    def _enable_pause_edge_fixture(self, preexisting_alias=False):
+        item_png = atlas_png((0, 0, 255, 255), size=(1024, 1024))
+        item_path = 'UI/menu_item.png'
+        alias_path = 'UI/PTBR_HASHES/menu_item_translated.png'
+        self.write(self.pack, item_path, item_png)
+        self.rules['pack_files'][item_path] = hd.digest(item_png)
+        self.rules['aliases'].append({
+            'resource': 'menu_item_parts00.ctxb',
+            'original': 'menu_item.png',
+            'translated': 'menu_item_translated.png',
+            'native_size': [256, 256],
+        })
+        self.rules['pause_edge_overlay'] = pause_edge_recipe(self.hd_native_atlas_relative)
+        self.pause_edge_item_png = item_png
+        self.pause_edge_alias_path = self.pack / alias_path
+        if preexisting_alias:
+            # Simulate the unpatched alias left by the previous HD installer.
+            self.write(self.pack, alias_path, item_png)
+
+    def test_pause_edge_prompts_are_composited_into_inventory_texture_alias(self):
+        self._enable_pause_edge_fixture(preexisting_alias=False)
+        self.install()
+        with Image.open(self.pause_edge_alias_path) as decoded:
+            image = decoded.convert('RGBA')
+            # The source atlas is red; only the four prompt cells should change.
+            for x, y in ((241, 13), (244, 71), (248, 124), (241, 200)):
+                self.assertEqual(image.getpixel((x * 4, y * 4)), (255, 0, 0, 255))
+            self.assertEqual(image.getpixel((100 * 4, 100 * 4)), (0, 0, 255, 255))
+        # The base menu-item PNG is never patched in place.
+        self.assertEqual((self.pack / 'UI/menu_item.png').read_bytes(), self.pause_edge_item_png)
+        hd.restore(self.root)
+        self.assertFalse(self.pause_edge_alias_path.exists())
+        self.assertEqual((self.pack / 'UI/menu_item.png').read_bytes(), self.pause_edge_item_png)
+
+    def test_pause_edge_overlay_upgrades_and_restores_preexisting_menu_item_alias(self):
+        self._enable_pause_edge_fixture(preexisting_alias=True)
+        before = self.pause_edge_alias_path.read_bytes()
+        self.install()
+        self.assertNotEqual(self.pause_edge_alias_path.read_bytes(), before)
+        hd.restore(self.root)
+        self.assertEqual(self.pause_edge_alias_path.read_bytes(), before)
+
     def test_duplicate_config_flag_rejected(self):
         profile = hd.read_json(self.root / 'TriAevum.launch.json')
         profile['arguments'] += ['--config', 'other.json']
