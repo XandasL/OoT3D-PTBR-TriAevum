@@ -1,0 +1,30 @@
+name: v1.3.0 safety smoke tests (no release)
+
+on:
+  push:
+    branches:
+      - feat/v1.3.0-full-ptbr-native-textures
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  safety-smoke:
+    name: Safety smoke / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Syntax compilation (stdlib only)
+        run: python -m py_compile installer/text_translation.py installer/font_mode.py installer/transaction_guard.py installer/build_installer.py installer/OoT3D_PTBR_TriAevum_v1.3.0.py test_v130_transaction_guard.py test_v130_translation_contract.py
+      - name: Safety and translation contract smoke tests
+        run: python -m unittest test_v130_transaction_guard test_v130_translation_contract -v
