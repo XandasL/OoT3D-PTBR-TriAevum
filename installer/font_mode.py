@@ -40,8 +40,11 @@ def read_state(pack: Path):
         if not pack.exists() or not expected or digest(pack.read_bytes()) != expected or disabled.exists():
             raise RuntimeError("Fonte HD ativa ou arquivos de controle alterados.")
     else:
-        if pack.exists():
-            raise RuntimeError("Modo original exige ausência do pacote HD ativo.")
+        if state["had_original"]:
+            if not pack.exists() or digest(pack.read_bytes()) != digest(backup.read_bytes()):
+                raise RuntimeError("Pacote de fonte original do usuário foi alterado.")
+        elif pack.exists():
+            raise RuntimeError("Modo original sem backup não deve manter fonte substituta.")
         if disabled.exists() and (not expected or digest(disabled.read_bytes()) != expected):
             raise RuntimeError("Pacote HD desativado foi alterado.")
     return state
@@ -78,25 +81,27 @@ def choose(pack: Path, mode: str, make_hd=None):
             return "unchanged"
     if mode == "original":
         if state is None:
-            previous = pack.read_bytes() if pack.exists() else None
-            if previous is not None:
-                # Own backup is validated before removing the active pack.
-                backup.write_bytes(previous)
-                if backup.read_bytes() != previous:
-                    raise RuntimeError("Falha ao preservar pacote HD anterior.")
-            state = {"format": "ptbr-noto-font-v1",
-                     "had_original": previous is not None, "sha256": None}
+            # An unmanaged user pack is not ours to disable or remove.
+            return "unchanged"
+        # Preserve the project's HD pack for re-enabling.
+        previous = pack.read_bytes()
+        disabled.write_bytes(previous)
+        if digest(disabled.read_bytes()) != state["sha256"]:
+            raise RuntimeError("Falha ao preservar HD antes da desativação.")
+        if state["had_original"]:
+            # Restore the pre-existing user pack when project HD is disabled.
+            original = backup.read_bytes()
+            temporary = pack.with_name(pack.name + ".original.tmp")
+            temporary.write_bytes(original)
+            if digest(temporary.read_bytes()) != digest(original):
+                raise RuntimeError("Falha ao validar pacote original.")
+            os.replace(temporary, pack)
         else:
-            # Preserve the currently installed Noto Sans so the user may reenable it.
-            previous = pack.read_bytes()
-            disabled.write_bytes(previous)
-            if digest(disabled.read_bytes()) != state["sha256"]:
-                raise RuntimeError("Falha ao preservar Noto Sans antes da desativação.")
-        os.replace(pack, disabled) if state["sha256"] is not None else pack.unlink(missing_ok=True)
+            os.replace(pack, disabled)
         _write_receipt(receipt, {**state, "mode": "original"})
         return "original"
     if make_hd is None:
-        raise RuntimeError("Gerador Noto Sans indisponível.")
+        raise RuntimeError("Gerador de cobertura HD indisponível.")
     data = make_hd()
     new_hash = digest(data)
     if state is None:
@@ -111,7 +116,7 @@ def choose(pack: Path, mode: str, make_hd=None):
     try:
         temporary.write_bytes(data)
         if digest(temporary.read_bytes()) != new_hash:
-            raise RuntimeError("Pacote Noto Sans temporário corrompido.")
+            raise RuntimeError("Pacote HD temporário corrompido.")
         os.replace(temporary, pack)
         _write_receipt(receipt, {**state, "mode": "hd", "sha256": new_hash})
         disabled.unlink(missing_ok=True)
