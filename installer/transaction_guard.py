@@ -101,3 +101,48 @@ def refuse_pending(root: Path) -> None:
 def complete_journal(path: Path) -> None:
     path.unlink()
     sync_directory(path.parent)
+
+
+def recover_original_launch(root: Path) -> str:
+    """Restore only the verified original launch profile after an interrupted operation.
+
+    Never deletes translated data, game data, font packs, or the journal.
+    Leaves the journal in place until remaining files have been reviewed.
+    """
+    root = Path(root)
+    record = pending(root)
+    if record is None:
+        raise PendingTransaction("Nenhuma transação anterior registrada.")
+    if record.get("operation") not in ("install", "restore"):
+        raise PendingTransaction("Troca de fonte interrompida; reparo do perfil não aplicável.")
+    original_hash = record.get("original_launch_sha256")
+    if not isinstance(original_hash, str) or len(original_hash) != 64:
+        raise PendingTransaction("SHA do perfil original ausente ou inválido.")
+
+    launch = root / "TriAevum.launch.json"
+    backup = root / "TriAevum.launch.json.antes_ptbr_textos"
+    if not launch.is_file():
+        raise PendingTransaction("Perfil ativo ausente; não é possível reparar automaticamente.")
+    current = sha256(launch)
+    if current == original_hash:
+        return "already-original"
+    expected_translated = record.get("expected_launch_sha256")
+    if record.get("operation") == "restore":
+        receipt = root / "traducao_ptbr_textos.json"
+        if not receipt.is_file():
+            raise PendingTransaction("Recibo anterior ausente; perfil desconhecido.")
+        try:
+            expected_translated = json.loads(receipt.read_text(encoding="utf-8"))["launch_sha256"]
+        except (KeyError, ValueError, OSError) as exc:
+            raise PendingTransaction("Recibo da tradução ilegível.") from exc
+    if not expected_translated or current != expected_translated:
+        raise PendingTransaction("Perfil ativo alterado por terceiros; recuperação recusada.")
+    if not backup.is_file() or sha256(backup) != original_hash:
+        raise PendingTransaction("Backup original ausente ou hash divergente; recuperação recusada.")
+
+    durable_replace(launch, backup.read_bytes())
+    if sha256(launch) != original_hash:
+        raise PendingTransaction("Falha ao confirmar restauração do perfil original.")
+    record["phase"] = "original_profile_recovered"
+    update_journal(root / "traducao_ptbr_v130.pending.json", record)
+    return "recovered-original"
