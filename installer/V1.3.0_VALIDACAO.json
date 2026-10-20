@@ -1,0 +1,37 @@
+{
+  "commit": "05d870a41cd9de357f0b2bca284a141f62827242",
+  "resources": 126,
+  "romfs_sha256": "26caf9f8ea36c106f7fd8a9c737b09203ce4535d0113d5ba946e917058e8a39b",
+  "original_sha256": "dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56",
+  "source_preserved": true,
+  "native_textures_ptbr": true,
+  "font_mode": "original",
+  "font_hd_coverage_sha256": "6923bff33e4df8da6d393d37f46d3298b12cb3e6f5cc2f492f9161bcec9b6b97",
+  "native_run_frames": 1850,
+  "native_run_exit": 0,
+  "hd_run_frames": 1850,
+  "hd_run_exit": 0,
+  "henriko_configured": true,
+  "restore_exact": true,
+  "graphics_config_preserved": true,
+  "original_font_restored": true,
+  "original_romfs_preserved": true,
+  "translation_artifacts_removed": true,
+  "hardware_power_loss_tested": false,
+  "restored_run_exit": 0,
+  "restored_run_frames": 620,
+  "ci": {
+    "build": "https://github.com/XandasL/OoT3D-PTBR-TriAevum/actions/runs/39500043051",
+    "safety": "https://github.com/XandasL/OoT3D-PTBR-TriAevum/actions/runs/39500043192",
+    "windows_build_selftest": "success",
+    "linux_build_selftest": "success",
+    "linux_game_tested": false
+  },
+  "visual_scope": [
+    "file selection",
+    "inventory"
+  ],
+  "pack_fallback": "Compatible Henriko item textures loaded; untranslated-hash UI regions retained native PT-BR; no aliases or texture composition.",
+  "local_windows_package_sha256": "85922fb65aa943a74c73ba34231634883e10f44c5a8a6102672748f45a109eaa",
+  "release_published": false
+}
