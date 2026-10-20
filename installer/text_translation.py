@@ -346,6 +346,7 @@ def diagnostic():
     transactions.refuse_pending(BASE)
     if is_installed():
         validate_installed()
-        print('[OK] Tradução completa instalada. Fonte: ' + fonts.read_state(font_path())['mode'])
+        font_state = fonts.read_state(font_path())
+        print('[OK] Tradução completa instalada. Fonte: ' + (font_state['mode'] if font_state else 'original'))
     else:
         print('Base original: ' + ('validada' if sha256_file(locate_runtime()[2]) == CLEAN_SHA256 else 'incompatível'))
