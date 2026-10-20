@@ -33,5 +33,20 @@
   ],
   "pack_fallback": "Compatible Henriko item textures loaded; untranslated-hash UI regions retained native PT-BR; no aliases or texture composition.",
   "local_windows_package_sha256": "85922fb65aa943a74c73ba34231634883e10f44c5a8a6102672748f45a109eaa",
-  "release_published": false
+  "release_published": false,
+  "external_henriko_compatibility": {
+    "approved_by_user": true,
+    "aliases": 71,
+    "source": "compatibility/henriko-5.0a-ptbr-v1.3.0/pack.json",
+    "runtime_exit": 0,
+    "frames": 1850,
+    "visually_confirmed": [
+      "HD inventory",
+      "Gear/Map/Items HD tabs",
+      "Nintendo prompts"
+    ],
+    "original_pngs_unchanged": true,
+    "installer_and_font_unchanged": true,
+    "load_directory_requirement": "Root containing pack.json; not the user ancestor directory"
+  }
 }

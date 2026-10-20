@@ -44,3 +44,13 @@ O executável deve ser colocado diretamente na raiz do TriAevum, ao lado de `Tri
 A release pública v1.0.0 distribui `OoT3D_PTBR_TriAevum_v1.0.zip`. O SHA-256 do ZIP validado é:
 
 `7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b`
+
+
+### Henriko com as texturas nativas PT-BR
+
+O carregador reconhece imagens por hash; traduzir as texturas muda esses hashes.
+Para quem deseja o Henriko original sobre a tradução, há um
+[pack.json externo opcional](../compatibility/henriko-5.0a-ptbr-v1.3.0/README.md)
+com 71 aliases. Aprovado pelo usuário, testado com menus HD em inglês, sem PNGs
+adaptados nem executável modificado. Esse arquivo é aplicado manualmente ao
+pack pelo usuário, e não pelo instalador. Leia a instrução sobre a raiz do pack.
