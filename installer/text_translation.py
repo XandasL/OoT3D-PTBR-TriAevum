@@ -312,13 +312,28 @@ def restore():
     manifest, _, romfs = locate_runtime()
     pack = font_path()
     backup = BASE / 'TriAevum.launch.json.antes_ptbr_textos'
+    original = backup.read_bytes()
+    receipt = state()
+    if digest(original) != receipt['backup_sha256']:
+        raise RuntimeError('Backup do perfil original diverge do recibo.')
+    journal_record = {'format': 'oot3d_ptbr_v130_transaction_v1',
+                      'operation': 'restore', 'phase': 'restoring',
+                      'original_launch_sha256': digest(original),
+                      'translated_romfs_sha256': receipt['romfs_sha256']}
+    journal = transactions.write_journal(BASE, journal_record)
+    # Switch back to the original profile before removing translated game data.
+    write(LAUNCH, original)
+    journal_record['phase'] = 'original_profile_active'
+    transactions.update_journal(journal, journal_record)
+    # On interruption, the original RomFS remains intact and the journal blocks
+    # further modifications until recovery has been validated.
     fonts.restore_previous(pack)
-    write(LAUNCH, backup.read_bytes())
     romfs.unlink()
     manifest.unlink()
     manifest.parent.rmdir()
     MARKER.unlink()
     backup.unlink()
+    transactions.complete_journal(journal)
     print('[OK] Perfil e fonte anteriores restaurados; saves e texturas preservados.')
 
 
