@@ -34,8 +34,10 @@ Port, adaptação e empacotamento: XandasL.
 Distribuição da tradução autorizada pelo responsável, com os devidos créditos.
 Nenhuma ROM, executável do jogo, fonte QBF nativa ou pack de texturas é incluído.
 Projeto de fãs, sem afiliação oficial com a Nintendo.
-Recuperação: se a operação for interrompida, abra o instalador e use
-Recuperar operação interrompida. Só estados verificáveis serão retomados.
+Recuperação: se a operação for interrompida, abra o instalador e clique em
+Instalar / aplicar fonte novamente. A recuperação é automática antes de instalar.
+Restaurar original também verifica e recupera operações anteriores.
+Só estados verificáveis serão retomados.
 Se o perfil, a fonte ou os dados foram alterados por terceiros, a recuperação
 é bloqueada e os arquivos são preservados. Temporários ilegíveis precisam de
 revisão manual: não apague backups para forçar a instalação.

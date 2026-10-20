@@ -113,6 +113,34 @@ class RecoveryTests(unittest.TestCase):
                 # Recovery is repeatable and a fresh installation is still possible.
                 self.restart();self.c.recover()
 
+    def test_install_again_recovers_and_applies_selected_font(self):
+        for point in ['install_copy_start', 'install_prepared', 'install_after_launch', 'install_receipt']:
+            with self.subTest(point=point):
+                with patch.object(self.c, '_checkpoint', side_effect=lambda name: (_ for _ in ()).throw(Crash()) if name == point else None):
+                    with self.assertRaises(Crash): self.c.install()
+                self.restart()
+                self.c.apply_translation('original')
+                self.c.validate_installed()
+                self.assertIsNone(self.c.transactions.pending(self.root))
+                self.assertEqual(self.pack.read_bytes(), b'user original font')
+                self.c.restore(); self.check_original()
+
+    def test_install_again_recovers_interrupted_restore(self):
+        self.c.install()
+        with patch.object(self.c, '_checkpoint', side_effect=lambda name: (_ for _ in ()).throw(Crash()) if name == 'restore_profile' else None):
+            with self.assertRaises(Crash): self.c.restore()
+        self.restart(); self.c.apply_translation('hd')
+        self.c.validate_installed()
+        self.assertIsNone(self.c.transactions.pending(self.root))
+        self.c.restore(); self.check_original()
+
+    def test_install_again_refuses_foreign_profile(self):
+        with patch.object(self.c, '_checkpoint', side_effect=lambda name: (_ for _ in ()).throw(Crash()) if name == 'install_after_launch' else None):
+            with self.assertRaises(Crash): self.c.install()
+        self.restart(); self.launch.write_bytes(b'third party profile')
+        with self.assertRaises(self.c.transactions.PendingTransaction): self.c.apply_translation('original')
+        self.assertEqual(self.launch.read_bytes(), b'third party profile')
+
     def test_restore_crashes_repeat_safely(self):
         for point in ['restore_intent','restore_profile','restore_font','restore_remove_romfs.bin',
                       'restore_remove_process-manifest.json','restore_remove_traducao_ptbr_textos.json',
@@ -121,7 +149,7 @@ class RecoveryTests(unittest.TestCase):
                 self.c.install()
                 with patch.object(self.c,'_checkpoint',side_effect=lambda name: (_ for _ in ()).throw(Crash()) if name==point else None):
                     with self.assertRaises(Crash):self.c.restore()
-                self.restart();self.c.recover();self.check_original();self.c.recover()
+                self.restart();self.c.apply_restore();self.check_original();self.c.apply_restore()
 
     def test_font_crashes_resume_and_preserve_user_pack(self):
         self.c.install()
@@ -130,7 +158,7 @@ class RecoveryTests(unittest.TestCase):
             with self.subTest(point=point):
                 with patch.object(self.c.fonts,'_checkpoint',side_effect=lambda name: (_ for _ in ()).throw(Crash()) if name==point else None):
                     with self.assertRaises(Crash):self.c.set_font_mode('original')
-                self.restart();self.c.recover()
+                self.restart();self.c.apply_translation('original')
                 self.assertEqual(self.pack.read_bytes(),b'user original font')
                 self.c.set_font_mode('hd')
         self.c.restore();self.check_original()

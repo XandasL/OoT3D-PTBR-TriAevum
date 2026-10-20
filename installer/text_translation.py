@@ -220,6 +220,17 @@ def set_font_mode(mode):
     return result
 
 
+def apply_translation(mode):
+    """Recover a verified interrupted operation, then honor the current choice."""
+    if mode not in ('original', 'hd'):
+        raise ValueError('Modo de fonte inválido.')
+    print('[INFO] Verificando operações anteriores...')
+    print('[INFO] ' + recover())
+    global FONT_MODE_OPTION
+    FONT_MODE_OPTION = mode
+    return install()
+
+
 def install():
     transactions.refuse_pending(BASE)
     if FONT_MODE_OPTION not in ('original', 'hd'):
@@ -476,6 +487,15 @@ def _finish_restore(record):
     return 'Perfil e fonte anteriores restaurados; saves e packs preservados.'
 
 
+def apply_restore():
+    print('[INFO] ' + recover())
+    if is_installed():
+        return restore()
+    _original_runtime(LAUNCH.read_bytes())
+    fonts.read_state(font_path())
+    return 'Perfil original verificado; nenhuma tradução ativa para remover.'
+
+
 def restore():
     transactions.refuse_pending(BASE);assert_closed()
     receipt=validate_installed();pack=font_path();font_state=fonts.read_state(pack)
@@ -493,6 +513,9 @@ def restore():
 
 
 def diagnostic():
+    if transactions.pending(BASE) is not None:
+        print('[INFO] Operação interrompida detectada. Clique em Instalar / aplicar fonte ou Restaurar original para recuperar automaticamente.')
+        return
     transactions.refuse_pending(BASE)
     fonts.read_state(font_path())
     if not is_installed() and ((BASE/'TriAevum.launch.json.antes_ptbr_textos').exists() or

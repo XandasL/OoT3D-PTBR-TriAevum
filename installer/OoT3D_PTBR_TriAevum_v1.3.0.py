@@ -199,9 +199,6 @@ class App(tk.Tk):
             variable=self.font_mode_var, value="hd")
         self.hd_font_radio.grid(row=0, column=1, sticky="w")
 
-        self.recovery_btn = ttk.Button(buttons, text="Recuperar operação interrompida", command=self.recover_operation)
-        self.recovery_btn.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(8, 0))
-
         status_frame = ttk.LabelFrame(self, text="Status", padding=(12, 8))
         status_frame.grid(row=2, column=0, sticky="ew", padx=18, pady=(2, 8))
         status_frame.columnconfigure(0, weight=1)
@@ -414,31 +411,6 @@ class App(tk.Tk):
         self.status_btn.configure(state=state)
         self.original_font_radio.configure(state=state)
         self.hd_font_radio.configure(state=state)
-        self.recovery_btn.configure(state=state)
-
-    def recover_operation(self):
-        self.refresh_paths(log=False)
-        if self.root_dir is None or self.core_path is None:
-            messagebox.showerror("Recuperação", "Selecione a instalação do TriAevum.")
-            return
-        self.set_operation_buttons(True)
-        self.status_var.set("Verificando recuperação...")
-        threading.Thread(target=self._recovery_worker, daemon=True).start()
-
-    def _recovery_worker(self):
-        try:
-            self.configure_core_paths()
-            result=self.core.recover()
-            self.after(0, lambda text=result:self._recovery_finished(True,text))
-        except Exception:
-            error=traceback.format_exc()
-            self.after(0, lambda text=error:self._recovery_finished(False,text))
-
-    def _recovery_finished(self, success, text):
-        self.write_log(text)
-        self.set_operation_buttons(False)
-        self.status_var.set("Recuperação verificada." if success else "Recuperação bloqueada; arquivos preservados. Consulte o log.")
-        (messagebox.showinfo if success else messagebox.showerror)("Recuperação",text)
 
     def install_translation(self):
         self.refresh_paths(log=False)
@@ -459,7 +431,8 @@ class App(tk.Tk):
         if not messagebox.askyesno(
             "Tradução e fonte PT-BR",
             "Se a tradução já estiver instalada, apenas a fonte será alterada.\n"
-            "Caso contrário, serão criados backups e instalada a tradução.\n\n"
+            "Caso contrário, serão criados backups e instalada a tradução.\n"
+            "Operações interrompidas serão verificadas e recuperadas automaticamente.\n\n"
             f"Fonte escolhida: {chosen}.\n\n"
             "Deseja continuar?"
         ):
@@ -485,12 +458,7 @@ class App(tk.Tk):
             self.configure_core_paths()
 
             with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
-                if self.core.is_installed():
-                    print('[INFO] Tradução já instalada; alterando somente a fonte.')
-                    result = self.core.set_font_mode(self.selected_font_mode)
-                else:
-                    self.core.FONT_MODE_OPTION = self.selected_font_mode
-                    result = self.core.install()
+                result = self.core.apply_translation(self.selected_font_mode)
 
             stdout_text = stdout_buffer.getvalue()
             stderr_text = stderr_buffer.getvalue()
@@ -591,7 +559,7 @@ class App(tk.Tk):
         try:
             self.configure_core_paths()
             with contextlib.redirect_stdout(stdout_buffer), contextlib.redirect_stderr(stderr_buffer):
-                result = self.core.restore()
+                result = self.core.apply_restore()
 
             stdout_text = stdout_buffer.getvalue()
             stderr_text = stderr_buffer.getvalue()
@@ -708,14 +676,14 @@ def bundle_self_test(report):
     window = App()
     window.withdraw()
     window.update_idletasks()
-    if window.font_mode_var.get() != 'original' or hasattr(window, 'hd_install_btn'):
+    if window.font_mode_var.get() != 'original' or hasattr(window, 'hd_install_btn') or hasattr(window, 'recovery_btn'):
         raise RuntimeError('Interface original/HD incorreta.')
     if window.hd_font_radio.cget('value') != 'hd':
         raise RuntimeError('Opção de fonte HD ausente.')
     window.destroy()
     result = {'ok': True, 'tk_verified': True, 'version': APP_VERSION,
               'font_modes': ['original', 'hd'], 'hd_cell': 128,
-              'texture_installer': False, 'native_game_font_embedded': False, 'recovery_ui_verified': hasattr(window, 'recovery_btn')}
+              'texture_installer': False, 'native_game_font_embedded': False, 'automatic_recovery': callable(getattr(core, 'apply_translation', None))}
     Path(report).write_text(json.dumps(result, indent=2), encoding='utf-8')
 
 

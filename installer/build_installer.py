@@ -13,7 +13,7 @@ import zipfile
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.3.0-experimental.1'
+VERSION = '1.3.0-experimental.2'
 SOURCE_URL = 'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip'
 SOURCE_SHA256 = '7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b'
 

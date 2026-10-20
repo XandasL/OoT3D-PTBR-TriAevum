@@ -4,6 +4,19 @@ O instalador atual é a **v1.2.1**, para **TriAevum v0.8.0-beta.1c**. Consulte [
 
 ## Histórico da primeira versão
 
+### Atualização v1.3.0-experimental.2
+
+O botão separado de recuperação foi removido. Ao clicar em **Instalar / aplicar
+fonte**, o instalador recupera primeiro qualquer operação interrompida verificável
+e depois instala a tradução ou aplica a fonte selecionada na tentativa atual.
+**Restaurar original** também recupera operações anteriores antes de restaurar;
+se a recuperação já concluiu a restauração, apenas verifica o original.
+Alterações externas incompatíveis continuam bloqueando a operação, com arquivos
+preservados. A consulta de status não altera arquivos.
+
+Gate local: 24 testes, incluindo reinstalação após interrupções na cópia,
+ativação do perfil, fonte e restauração, além da recusa de perfil externo.
+
 Esta pasta preserva o código e os arquivos de build do instalador da tradução PT-BR para **TriAevum v0.6.0-alpha.2c**.
 
 **Compatibilidade validada:** TriAevum **v0.6.0-alpha.2c Windows x64**. O protótipo Linux desta pasta também tem como alvo a **v0.6.0-alpha.2c distribuída via Flatpak**.
