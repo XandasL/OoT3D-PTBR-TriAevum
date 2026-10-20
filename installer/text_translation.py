@@ -209,7 +209,12 @@ def set_font_mode(mode):
     assert_closed()
     validate_installed()
     native = read_resource(locate_runtime()[2], 'message/eu/ltn16.qbf')
+    record = {'format': 'oot3d_ptbr_v130_transaction_v1',
+              'operation': 'change_font', 'phase': 'changing',
+              'target_mode': mode, 'launch_sha256': sha256_file(LAUNCH)}
+    journal = transactions.write_journal(BASE, record)
     result = fonts.choose(font_path(), mode, (lambda: make_font(native)) if mode == 'hd' else None)
+    transactions.complete_journal(journal)
     print('[OK] Fonte ' + ('HD 128' if mode == 'hd' else 'original') + '; textos PT-BR preservados.')
     return result
 
