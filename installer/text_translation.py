@@ -31,6 +31,7 @@ def module(name):
 
 parser = module('Instalador_Traducao_PTBR_OoT3D_V4_compat_test')
 fonts = module('font_mode')
+transactions = module('transaction_guard')
 
 
 def sha256_file(path):
@@ -43,13 +44,7 @@ def digest(data):
 
 
 def write(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + '.tmp')
-    try:
-        temporary.write_bytes(data)
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
+    transactions.durable_replace(path, data)
 
 
 def encoded(value):
@@ -208,6 +203,7 @@ def validate_installed():
 
 
 def set_font_mode(mode):
+    transactions.refuse_pending(BASE)
     if mode not in ('original', 'hd'):
         raise ValueError('Modo de fonte inválido.')
     assert_closed()
@@ -219,6 +215,7 @@ def set_font_mode(mode):
 
 
 def install():
+    transactions.refuse_pending(BASE)
     if FONT_MODE_OPTION not in ('original', 'hd'):
         raise ValueError('Modo de fonte inválido.')
     assert_closed()
@@ -240,8 +237,13 @@ def install():
     if backup.exists() or folder.exists():
         raise RuntimeError('Arquivos de instalação anteriores encontrados; não serão sobrescritos.')
     original_launch = LAUNCH.read_bytes()
-    folder.mkdir(parents=True)
+    journal_record = {'format': 'oot3d_ptbr_v130_transaction_v1',
+                      'operation': 'install', 'phase': 'preparing',
+                      'original_launch_sha256': digest(original_launch),
+                      'clean_romfs_sha256': CLEAN_SHA256}
+    journal = transactions.write_journal(BASE, journal_record)
     try:
+        folder.mkdir(parents=True)
         output = folder / 'romfs.bin'
         shutil.copyfile(clean, output)
         header, index = parser.index_romfs(clean)
@@ -266,6 +268,10 @@ def install():
                 expected = resources[name] if name in resources else a.read(before['size'])
                 if b.read(after['size']) != expected:
                     raise RuntimeError('Recurso divergente: ' + name)
+        # Ensure translated bytes reach disk before exposing this RomFS in the launch profile.
+        with output.open('rb') as translated_file:
+            os.fsync(translated_file.fileno())
+        transactions.sync_directory(folder)
         for key in ('code_bin_path', 'exheader_path'):
             path = contained(original_manifest.parent / data['source'][key])
             data['source'][key] = os.path.relpath(path, folder).replace('\\', '/')
@@ -279,23 +285,28 @@ def install():
         args[args.index('--a32-process-manifest')+1] = '${runtime_dir}/data/mods/ptbr-textos/process-manifest.json'
         write(backup, original_launch)
         fonts.choose(pack, FONT_MODE_OPTION, (lambda: hd) if hd else None)
-        write(LAUNCH, encoded(launch))
-        write(MARKER, encoded({'format': FORMAT, 'launch_sha256': sha256_file(LAUNCH),
+        # Stage receipt before switching launch; pending journal prevents false success.
+        receipt_contents = encoded({'format': FORMAT, 'launch_sha256': sha256_file(LAUNCH),
                               'backup_sha256': digest(original_launch),
                               'romfs_sha256': sha256_file(output), 'manifest_sha256': sha256_file(manifest),
-                              'resource_sha256': {name: digest(payload) for name, payload in resources.items()}}))
+                              'resource_sha256': {name: digest(payload) for name, payload in resources.items()}})
+        journal_record['phase'] = 'committing'
+        journal_record['expected_launch_sha256'] = digest(encoded(launch))
+        journal_record['translated_romfs_sha256'] = sha256_file(output)
+        transactions.update_journal(journal, journal_record)
+        write(LAUNCH, encoded(launch))
+        # The receipt is committed only after activation; the journal remains until then.
+        write(MARKER, receipt_contents)
+        transactions.complete_journal(journal)
     except Exception:
-        write(LAUNCH, original_launch)
-        fonts.restore_previous(pack)
-        backup.unlink(missing_ok=True)
-        for name in ('romfs.bin', 'process-manifest.json'):
-            (folder / name).unlink(missing_ok=True)
-        folder.rmdir()
+        # If anything fails, leave the durable journal and all recovery evidence intact.
+        # This avoids a second failure in cleanup destroying user data or backups.
         raise
     print('[OK] Tradução completa instalada, incluindo texturas originais PT-BR; configurações gráficas preservadas.')
 
 
 def restore():
+    transactions.refuse_pending(BASE)
     assert_closed()
     validate_installed()
     manifest, _, romfs = locate_runtime()
@@ -312,6 +323,7 @@ def restore():
 
 
 def diagnostic():
+    transactions.refuse_pending(BASE)
     if is_installed():
         validate_installed()
         print('[OK] Tradução completa instalada. Fonte: ' + fonts.read_state(font_path())['mode'])
