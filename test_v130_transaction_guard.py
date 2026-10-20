@@ -56,6 +56,47 @@ class SafetySmokeTests(unittest.TestCase):
             transaction.complete_journal(target)
             self.assertIsNone(transaction.pending(root))
 
+    def test_recover_original_launch_leaves_all_other_files_intact(self):
+        transaction = load("transaction_guard")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            launch = root / "TriAevum.launch.json"
+            backup = root / "TriAevum.launch.json.antes_ptbr_textos"
+            romfs = root / "romfs.bin"
+            backup.write_bytes(b"original profile")
+            launch.write_bytes(b"translated profile")
+            romfs.write_bytes(b"translated game data kept for review")
+            import hashlib
+            transaction.write_journal(root, {
+                "format": "oot3d_ptbr_v130_transaction_v1",
+                "operation": "install", "phase": "committing",
+                "original_launch_sha256": hashlib.sha256(backup.read_bytes()).hexdigest(),
+                "expected_launch_sha256": hashlib.sha256(launch.read_bytes()).hexdigest(),
+            })
+            self.assertEqual(transaction.recover_original_launch(root), "recovered-original")
+            self.assertEqual(launch.read_bytes(), backup.read_bytes())
+            self.assertEqual(romfs.read_bytes(), b"translated game data kept for review")
+            self.assertIsNotNone(transaction.pending(root))
+            self.assertEqual(transaction.recover_original_launch(root), "already-original")
+
+    def test_recovery_rejects_unrecognized_active_profile(self):
+        transaction = load("transaction_guard")
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            import hashlib
+            (root / "TriAevum.launch.json").write_bytes(b"third-party edits")
+            backup = root / "TriAevum.launch.json.antes_ptbr_textos"
+            backup.write_bytes(b"original")
+            transaction.write_journal(root, {
+                "format": "oot3d_ptbr_v130_transaction_v1",
+                "operation": "install", "phase": "committing",
+                "original_launch_sha256": hashlib.sha256(backup.read_bytes()).hexdigest(),
+                "expected_launch_sha256": hashlib.sha256(b"translated").hexdigest(),
+            })
+            with self.assertRaises(transaction.PendingTransaction):
+                transaction.recover_original_launch(root)
+            self.assertEqual((root / "TriAevum.launch.json").read_bytes(), b"third-party edits")
+
     def test_durable_replace_writes_complete_file(self):
         transaction = load("transaction_guard")
         with tempfile.TemporaryDirectory() as d:
