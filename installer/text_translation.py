@@ -286,7 +286,7 @@ def install():
         write(backup, original_launch)
         fonts.choose(pack, FONT_MODE_OPTION, (lambda: hd) if hd else None)
         # Stage receipt before switching launch; pending journal prevents false success.
-        receipt_contents = encoded({'format': FORMAT, 'launch_sha256': sha256_file(LAUNCH),
+        receipt_contents = encoded({'format': FORMAT, 'launch_sha256': digest(encoded(launch)),
                               'backup_sha256': digest(original_launch),
                               'romfs_sha256': sha256_file(output), 'manifest_sha256': sha256_file(manifest),
                               'resource_sha256': {name: digest(payload) for name, payload in resources.items()}})
