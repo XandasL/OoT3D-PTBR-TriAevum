@@ -13,7 +13,7 @@ import zipfile
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.3.0-experimental.2'
+VERSION = '1.3.0'
 SOURCE_URL = 'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip'
 SOURCE_SHA256 = '7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b'
 
@@ -117,14 +117,19 @@ def main():
     subprocess.run([str(binary), '--self-test-report', str(report)], check=True, timeout=120)
     if not json.loads(report.read_text(encoding='utf-8')).get('ok'):
         raise RuntimeError('Autoteste do executável falhou.')
-    archive = output/(name+'.zip')
-    with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False) as z:
-        z.write(binary, binary.name)
-        z.write(ROOT/'installer/LEIA-ME_v1.3.0.txt', 'LEIA-ME.txt')
-        z.write(ROOT/'installer/CREDITOS.txt', 'CREDITOS.txt')
-    sha = hashlib.sha256(archive.read_bytes()).hexdigest()
-    (output/(archive.name+'.sha256')).write_text(sha+'  '+archive.name+'\n', encoding='utf-8')
-    print('Pacote:', archive)
+    variants = ['Windows-x64'] if sys.platform == 'win32' else ['Linux-x86_64-AppImage', 'Linux-x86_64-Flatpak']
+    for variant in variants:
+        archive = output/f'OoT3D_PTBR_TriAevum_v{VERSION}_{variant}.zip'
+        with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED, strict_timestamps=False) as z:
+            z.write(binary, binary.name)
+            z.write(ROOT/'installer/LEIA-ME_v1.3.0.txt', 'LEIA-ME.txt')
+            z.write(ROOT/'installer/CREDITOS.txt', 'CREDITOS.txt')
+        with zipfile.ZipFile(archive) as z:
+            if set(z.namelist()) != {binary.name, 'LEIA-ME.txt', 'CREDITOS.txt'} or z.testzip():
+                raise RuntimeError('Conteúdo inesperado ou corrompido no ZIP de distribuição.')
+        sha = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (output/(archive.name+'.sha256')).write_text(sha+'  '+archive.name+'\n', encoding='utf-8')
+        print('Pacote:', archive)
 
 
 if __name__ == '__main__':

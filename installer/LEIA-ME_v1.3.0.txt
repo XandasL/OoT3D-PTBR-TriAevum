@@ -1,7 +1,7 @@
-Tradução PT-BR para Ocarina of Time 3D / TriAevum — v1.3.0 experimental.1
+Tradução PT-BR para Ocarina of Time 3D / TriAevum — v1.3.0
 
-BUILD EXPERIMENTAL: teste somente numa cópia da instalação preparada pelo Forge.
-Não use como release pública nem substitua sua instalação principal.
+Pré-release para TriAevum v0.8.0-beta.1.1.
+Faça backup dos seus saves antes de atualizar a instalação.
 
 Compatibilidade: base de dados beta.1.1 validada no Windows x64.
 Linux: pacote disponível para testes; validação no jogo pendente.
@@ -11,6 +11,8 @@ Escolha a fonte:
 • HD 128: usa a fonte desenvolvida para este projeto, com as métricas originais.
 A escolha pode ser alterada depois sem reinstalar a tradução.
 
+Windows: abra o instalador .exe. Linux: conceda permissão de execução ao
+instalador (chmod +x) e execute-o fora do AppImage/Flatpak do jogo.
 Prepare o jogo no Forge, feche o jogo e selecione a pasta que contém
 TriAevum.launch.json e data. Verifique o status, escolha a fonte e instale.
 O instalador aplica a tradução completa, incluindo textos nas texturas originais,
@@ -23,6 +25,10 @@ de instalar esta versão. Não instale por cima de dados modificados.
 Texturas HD são opcionais e instaladas pelo próprio usuário no TriAevum.
 Para Henriko, use o pack original no diretório load de texturas do TriAevum
 e ative o carregamento de texturas personalizadas nas configurações do jogo.
+Para o Henriko original 5.0a, o download opcional de compatibilidade da release
+contém um pack.json com 71 aliases. Preserve o pack.json anterior, copie o novo
+para a raiz do pack (ao lado de UI) e selecione essa raiz no TriAevum,
+terminando em user/load/textures/0004000000033500. Reabra o jogo.
 Este instalador não procura, copia, combina nem modifica packs de texturas.
 Sem pack HD, as texturas nativas continuam traduzidas. A tradução de texturas
 não é automaticamente transferida para arquivos de packs HD de terceiros.

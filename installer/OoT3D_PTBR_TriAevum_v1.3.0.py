@@ -19,7 +19,7 @@ from tkinter.scrolledtext import ScrolledText
 
 
 APP_VERSION = "1.3.0"
-APP_TITLE = "Tradução PT-BR v1.3.0 experimental — use uma cópia do TriAevum"
+APP_TITLE = "Tradução PT-BR para TriAevum — v1.3.0"
 CORE_FILENAME = "text_translation.py"
 PAYLOAD_RELATIVE = Path("TraducaoCompleta") / "citra" / "romfs"
 

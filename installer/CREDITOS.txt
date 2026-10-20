@@ -24,9 +24,8 @@ Este projeto é um projeto de fãs e não possui afiliação oficial com a Ninte
 The Legend of Zelda e demais propriedades relacionadas pertencem aos seus
 respectivos detentores.
 
-TEXTURAS HD E LAYOUT
-Henriko Magnifico — OOT3D 4K 5.0a (4K).
-TopScreen / Single Screen Experience 2.1.1 e texturas 4K.
-UI/MENU 4K TRADUZIDA PT-BR + PS5 LAYOUT:
-https://gamebanana.com/mods/725250
-Detalhes, links e atribuicao: TEXTURAS-CREDITOS.md.
+RECURSOS EXTERNOS OPCIONAIS
+Henriko Magnifico — OOT3D 4K 5.0a (4K): https://www.henrikomagnifico.com/
+SingleScreen / TopScreen, por M-1 / rlgcarrot: https://gamebanana.com/mods/695893
+Os packs são obtidos com seus autores e não acompanham este instalador.
+Esta versão não distribui runtime modificado nem layout PlayStation.
