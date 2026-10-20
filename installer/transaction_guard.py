@@ -80,6 +80,16 @@ def pending(root: Path) -> dict | None:
 
 
 def refuse_pending(root: Path) -> None:
+    root = Path(root)
+    # A power loss can happen before the initial journal rename.
+    # Never overlook its partially written temporary file.
+    unfinished = root / "traducao_ptbr_v130.pending.json.ptbr-write.tmp"
+    profile_temp = root / "TriAevum.launch.json.ptbr-write.tmp"
+    if unfinished.exists() or profile_temp.exists():
+        raise PendingTransaction(
+            "Arquivos temporários de uma operação interrompida foram encontrados. "
+            "Nenhuma alteração será feita até revisão segura."
+        )
     if pending(root) is not None:
         raise PendingTransaction(
             "Foi detectada uma operação PT-BR interrompida. "
