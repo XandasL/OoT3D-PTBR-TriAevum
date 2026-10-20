@@ -19,7 +19,7 @@ from tkinter.scrolledtext import ScrolledText
 
 
 APP_VERSION = "1.3.0"
-APP_TITLE = "Tradução PT-BR / TriAevum v0.8.0-beta.1.1"
+APP_TITLE = "Tradução PT-BR v1.3.0 experimental — use uma cópia do TriAevum"
 CORE_FILENAME = "text_translation.py"
 PAYLOAD_RELATIVE = Path("TraducaoCompleta") / "citra" / "romfs"
 
@@ -199,6 +199,9 @@ class App(tk.Tk):
             variable=self.font_mode_var, value="hd")
         self.hd_font_radio.grid(row=0, column=1, sticky="w")
 
+        self.recovery_btn = ttk.Button(buttons, text="Recuperar operação interrompida", command=self.recover_operation)
+        self.recovery_btn.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(8, 0))
+
         status_frame = ttk.LabelFrame(self, text="Status", padding=(12, 8))
         status_frame.grid(row=2, column=0, sticky="ew", padx=18, pady=(2, 8))
         status_frame.columnconfigure(0, weight=1)
@@ -255,8 +258,9 @@ class App(tk.Tk):
 
         if self.root_dir and self.core_path and self.payload_dir:
             self.status_var.set(
-                "Arquivos necessários detectados. Clique em “Verificar status”."
+                "Arquivos necessários detectados. Verificando status..."
             )
+            self.verify_status()
         else:
             self.status_var.set(
                 "Detecção incompleta. Consulte o log antes de verificar o status."
@@ -410,6 +414,31 @@ class App(tk.Tk):
         self.status_btn.configure(state=state)
         self.original_font_radio.configure(state=state)
         self.hd_font_radio.configure(state=state)
+        self.recovery_btn.configure(state=state)
+
+    def recover_operation(self):
+        self.refresh_paths(log=False)
+        if self.root_dir is None or self.core_path is None:
+            messagebox.showerror("Recuperação", "Selecione a instalação do TriAevum.")
+            return
+        self.set_operation_buttons(True)
+        self.status_var.set("Verificando recuperação...")
+        threading.Thread(target=self._recovery_worker, daemon=True).start()
+
+    def _recovery_worker(self):
+        try:
+            self.configure_core_paths()
+            result=self.core.recover()
+            self.after(0, lambda text=result:self._recovery_finished(True,text))
+        except Exception:
+            error=traceback.format_exc()
+            self.after(0, lambda text=error:self._recovery_finished(False,text))
+
+    def _recovery_finished(self, success, text):
+        self.write_log(text)
+        self.set_operation_buttons(False)
+        self.status_var.set("Recuperação verificada." if success else "Recuperação bloqueada; arquivos preservados. Consulte o log.")
+        (messagebox.showinfo if success else messagebox.showerror)("Recuperação",text)
 
     def install_translation(self):
         self.refresh_paths(log=False)
@@ -686,7 +715,7 @@ def bundle_self_test(report):
     window.destroy()
     result = {'ok': True, 'tk_verified': True, 'version': APP_VERSION,
               'font_modes': ['original', 'hd'], 'hd_cell': 128,
-              'texture_installer': False, 'native_game_font_embedded': False}
+              'texture_installer': False, 'native_game_font_embedded': False, 'recovery_ui_verified': hasattr(window, 'recovery_btn')}
     Path(report).write_text(json.dumps(result, indent=2), encoding='utf-8')
 
 

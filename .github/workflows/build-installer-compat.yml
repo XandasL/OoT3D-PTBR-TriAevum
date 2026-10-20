@@ -1,25 +1,22 @@
-name: Build instalador PT-BR v1.2.1 (release somente draft)
+name: v1.3.0 experimental build (no release)
 on:
   workflow_dispatch:
   push:
-    branches: [compat/triaevum-0.8.0-beta.1]
-    paths:
-      - 'installer/**'
-      - 'test_compat_safety.py'
-      - 'test_hd_integration.py'
-      - '.github/workflows/build-installer-compat.yml'
+    branches: [feat/v1.3.0-full-ptbr-native-textures]
+    paths: ['installer/**', 'test_v130*.py', 'test_font_mode.py', '.github/workflows/**']
 permissions:
   contents: read
 concurrency:
-  group: installer-v1.2.1-${{ github.ref }}
+  group: v130-experimental-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  prepare-runtime:
-    name: Ler e validar apenas o insumo HD do draft
-    runs-on: ubuntu-22.04
-    timeout-minutes: 10
-    permissions:
-      contents: write # GitHub restricts draft assets to collaborators.
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,107 +24,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Baixar o asset fixado por hash (nenhuma execução do runtime)
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python installer/fetch_hd_runtime.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: runtime-HD-input-v1.2.1
-          path: build/hd-runtime-v1.2.1/**
-          if-no-files-found: error
-          retention-days: 7
-  build:
-    needs: prepare-runtime
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-2022
-            label: Windows-x64-HD
-          - os: ubuntu-22.04
-            label: Linux-x86_64-AppImage-Flatpak
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
           architecture: x64
-      - name: Dependências Linux para Tk e empacotamento
+      - name: Linux headless prerequisites
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-tk binutils xvfb
-      - name: Dependências de build
-        run: python -m pip install -r installer/requirements-build.txt
-      - name: Obter e validar os 112 recursos da tradução
+      - run: python -m pip install -r installer/requirements-v1.3-build.txt
+      - name: Verify original translation payload
         run: python installer/build_installer.py --prepare-only
-      - name: Testes de segurança, conversão e integração HD
-        run: python -m unittest test_compat_safety test_hd_integration -v
-      - name: Obter o runtime já validado do job sem compilação
+      - name: Windows recovery gate, build and packaged self-test
         if: runner.os == 'Windows'
-        uses: actions/download-artifact@v4
-        with:
-          name: runtime-HD-input-v1.2.1
-          path: build/hd-runtime-v1.2.1
-      - name: Build Windows HD opcional e autoteste do executável
-        if: runner.os == 'Windows'
-        run: python installer/build_installer.py --hd-runtime build/hd-runtime-v1.2.1
-      - name: Build Linux e autoteste de Tk sem monitor
+        run: python installer/build_installer.py
+      - name: Linux recovery gate, build and packaged self-test
         if: runner.os == 'Linux'
         run: xvfb-run -a python installer/build_installer.py
-      - name: Artefatos de build e autotestes
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: OoT3D-PTBR-v1.2.1-${{ matrix.label }}
+          name: OoT3D-PTBR-v1.3.0-experimental.1-${{ runner.os }}
           path: artifacts/*
           if-no-files-found: error
-          retention-days: 30
-  attach-draft:
-    name: Atualizar pacotes somente se a release 1.2.1 for draft
-    needs: build
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: OoT3D-PTBR-v1.2.1-*
-          merge-multiple: true
-          path: release-assets
-      - name: Anexar os três instaladores finais e checksums
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          RELEASE_ID=$(gh api "repos/$GH_REPO/releases?per_page=100" --jq '.[] | select(.tag_name == "1.2.1") | .id' | head -n 1)
-          test -n "$RELEASE_ID" || { echo "Release 1.2.1 nao encontrada"; exit 1; }
-          IS_DRAFT=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID" --jq '.draft')
-          test "$IS_DRAFT" = "true" || { echo "Release 1.2.1 publicada: assets imutaveis. Crie uma nova versao."; exit 1; }
-          test "$(find release-assets -maxdepth 1 -name '*.zip' | wc -l)" -eq 4
-          for file in release-assets/*.zip; do
-            name=$(basename "$file")
-            old_id=$(gh api "repos/$GH_REPO/releases/$RELEASE_ID/assets?per_page=100" --jq ".[] | select(.name == \"$name\") | .id" | head -n 1)
-            if [ -n "$old_id" ]; then
-              gh api -X DELETE "repos/$GH_REPO/releases/assets/$old_id"
-            fi
-            gh api -X POST -H "Content-Type: application/octet-stream" --input "$file" "https://uploads.github.com/repos/$GH_REPO/releases/$RELEASE_ID/assets?name=$name" >/dev/null
-            echo "Anexado: $name"
-          done
-          gh api "repos/$GH_REPO/releases/$RELEASE_ID" > release.json
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          release = json.loads(Path('release.json').read_text())
-          body = release['body'].split('<!-- integridade:start -->')[0].rstrip()
-          rows = []
-          for path in sorted(Path('release-assets').glob('*.sha256')):
-              parts = path.read_text().strip().split(maxsplit=1)
-              rows.append('| `' + parts[1] + '` | `' + parts[0] + '` |')
-          body += '\n\n<!-- integridade:start -->\n<details>\n<summary>Verificar integridade (SHA-256)</summary>\n\n| Arquivo | SHA-256 |\n| --- | --- |\n' + '\n'.join(rows) + '\n\n</details>\n'
-          Path('release-body.json').write_text(json.dumps({'body': body, 'tag_name': '1.2.1'}), encoding='utf-8')
-          PY
-          gh api -X PATCH "repos/$GH_REPO/releases/$RELEASE_ID" --input release-body.json > /dev/null
-          echo "Release atualizada; estado de publicacao preservado."
+          retention-days: 14

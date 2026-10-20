@@ -11,6 +11,7 @@ import zipfile
 import csv
 import subprocess
 import sys
+import uuid
 
 HERE = Path(__file__).resolve().parent
 BASE = HERE
@@ -48,7 +49,7 @@ def write(path, data):
 
 
 def encoded(value):
-    return (json.dumps(value, ensure_ascii=False, indent=2) + '\n').encode('utf-8')
+    return (json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + '\n').encode('utf-8')
 
 
 def assert_closed():
@@ -156,9 +157,9 @@ def make_font(native):
                                           for i in range((end-16)//8)]}]}
     output = io.BytesIO()
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_STORED) as z:
-        z.writestr('native/' + nh + '.qbf', native)
-        z.writestr('coverage/' + ch + '.qbf', coverage)
-        z.writestr('manifest.json', encoded(manifest))
+        z.writestr(zipfile.ZipInfo('native/' + nh + '.qbf'), native)
+        z.writestr(zipfile.ZipInfo('coverage/' + ch + '.qbf'), coverage)
+        z.writestr(zipfile.ZipInfo('manifest.json'), encoded(manifest))
     return output.getvalue()
 
 
@@ -211,7 +212,7 @@ def set_font_mode(mode):
     native = read_resource(locate_runtime()[2], 'message/eu/ltn16.qbf')
     record = {'format': 'oot3d_ptbr_v130_transaction_v1',
               'operation': 'change_font', 'phase': 'changing',
-              'target_mode': mode, 'launch_sha256': sha256_file(LAUNCH)}
+              'target_mode': mode, 'transaction_id': uuid.uuid4().hex, 'launch_sha256': sha256_file(LAUNCH)}
     journal = transactions.write_journal(BASE, record)
     result = fonts.choose(font_path(), mode, (lambda: make_font(native)) if mode == 'hd' else None)
     transactions.complete_journal(journal)
@@ -245,12 +246,18 @@ def install():
     journal_record = {'format': 'oot3d_ptbr_v130_transaction_v1',
                       'operation': 'install', 'phase': 'preparing',
                       'original_launch_sha256': digest(original_launch),
-                      'clean_romfs_sha256': CLEAN_SHA256}
+                      'clean_romfs_sha256': CLEAN_SHA256,
+                      'transaction_id': uuid.uuid4().hex, 'font_mode': FONT_MODE_OPTION,
+                      'font_before_sha256': fonts.file_hash(pack)}
     journal = transactions.write_journal(BASE, journal_record)
     try:
+        write(backup, original_launch)
+        _checkpoint('install_backup')
         folder.mkdir(parents=True)
+        _checkpoint('install_copy_start')
         output = folder / 'romfs.bin'
         shutil.copyfile(clean, output)
+        _checkpoint('install_copy_end')
         header, index = parser.index_romfs(clean)
         if not set(resources) <= set(index):
             raise RuntimeError('Recursos da tradução ausentes da base.')
@@ -274,7 +281,7 @@ def install():
                 if b.read(after['size']) != expected:
                     raise RuntimeError('Recurso divergente: ' + name)
         # Ensure translated bytes reach disk before exposing this RomFS in the launch profile.
-        with output.open('rb') as translated_file:
+        with output.open('r+b') as translated_file:
             os.fsync(translated_file.fileno())
         transactions.sync_directory(folder)
         for key in ('code_bin_path', 'exheader_path'):
@@ -285,24 +292,39 @@ def install():
         data['source_path_scopes'] = {key: 'relative' for key in ('code_bin_path', 'exheader_path', 'romfs_image_path')}
         manifest = folder / 'process-manifest.json'
         write(manifest, encoded(data))
+        _checkpoint('install_manifest')
         launch = json.loads(original_launch)
         args = launch['arguments']
-        args[args.index('--a32-process-manifest')+1] = '${runtime_dir}/data/mods/ptbr-textos/process-manifest.json'
-        write(backup, original_launch)
-        fonts.choose(pack, FONT_MODE_OPTION, (lambda: hd) if hd else None)
+        args[args.index('--a32-process-manifest')+1] = '${profile_dir}/data/mods/ptbr-textos/process-manifest.json'
         # Stage receipt before switching launch; pending journal prevents false success.
         receipt_contents = encoded({'format': FORMAT, 'launch_sha256': digest(encoded(launch)),
                               'backup_sha256': digest(original_launch),
                               'romfs_sha256': sha256_file(output), 'manifest_sha256': sha256_file(manifest),
                               'resource_sha256': {name: digest(payload) for name, payload in resources.items()}})
-        journal_record['phase'] = 'committing'
+        journal_record['phase'] = 'PREPARED'
+        journal_record['launch'] = launch
+        journal_record['receipt'] = json.loads(receipt_contents)
         journal_record['expected_launch_sha256'] = digest(encoded(launch))
         journal_record['translated_romfs_sha256'] = sha256_file(output)
         transactions.update_journal(journal, journal_record)
+        _checkpoint('install_prepared')
+        fonts.choose(pack, FONT_MODE_OPTION, (lambda: hd) if hd else None)
+        _checkpoint('install_font')
+        journal_record['phase'] = 'COMMITTING'
+        transactions.update_journal(journal, journal_record)
+        _checkpoint('install_before_launch')
+        if sha256_file(LAUNCH) != digest(original_launch):
+            raise transactions.PendingTransaction('Perfil alterado durante a instalação.')
         write(LAUNCH, encoded(launch))
+        _checkpoint('install_after_launch')
         # The receipt is committed only after activation; the journal remains until then.
         write(MARKER, receipt_contents)
-        transactions.complete_journal(journal)
+        _checkpoint('install_receipt')
+        validate_installed()
+        journal_record['phase'] = 'COMMITTED'
+        transactions.update_journal(journal, journal_record)
+        _checkpoint('install_committed')
+        finish_transaction(journal_record)
     except Exception:
         # If anything fails, leave the durable journal and all recovery evidence intact.
         # This avoids a second failure in cleanup destroying user data or backups.
@@ -310,40 +332,172 @@ def install():
     print('[OK] Tradução completa instalada, incluindo texturas originais PT-BR; configurações gráficas preservadas.')
 
 
-def restore():
-    transactions.refuse_pending(BASE)
+def _checkpoint(name):
+    """Crash injection hook for subprocess tests."""
+
+
+def finish_transaction(record):
+    identity = record.get('transaction_id')
+    if not isinstance(identity,str) or len(identity)!=32 or any(c not in '0123456789abcdef' for c in identity):
+        raise transactions.PendingTransaction('Identidade de transação inválida.')
+    archive = contained(BASE/'data/mods/ptbr-recovery'/identity)
+    archive.mkdir(parents=True,exist_ok=True)
+    write(archive/'journal.json',encoded(record))
+    transactions.complete_journal(BASE/'traducao_ptbr_v130.pending.json')
+
+
+def _original_runtime(launch_bytes):
+    args=json.loads(launch_bytes)['arguments']
+    manifest=profile_path(args[args.index('--a32-process-manifest')+1])
+    document=json.loads(manifest.read_text(encoding='utf-8'))
+    clean=contained(manifest.parent/document['source']['romfs_image_path'])
+    if sha256_file(clean)!=CLEAN_SHA256:
+        raise transactions.PendingTransaction('RomFS original alterado; recuperação recusada.')
+    return clean
+
+
+def recover():
     assert_closed()
-    validate_installed()
-    manifest, _, romfs = locate_runtime()
-    pack = font_path()
-    backup = BASE / 'TriAevum.launch.json.antes_ptbr_textos'
-    original = backup.read_bytes()
-    receipt = state()
-    if digest(original) != receipt['backup_sha256']:
-        raise RuntimeError('Backup do perfil original diverge do recibo.')
-    journal_record = {'format': 'oot3d_ptbr_v130_transaction_v1',
-                      'operation': 'restore', 'phase': 'restoring',
-                      'original_launch_sha256': digest(original),
-                      'translated_romfs_sha256': receipt['romfs_sha256']}
-    journal = transactions.write_journal(BASE, journal_record)
-    # Switch back to the original profile before removing translated game data.
-    write(LAUNCH, original)
-    journal_record['phase'] = 'original_profile_active'
-    transactions.update_journal(journal, journal_record)
-    # On interruption, the original RomFS remains intact and the journal blocks
-    # further modifications until recovery has been validated.
-    fonts.restore_previous(pack)
-    romfs.unlink()
-    manifest.unlink()
-    manifest.parent.rmdir()
-    MARKER.unlink()
-    backup.unlink()
-    transactions.complete_journal(journal)
-    print('[OK] Perfil e fonte anteriores restaurados; saves e texturas preservados.')
+    record=transactions.pending(BASE)
+    if record is None:
+        transactions.refuse_pending(BASE)
+        # A font journal can outlive a completed main journal.
+        fonts.recover(font_path())
+        return 'Nenhuma transação principal pendente.'
+    journal=BASE/'traducao_ptbr_v130.pending.json'
+    operation=record.get('operation')
+    if operation=='change_font':
+        if sha256_file(LAUNCH)!=record['launch_sha256']:
+            raise transactions.PendingTransaction('Perfil alterado por terceiros.')
+        fonts.recover(font_path())
+        native=read_resource(locate_runtime()[2],'message/eu/ltn16.qbf')
+        mode=record['target_mode']
+        fonts.choose(font_path(),mode,(lambda:make_font(native)) if mode=='hd' else None)
+        finish_transaction(record)
+        return 'Troca de fonte recuperada.'
+    backup=BASE/'TriAevum.launch.json.antes_ptbr_textos'
+    if operation=='install':
+        current=sha256_file(LAUNCH)
+        original_hash=record['original_launch_sha256']
+        expected=record.get('expected_launch_sha256')
+        if current not in {original_hash,expected}:
+            raise transactions.PendingTransaction('Perfil alterado por terceiros; recuperação recusada.')
+        if record['phase']=='preparing':
+            # Activation and font mutation have not started. Preserve incomplete
+            # output as evidence, never overwrite or delete unknown user content.
+            if current!=original_hash or fonts.file_hash(font_path())!=record['font_before_sha256']:
+                raise transactions.PendingTransaction('Estado original alterado; revisão manual necessária.')
+            _original_runtime(LAUNCH.read_bytes())
+            if MARKER.exists():raise transactions.PendingTransaction('Recibo inesperado; revisão manual necessária.')
+            if backup.exists() and sha256_file(backup)!=original_hash:
+                raise transactions.PendingTransaction('Backup original alterado.')
+            identity=record['transaction_id']
+            archive=contained(BASE/'data/mods/ptbr-recovery'/identity)
+            archive.mkdir(parents=True,exist_ok=True)
+            folder=contained(BASE/'data/mods/ptbr-textos')
+            if folder.exists():
+                allowed={'romfs.bin','process-manifest.json','process-manifest.json.ptbr-write.tmp'}
+                if any(x.name not in allowed or not x.is_file() for x in folder.iterdir()):
+                    raise transactions.PendingTransaction('Arquivos desconhecidos no staging; revisão necessária.')
+                target=contained(archive/'interrupted-staging')
+                if target.exists():raise transactions.PendingTransaction('Destino de recuperação já existe.')
+                folder.rename(target);transactions.sync_directory(folder.parent)
+            if backup.exists():
+                target=contained(archive/'original-launch.json')
+                if target.exists():raise transactions.PendingTransaction('Backup de recuperação já existe.')
+                backup.rename(target);transactions.sync_directory(backup.parent)
+            record['phase']='ABORTED_ORIGINAL_PRESERVED'
+            finish_transaction(record)
+            return 'Perfil original preservado; dados incompletos arquivados para auditoria.'
+        receipt=record['receipt'];launch=record['launch']
+        if digest(encoded(launch))!=expected or receipt.get('launch_sha256')!=expected:
+            raise transactions.PendingTransaction('Jornal de recuperação divergente.')
+        if not backup.is_file() or sha256_file(backup)!=original_hash:
+            raise transactions.PendingTransaction('Backup original ausente ou alterado.')
+        _original_runtime(backup.read_bytes())
+        folder=contained(BASE/'data/mods/ptbr-textos')
+        if (sha256_file(folder/'romfs.bin')!=receipt['romfs_sha256'] or
+            sha256_file(folder/'process-manifest.json')!=receipt['manifest_sha256']):
+            raise transactions.PendingTransaction('Dados traduzidos alterados; recuperação recusada.')
+        if MARKER.exists() and MARKER.read_bytes()!=encoded(receipt):
+            raise transactions.PendingTransaction('Recibo alterado por terceiros.')
+        fonts.recover(font_path())
+        native=read_resource(folder/'romfs.bin','message/eu/ltn16.qbf');mode=record['font_mode']
+        fonts.choose(font_path(),mode,(lambda:make_font(native)) if mode=='hd' else None)
+        if sha256_file(LAUNCH) not in {original_hash,expected}:
+            raise transactions.PendingTransaction('Perfil alterado durante recuperação.')
+        if sha256_file(LAUNCH)!=expected:write(LAUNCH,encoded(launch))
+        if MARKER.exists() and MARKER.read_bytes()!=encoded(receipt):
+            raise transactions.PendingTransaction('Recibo alterado por terceiros.')
+        if not MARKER.exists():write(MARKER,encoded(receipt))
+        validate_installed();record['phase']='COMMITTED';finish_transaction(record)
+        return 'Instalação verificada e recuperada.'
+    if operation=='restore':
+        return _finish_restore(record)
+    raise transactions.PendingTransaction('Operação de recuperação desconhecida.')
+
+
+def _finish_restore(record):
+    original=record['original_launch'].encode('utf-8')
+    receipt=record['receipt']
+    original_hash=record['original_launch_sha256']
+    if digest(original)!=original_hash or sha256_file(LAUNCH) not in {original_hash,receipt['launch_sha256']}:
+        raise transactions.PendingTransaction('Perfil alterado; restauração recusada.')
+    _original_runtime(original)
+    folder=contained(BASE/'data/mods/ptbr-textos')
+    expected={folder/'romfs.bin':receipt['romfs_sha256'],folder/'process-manifest.json':receipt['manifest_sha256'],
+              MARKER:record['receipt_file_sha256'],BASE/'TriAevum.launch.json.antes_ptbr_textos':original_hash}
+    # Validate every deletion before deleting any artifact. Missing files are
+    # permitted after an interrupted cleanup, but foreign bytes never are.
+    if folder.exists() and any(p not in expected for p in folder.iterdir()):
+        raise transactions.PendingTransaction('Arquivos desconhecidos na instalação; restauração recusada.')
+    for path,sha in expected.items():
+        if path.exists() and sha256_file(path)!=sha:
+            raise transactions.PendingTransaction('Artefato alterado por terceiros: '+str(path))
+    pack=font_path()
+    if sha256_file(LAUNCH) not in {original_hash,receipt['launch_sha256']}:
+        raise transactions.PendingTransaction('Perfil alterado durante restauração.')
+    if sha256_file(LAUNCH)!=original_hash:write(LAUNCH,original)
+    _checkpoint('restore_profile')
+    journal=BASE/'traducao_ptbr_v130.pending.json'
+    record['phase']='ORIGINAL_PROFILE_ACTIVE';transactions.update_journal(journal,record)
+    fonts.recover(pack);fonts.restore_previous(pack)
+    _checkpoint('restore_font')
+    if fonts.file_hash(pack)!=record['original_font_sha256']:
+        raise transactions.PendingTransaction('Fonte anterior não confirmada; backups preservados.')
+    _original_runtime(LAUNCH.read_bytes())
+    record['phase']='CLEANUP';transactions.update_journal(journal,record)
+    for path in expected:
+        if path.exists():
+            path.unlink();transactions.sync_directory(path.parent)
+        _checkpoint('restore_remove_'+path.name)
+    if folder.exists():folder.rmdir();transactions.sync_directory(folder.parent)
+    record['phase']='RESTORED';finish_transaction(record)
+    return 'Perfil e fonte anteriores restaurados; saves e packs preservados.'
+
+
+def restore():
+    transactions.refuse_pending(BASE);assert_closed()
+    receipt=validate_installed();pack=font_path();font_state=fonts.read_state(pack)
+    if font_state and font_state['had_original']:
+        original_font=fonts.file_hash(fonts.paths(pack)[1])
+    elif font_state:original_font=None
+    else:original_font=fonts.file_hash(pack)
+    backup=BASE/'TriAevum.launch.json.antes_ptbr_textos';original=backup.read_bytes()
+    record={'format':'oot3d_ptbr_v130_transaction_v1','operation':'restore','phase':'RESTORING',
+            'transaction_id':uuid.uuid4().hex,'receipt':receipt,'receipt_file_sha256':sha256_file(MARKER),'original_launch':original.decode('utf-8'),
+            'original_launch_sha256':digest(original),'original_font_sha256':original_font}
+    transactions.write_journal(BASE,record)
+    _checkpoint('restore_intent')
+    print('[OK] '+_finish_restore(record))
 
 
 def diagnostic():
     transactions.refuse_pending(BASE)
+    fonts.read_state(font_path())
+    if not is_installed() and ((BASE/'TriAevum.launch.json.antes_ptbr_textos').exists() or
+                              (BASE/'data/mods/ptbr-textos').exists()):
+        raise transactions.PendingTransaction('Backup ou staging órfão; preserve os arquivos e revise a recuperação.')
     if is_installed():
         validate_installed()
         font_state = fonts.read_state(font_path())

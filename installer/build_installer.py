@@ -13,7 +13,7 @@ import zipfile
 import zlib
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '1.3.0'
+VERSION = '1.3.0-experimental.1'
 SOURCE_URL = 'https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/v1.0.0/OoT3D_PTBR_TriAevum_v1.0.zip'
 SOURCE_SHA256 = '7bdcb391d4ae746d456c1bcb853371bd8be1bb9a3b9e63311aab1b487b300f7b'
 
@@ -90,6 +90,15 @@ def main():
     print('Payload validado: 112 recursos, incluindo texturas PT-BR originais.')
     if args.prepare_only:
         return
+    # A build is intentionally blocked when any recovery regression fails.
+    subprocess.run([sys.executable, '-m', 'unittest', 'test_v130_transaction_guard',
+                    'test_v130_translation_contract', 'test_v130_recovery', 'test_font_mode', '-v'],
+                   check=True, cwd=ROOT)
+    font_assets = ROOT/'installer/font-hd-128'
+    contract = json.loads((font_assets/'manifest.json').read_text(encoding='utf-8'))
+    if (contract.get('cell') != 128 or
+        hashlib.sha256((font_assets/'atlas.a4').read_bytes()).hexdigest() != contract['atlas_sha256']):
+        raise RuntimeError('Build bloqueada: cobertura HD 128 inválida.')
     machine = platform.machine().lower()
     if struct.calcsize('P') != 8 or machine not in ('amd64', 'x86_64') or sys.platform not in ('win32', 'linux'):
         raise RuntimeError('Build destinado a Windows/Linux x64.')

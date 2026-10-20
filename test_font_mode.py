@@ -23,7 +23,7 @@ class FontModeTests(unittest.TestCase):
             receipt, backup, disabled = manager.paths(pack)
             self.assertEqual(backup.read_bytes(), original)
             self.assertEqual(manager.choose(pack, "original"), "original")
-            self.assertFalse(pack.exists())
+            self.assertEqual(pack.read_bytes(), original)
             self.assertEqual(disabled.read_bytes(), noto)
             self.assertEqual(manager.choose(pack, "hd", lambda: noto), "hd")
             self.assertEqual(pack.read_bytes(), noto)
@@ -36,9 +36,9 @@ class FontModeTests(unittest.TestCase):
     def test_default_original_does_not_require_hd_font(self):
         with tempfile.TemporaryDirectory() as temp:
             pack = Path(temp) / "font_coverage.zip"
-            self.assertEqual(manager.choose(pack, "original"), "original")
+            self.assertEqual(manager.choose(pack, "original"), "unchanged")
             self.assertFalse(pack.exists())
-            self.assertEqual(manager.read_state(pack)["mode"], "original")
+            self.assertIsNone(manager.read_state(pack))
             manager.restore_previous(pack)
             self.assertFalse(pack.exists())
 
@@ -46,8 +46,8 @@ class FontModeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             pack = Path(temp) / "font_coverage.zip"
             pack.write_bytes(b"legacy-original")
-            self.assertEqual(manager.choose(pack, "original"), "original")
-            self.assertFalse(pack.exists())
+            self.assertEqual(manager.choose(pack, "original"), "unchanged")
+            self.assertEqual(pack.read_bytes(), b"legacy-original")
             manager.restore_previous(pack)
             self.assertEqual(pack.read_bytes(), b"legacy-original")
 

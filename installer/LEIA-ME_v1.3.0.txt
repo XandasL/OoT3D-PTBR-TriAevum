@@ -1,10 +1,13 @@
-Tradução PT-BR para Ocarina of Time 3D / TriAevum — v1.3.0
+Tradução PT-BR para Ocarina of Time 3D / TriAevum — v1.3.0 experimental.1
+
+BUILD EXPERIMENTAL: teste somente numa cópia da instalação preparada pelo Forge.
+Não use como release pública nem substitua sua instalação principal.
 
 Compatibilidade: base de dados beta.1.1 validada no Windows x64.
 Linux: pacote disponível para testes; validação no jogo pendente.
 
 Escolha a fonte:
-• Original: mantém a fonte do jogo, sem cobertura HD externa ativa.
+• Original: não instala nossa cobertura HD e preserva fontes de terceiros.
 • HD 128: usa a fonte desenvolvida para este projeto, com as métricas originais.
 A escolha pode ser alterada depois sem reinstalar a tradução.
 
@@ -31,3 +34,11 @@ Port, adaptação e empacotamento: XandasL.
 Distribuição da tradução autorizada pelo responsável, com os devidos créditos.
 Nenhuma ROM, executável do jogo, fonte QBF nativa ou pack de texturas é incluído.
 Projeto de fãs, sem afiliação oficial com a Nintendo.
+Recuperação: se a operação for interrompida, abra o instalador e use
+Recuperar operação interrompida. Só estados verificáveis serão retomados.
+Se o perfil, a fonte ou os dados foram alterados por terceiros, a recuperação
+é bloqueada e os arquivos são preservados. Temporários ilegíveis precisam de
+revisão manual: não apague backups para forçar a instalação.
+Os journals concluídos ficam em data/mods/ptbr-recovery para auditoria.
+Os testes simulam interrupções de processo; não certificam perda física de
+energia, falhas do disco ou durabilidade de hardware no Windows.

@@ -34,7 +34,7 @@ class V130TranslationContractTests(unittest.TestCase):
             translated[f"scene/test_{i}.ctxb"] = b"textura PTBR"
         self.assertEqual(len(translated), 126)
 
-        source_items = [{"source_rel": f"payload/{i}"} for i in range(112)]
+        source_items = [{"source_rel": f"payload/{i}", "source": Path(f"payload/{i}")} for i in range(112)]
         patch_items = [{"target": name, "source_rel": name}
                        for name in translated]
         manifest = {x["source_rel"]: "validated" for x in source_items}

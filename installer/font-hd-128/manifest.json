@@ -1,0 +1,9 @@
+{
+  "format": "ptbr_font_128_atlas_v1",
+  "cell": 128,
+  "native_sha256": "b833f9ff04a3775056a8702eb5da06da4a9d4c51a6015c59a8fcce7ba134191d",
+  "directory_sha256": "6fabe45ce9776cd7c991c34e7de08a602ceb15cfc8cdf183a531e7a2042762d4",
+  "atlas_sha256": "f0040444939791c7e9f536d3114092945c1855300a44dbe246b96817e16b094c",
+  "coverage_sha256": "6923bff33e4df8da6d393d37f46d3298b12cb3e6f5cc2f492f9161bcec9b6b97",
+  "glyphs": 208
+}
