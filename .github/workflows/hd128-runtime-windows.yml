@@ -65,7 +65,7 @@ jobs:
           $source = Get-Content $cmake -Raw
           $original = 'spdlog libogg libvorbis opus opusfile)'
           if (-not $source.Contains($original)) { throw 'Upstream vcpkg dependencies changed; refusing blind edit' }
-          $updated = $source.Replace($original, 'spdlog libogg libvorbis opus opusfile vulkan-headers vulkan-loader)')
+          $updated = $source.Replace($original, 'spdlog libogg libvorbis opus opusfile vulkan-headers vulkan-loader shaderc:x64-windows)')
           if ($updated -eq $source) { throw 'Vulkan dependency injection failed' }
           [System.IO.File]::WriteAllText((Resolve-Path $cmake), $updated)
           Write-Host 'Vulkan headers/loader added to isolated vcpkg dependency list (not committed upstream).'
@@ -73,7 +73,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          cmake -S triaevum -B build/triaevum-hd128 -G "Visual Studio 17 2022" -A x64 -DOOT3D_DIRECT_AOT_PLUGIN=ON -DOOT3D_REBUILD_WHOLE_AOT=OFF -DOOT3D_REGENERATE_WHOLE_AOT=OFF -DOOT3D_WHOLE_AOT_PRODUCT_MODE=OFF -DTRIAEVUM_DEVELOPER_TOOLS=OFF -DOOT3D_FAST_DEV_LINK=ON -DCMAKE_CONFIGURATION_TYPES=Release -DAUTOMATE_VCPKG_UPDATE=OFF
+          cmake -S triaevum -B build/triaevum-hd128 -G "Visual Studio 17 2022" -A x64 -DOOT3D_DIRECT_AOT_PLUGIN=ON -DOOT3D_REBUILD_WHOLE_AOT=OFF -DOOT3D_REGENERATE_WHOLE_AOT=OFF -DOOT3D_WHOLE_AOT_PRODUCT_MODE=OFF -DTRIAEVUM_DEVELOPER_TOOLS=OFF -DOOT3D_FAST_DEV_LINK=ON -DCMAKE_CONFIGURATION_TYPES=Release -DAUTOMATE_VCPKG_UPDATE=OFF -DTHREE_DS_RECOMP_SHADERC_INCLUDE_DIR="$((Join-Path (Resolve-Path .).Path 'build/triaevum-hd128/vcpkg/installed/x64-windows/include'))" -DTHREE_DS_RECOMP_SHADERC_LIBRARY="$((Join-Path (Resolve-Path .).Path 'build/triaevum-hd128/vcpkg/installed/x64-windows/lib/shaderc_shared.lib'))" -DTHREE_DS_RECOMP_SHADERC_RUNTIME="$((Join-Path (Resolve-Path .).Path 'build/triaevum-hd128/vcpkg/installed/x64-windows/bin/shaderc_shared.dll'))"
           if ($LASTEXITCODE) { throw 'TriAevum configuration failed' }
       - name: Compile experimental runtime and official stub
         shell: pwsh
