@@ -52,8 +52,7 @@ jobs:
           fi
           test "$is_draft" = true
           test "$is_pre" = true
-          test "$tag" = "1.3.0"
-          gh release upload "1.3.0" output/*.zip --clobber --repo "$GITHUB_REPOSITORY"
+          # Assets already verified and attached; refresh release notes only.
           gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/418966092" -F "body=@output/release-notes.md" -F draft=true -F prerelease=true > /dev/null
           obsolete="$(gh api "repos/${GITHUB_REPOSITORY}/releases/418966092/assets" --jq '.[] | select(.name == "OoT3D_PTBR_TriAevum_v1.3.0_Compatibilidade-Henriko.zip") | .id')"
           if [ -n "$obsolete" ]; then
