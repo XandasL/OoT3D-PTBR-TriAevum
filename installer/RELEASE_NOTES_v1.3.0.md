@@ -7,6 +7,7 @@ Instalador da tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D
 - Tradução PT-BR completa, incluindo diálogos, mensagens, HUD, menus e texturas nativas: **112 recursos de origem** e **14 espelhos de menus EUR** (126 operações).
 - Escolha entre **Original do jogo** e **Fonte HD 64**. A fonte HD 64 mantém caracteres e métricas nativas, e, nos testes finais no Windows, apresentou boa fluidez, sem engasgos observados e com as caixas de diálogo aparecendo normalmente.
 - **TriAevum original e intacto:** não modifica `TriAevum.exe`, shaders, FPS, resolução ou configurações gráficas.
+- **TopScreen / SingleScreen necessário para menus e HUD em HD:** prepare o TriAevum pelo Forge **com o TopScreen integrado/ativado**. Sem essa configuração, os elementos de menu e HUD podem não aparecer corretamente em alta resolução, mesmo com a tradução instalada e o pack de texturas HD selecionado.
 - Instalação e restauração com backups, recibos, validação e recuperação de operações interrompidas.
 - **Compatibilidade opcional com Henriko original 5.0a incluída em cada ZIP**, com `pack.json` e instruções na pasta `Henriko-5.0a-PTBR/`. Os 71 aliases permitem ao pack HD identificar texturas nativas traduzidas; as imagens do Henriko não são redistribuídas. O instalador **não aplica nem altera** o pack automaticamente.
 
@@ -24,7 +25,7 @@ O instalador Linux é executado fora do AppImage/Flatpak do jogo; os ZIPs não i
 
 ## Como instalar
 
-1. Prepare e teste o jogo usando o Forge do **TriAevum beta.1.1**. Faça uma cópia de segurança dos saves. Feche o jogo e o Forge.
+1. Prepare e teste o jogo usando o Forge do **TriAevum beta.1.1**, **com o TopScreen / SingleScreen integrado** para que os menus e o HUD sejam exibidos corretamente em HD. Faça uma cópia de segurança dos saves. Feche o jogo e o Forge.
 2. Extraia o ZIP correspondente à sua plataforma.
 3. **Windows:** execute o instalador `.exe`. **Linux:** conceda permissão de execução ao arquivo instalador (`chmod +x`) e execute-o fora do AppImage/Flatpak.
 4. Selecione a pasta preparada pelo Forge que contém `TriAevum.launch.json` e `data`. Não selecione o arquivo AppImage nem a pasta `/app` do Flatpak.
@@ -36,7 +37,7 @@ O instalador Linux é executado fora do AppImage/Flatpak do jogo; os ZIPs não i
 
 ## Texturas HD Henriko 5.0a — opcional
 
-O jogo funciona sem pacote HD adicional; as texturas nativas traduzidas seguem em português. Para integrar o **pack original Henriko Magnifico 5.0a**:
+O jogo funciona sem pacote HD adicional; as texturas nativas traduzidas seguem em português. **A exibição correta de menus e HUD em HD depende de uma instalação do TriAevum preparada com TopScreen / SingleScreen**: o `pack.json` do Henriko não substitui essa integração. Para integrar o **pack original Henriko Magnifico 5.0a**:
 
 1. Instale o pack adquirido/baixado do autor pelos meios indicados por ele. Feche o jogo.
 2. Faça backup do `pack.json` existente na **raiz do pack Henriko original 5.0a**, ao lado das pastas `UI`, `ENVIRONMENT` etc.
