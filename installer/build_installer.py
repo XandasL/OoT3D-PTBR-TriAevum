@@ -92,7 +92,8 @@ def main():
         return
     # A build is intentionally blocked when any recovery regression fails.
     subprocess.run([sys.executable, '-m', 'unittest', 'test_v130_transaction_guard',
-                    'test_v130_translation_contract', 'test_v130_recovery', 'test_font_mode', '-v'],
+                    'test_v130_translation_contract', 'test_v130_recovery', 'test_font_mode',
+                    'test_font_atlas_downsample', '-v'],
                    check=True, cwd=ROOT)
     font_assets = ROOT/'installer/font-hd-128'
     contract = json.loads((font_assets/'manifest.json').read_text(encoding='utf-8'))
