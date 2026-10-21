@@ -81,29 +81,54 @@ jobs:
           $ErrorActionPreference = 'Stop'
           cmake --build build/triaevum-hd128 --config Release --target triaevum_public_runtime --parallel 2
           if ($LASTEXITCODE) { throw 'TriAevum experimental build failed' }
-      - name: Package only built executable and adjacent runtime dependencies
+      - name: Verify build identity and package a safe overlay
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $root = (Resolve-Path build/triaevum-hd128).Path
-          $exes = @(Get-ChildItem $root -Recurse -File -Filter TriAevum.exe)
-          if ($exes.Count -ne 1) { throw "Expected one TriAevum.exe, found $($exes.Count)" }
+          $manifests = @(Get-ChildItem 'build/triaevum-hd128' -Recurse -File -Filter 'triaevum-runtime-targets-Release.json')
+          if ($manifests.Count -ne 1) { throw "Expected a single official CMake runtime manifest, found $($manifests.Count)" }
+          $targets = Get-Content $manifests[0].FullName -Raw | ConvertFrom-Json
+          if ($targets.format -ne 'triaevum_runtime_targets_v1') { throw 'Wrong runtime manifest format' }
+          $exe = [string]$targets.runtime
+          $stub = [string]$targets.stub
+          if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Executable missing: $exe" }
+          if (-not (Test-Path -LiteralPath $stub -PathType Leaf)) { throw "AOT build stub missing: $stub" }
+          if ([IO.Path]::GetFileName($exe) -ne 'TriAevum.exe') { throw "Unexpected executable: $exe" }
           $stage = 'out/HD128-A4-experimental-Windows'
           New-Item -ItemType Directory -Path $stage -Force | Out-Null
-          Copy-Item $exes[0].FullName "$stage/TriAevum.exe"
-          # Copy direct build outputs only; never package ROMs, saves, or title plugin content.
-          Get-ChildItem $exes[0].DirectoryName -File -Include '*.dll' -ErrorAction SilentlyContinue |
-            ForEach-Object { Copy-Item $_.FullName $stage }
+          Copy-Item -LiteralPath $exe -Destination "$stage/TriAevum.exe"
+          $runtimeDeps = @(Get-ChildItem -LiteralPath (Split-Path $exe) -File -Filter '*.dll')
+          foreach ($dll in $runtimeDeps) {
+            if ($dll.Name -ieq 'triaevum_title_aot.dll') { continue }
+            Copy-Item -LiteralPath $dll.FullName -Destination $stage -Force
+          }
+          $vcpkg = 'build/triaevum-hd128/vcpkg/installed/x64-windows/bin'
+          $shaderc = Join-Path $vcpkg 'shaderc_shared.dll'
+          if (-not (Test-Path -LiteralPath $shaderc -PathType Leaf)) {
+            throw "Runtime dependency shaderc_shared.dll not present at $shaderc"
+          }
+          Copy-Item -LiteralPath $shaderc -Destination "$stage/shaderc_shared.dll" -Force
+          if (-not (Test-Path -LiteralPath "$stage/shaderc_shared.dll")) { throw 'shaderc DLL not packaged' }
+          # Never distribute the empty title AOT stub: user's Forge-generated title plugin must remain intact.
+          if (Test-Path "$stage/triaevum_title_aot.dll") { throw 'Refusing to package empty title AOT stub' }
           @'
-          EXPERIMENTAL: TriAevum v0.8.0-beta.1.1 with A4 decoder optimization only.
-          This is NOT the PT-BR installer or a public TriAevum release.
-          Back up the original runtime and test ONLY on a disposable copy of your TriAevum profile.
-          The game title/plugin and all other required runtime files must come from your own installation.
-          The change is not yet validated against audio stuttering during the intro.
+          HD128 A4 PERFORMANCE EXPERIMENT ONLY — not the PT-BR installer or a public release.
+
+          On a disposable COPY of the beta.1.1 installation:
+          1. Save the original TriAevum.exe and shaderc_shared.dll from that copy.
+          2. Replace only TriAevum.exe and shaderc_shared.dll with the files in this ZIP.
+          3. Keep the existing Forge-generated triaevum_title_aot.dll, game data,
+             ROMFS, font_coverage.zip, launch profile and all original resources.
+          4. Reproduce the same first-slot intro with font HD 128, then restore
+             the previous executable and DLL to compare.
+          NEVER copy this into your primary installation.
+          It has no gameplay/audio performance certification.
           '@ | Set-Content -Encoding UTF8 "$stage/LEIA-ME-EXPERIMENTAL.txt"
-          Get-FileHash "$stage/TriAevum.exe" -Algorithm SHA256 |
-            ForEach-Object { "$($_.Hash.ToLower())  TriAevum.exe" } |
-            Set-Content -Encoding ascii "$stage/SHA256SUMS.txt"
+          Get-ChildItem $stage -File | Where-Object { $_.Extension -in '.exe', '.dll' } |
+            ForEach-Object {
+              $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()
+              "$hash  $($_.Name)"
+            } | Set-Content -Encoding ascii "$stage/SHA256SUMS.txt"
           Compress-Archive -Path "$stage/*" -DestinationPath 'out/HD128-A4-experimental-Windows.zip' -Force
       - name: Upload experimental runnable build (never create release)
         uses: actions/upload-artifact@v4
