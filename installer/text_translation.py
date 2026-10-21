@@ -126,7 +126,9 @@ def prepared_resources(native):
     return {x['target'].lower(): parser.prepare_payload(x) for x in parser.collect_v4_items()}
 
 
-def make_font(native):
+def make_font(native, cell=128):
+    if cell not in (64, 128):
+        raise ValueError('Resolução da fonte HD inválida.')
     assets = HERE / 'font-hd-128'
     contract = json.loads((assets / 'manifest.json').read_text(encoding='utf-8'))
     atlas = (assets / 'atlas.a4').read_bytes()
@@ -137,8 +139,11 @@ def make_font(native):
             or digest(native[16:end]) != contract['directory_sha256']
             or digest(atlas) != contract['atlas_sha256']):
         raise RuntimeError('Fonte 128 ou fonte original incompatível.')
-    coverage = native[:13] + bytes((128, 128, 2)) + native[16:end] + atlas
-    if digest(coverage) != contract['coverage_sha256']:
+    if cell == 64:
+        from font_atlas_downsample import half_a4_atlas
+        atlas = half_a4_atlas(atlas, contract['glyphs'])
+    coverage = native[:13] + bytes((cell, cell, 2)) + native[16:end] + atlas
+    if cell == 128 and digest(coverage) != contract['coverage_sha256']:
         raise RuntimeError('Cobertura da fonte 128 inválida.')
     nh, ch = digest(native), digest(coverage)
     manifest = {'format': 'oot3d_qbf_coverage_v1', 'runtime_enabled': True,
@@ -147,8 +152,8 @@ def make_font(native):
                            'native_file': 'native/' + nh + '.qbf',
                            'coverage_file': 'coverage/' + ch + '.qbf',
                            'native_sha256': nh, 'coverage_sha256': ch,
-                           'logical_cell': [16, 16], 'coverage_cell': [128, 128],
-                           'density': 8, 'fallback_code': int.from_bytes(native[8:10], 'little'),
+                           'logical_cell': [16, 16], 'coverage_cell': [cell, cell],
+                           'density': cell // 16, 'fallback_code': int.from_bytes(native[8:10], 'little'),
                            'replacement_metric_differences': 0,
                            'characters': [{'code': struct.unpack_from('<H', native, 16+i*8)[0],
                                            'native_glyph': struct.unpack_from('<H', native, 18+i*8)[0],
@@ -205,7 +210,7 @@ def validate_installed():
 
 def set_font_mode(mode):
     transactions.refuse_pending(BASE)
-    if mode not in ('original', 'hd'):
+    if mode not in ('original', 'hd', 'hd64'):
         raise ValueError('Modo de fonte inválido.')
     assert_closed()
     validate_installed()
@@ -214,15 +219,16 @@ def set_font_mode(mode):
               'operation': 'change_font', 'phase': 'changing',
               'target_mode': mode, 'transaction_id': uuid.uuid4().hex, 'launch_sha256': sha256_file(LAUNCH)}
     journal = transactions.write_journal(BASE, record)
-    result = fonts.choose(font_path(), mode, (lambda: make_font(native)) if mode == 'hd' else None)
+    result = fonts.choose(font_path(), 'hd' if mode == 'hd64' else mode,
+                          (lambda: make_font(native, 64 if mode == 'hd64' else 128)) if mode != 'original' else None)
     transactions.complete_journal(journal)
-    print('[OK] Fonte ' + ('HD 128' if mode == 'hd' else 'original') + '; textos PT-BR preservados.')
+    print('[OK] Fonte ' + ('HD 64 experimental' if mode == 'hd64' else 'HD 128' if mode == 'hd' else 'original') + '; textos PT-BR preservados.')
     return result
 
 
 def apply_translation(mode):
     """Recover a verified interrupted operation, then honor the current choice."""
-    if mode not in ('original', 'hd'):
+    if mode not in ('original', 'hd', 'hd64'):
         raise ValueError('Modo de fonte inválido.')
     print('[INFO] Verificando operações anteriores...')
     print('[INFO] ' + recover())
@@ -233,7 +239,7 @@ def apply_translation(mode):
 
 def install():
     transactions.refuse_pending(BASE)
-    if FONT_MODE_OPTION not in ('original', 'hd'):
+    if FONT_MODE_OPTION not in ('original', 'hd', 'hd64'):
         raise ValueError('Modo de fonte inválido.')
     assert_closed()
     if is_installed():
@@ -245,7 +251,7 @@ def install():
         raise RuntimeError('A instalação precisa usar a base original beta.1.1 validada.')
     native = read_resource(clean, 'message/eu/ltn16.qbf')
     resources = prepared_resources(native)
-    hd = make_font(native) if FONT_MODE_OPTION == 'hd' else None
+    hd = make_font(native, 64 if FONT_MODE_OPTION == 'hd64' else 128) if FONT_MODE_OPTION != 'original' else None
     pack = font_path()
     if fonts.read_state(pack) is not None:
         raise RuntimeError('Há uma fonte gerenciada por outra instalação; restaure-a antes de continuar.')
@@ -319,7 +325,7 @@ def install():
         journal_record['translated_romfs_sha256'] = sha256_file(output)
         transactions.update_journal(journal, journal_record)
         _checkpoint('install_prepared')
-        fonts.choose(pack, FONT_MODE_OPTION, (lambda: hd) if hd else None)
+        fonts.choose(pack, 'hd' if FONT_MODE_OPTION == 'hd64' else FONT_MODE_OPTION, (lambda: hd) if hd else None)
         _checkpoint('install_font')
         journal_record['phase'] = 'COMMITTING'
         transactions.update_journal(journal, journal_record)
