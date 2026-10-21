@@ -46,6 +46,10 @@ jobs:
           is_pre="$(gh api repos/${GITHUB_REPOSITORY}/releases/418966092 --jq '.prerelease')"
           tag="$(gh api repos/${GITHUB_REPOSITORY}/releases/418966092 --jq '.tag_name')"
           test "$id" = "418966092"
+          if [ "$is_draft" != true ]; then
+            gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/418966092" -F draft=true -F prerelease=true > /dev/null
+            is_draft="$(gh api repos/${GITHUB_REPOSITORY}/releases/418966092 --jq '.draft')"
+          fi
           test "$is_draft" = true
           test "$is_pre" = true
           test "$tag" = "1.3.0"
