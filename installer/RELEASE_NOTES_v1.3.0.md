@@ -5,7 +5,7 @@ Instalador da tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D
 ## Novidades e testes
 
 - Tradução PT-BR completa, incluindo diálogos, mensagens, HUD, menus e texturas nativas: **112 recursos de origem** e **14 espelhos de menus EUR** (126 operações).
-- Escolha entre **Original do jogo** e **Fonte HD 64**. A fonte HD 64 mantém caracteres e métricas nativas, e o usuário confirmou, em seus testes finais no Windows, boa fluidez, ausência de engasgos e caixas de diálogo aparecendo normalmente.
+- Escolha entre **Original do jogo** e **Fonte HD 64**. A fonte HD 64 mantém caracteres e métricas nativas, e, nos testes finais no Windows, apresentou boa fluidez, sem engasgos observados e com as caixas de diálogo aparecendo normalmente.
 - **TriAevum original e intacto:** não modifica `TriAevum.exe`, shaders, FPS, resolução ou configurações gráficas.
 - Instalação e restauração com backups, recibos, validação e recuperação de operações interrompidas.
 - **Compatibilidade opcional com Henriko original 5.0a incluída em cada ZIP**, com `pack.json` e instruções na pasta `Henriko-5.0a-PTBR/`. Os 71 aliases permitem ao pack HD identificar texturas nativas traduzidas; as imagens do Henriko não são redistribuídas. O instalador **não aplica nem altera** o pack automaticamente.
@@ -48,7 +48,7 @@ Se seu `pack.json` já contém outros ajustes, **não sobrescreva diretamente**;
 
 ## Status, limites e segurança
 
-- **Windows x64 / TriAevum beta.1.1:** usuário relatou que os testes finais com fonte HD 64 e tradução PT-BR estão funcionando bem.
+- **Windows x64 / TriAevum beta.1.1:** os testes finais no jogo com a tradução PT-BR e a fonte HD 64 tiveram resultado positivo.
 - **Windows e Linux x64:** build, testes de segurança e autotestes do instalador aprovados. **Linux no jogo:** teste funcional pendente.
 - Nem todos os cenários e menus foram verificados visualmente.
 - Backups e recuperação são conservadores; não há garantia contra falha física de disco ou energia.
