@@ -1,9 +1,9 @@
 # Henriko 5.0a + tradução PT-BR v1.3.0
 
-Arquivo de compatibilidade externo ao instalador, aprovado pelo usuário.
+Arquivo de compatibilidade OPCIONAL incluído na pasta Henriko-5.0a-PTBR/\ndo ZIP do instalador. Sua aplicação é manual; o instalador não altera o pack.
 Acrescenta 71 aliases de hashes: associa as texturas nativas traduzidas aos
 PNGs originais em inglês do Henriko, sem alterar ou redistribuir imagens.
-A fonte original/HD 128 e o RomFS traduzido permanecem inalterados.
+A fonte selecionada (Original ou HD 64) e o RomFS traduzido permanecem inalterados.
 
 1. Feche o jogo.
 2. Preserve uma cópia do pack.json do Henriko original 5.0a.
@@ -15,7 +15,7 @@ A fonte original/HD 128 e o RomFS traduzido permanecem inalterados.
 Validação: runtime original beta.1.1, RomFS completo PT-BR
 26caf9f8ea36c106f7fd8a9c737b09203ce4535d0113d5ba946e917058e8a39b,
 1850 frames, inventário e abas Gear/Map/Items em HD. Mantidos os controles
-Nintendo, os diálogos PT-BR e a fonte 128. Todas as 71 imagens referenciadas
+Nintendo, os diálogos PT-BR e a fonte 128 utilizada no teste histórico.\nO pack.json funciona de forma independente da escolha da fonte no instalador. Todas as 71 imagens referenciadas
 ficaram byte a byte iguais às do pack original. Outras áreas/menus não foram
 todas conferidas visualmente. Metadados originais e opções de hash/flip/mipmap
 preservados; nenhum executável ou shader é alterado.

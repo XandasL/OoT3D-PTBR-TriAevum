@@ -65,6 +65,14 @@ class V130TranslationContractTests(unittest.TestCase):
         self.assertIn("half_a4_atlas", core)
         self.assertNotIn("make_font(native, 128)", core)
 
+    def test_henriko_compatibility_is_manually_bundled(self):
+        build = (ROOT / 'installer/build_installer.py').read_text(encoding='utf-8')
+        readme = (ROOT / 'installer/LEIA-ME_v1.3.0.txt').read_text(encoding='utf-8')
+        self.assertIn('Henriko-5.0a-PTBR/pack.json', build)
+        self.assertIn('Henriko-5.0a-PTBR/LEIA-ME.txt', build)
+        self.assertIn('Henriko-5.0a-PTBR/pack.json', readme)
+        self.assertIn('nao e instalado automaticamente', readme)
+
     def test_installer_does_not_manage_hd_texture_packs(self):
         code = CORE.read_text(encoding="utf-8")
         # The installer must not perform pack-copying or graphics-setting edits.

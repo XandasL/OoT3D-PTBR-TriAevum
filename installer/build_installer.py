@@ -118,6 +118,15 @@ def main():
     subprocess.run([str(binary), '--self-test-report', str(report)], check=True, timeout=120)
     if not json.loads(report.read_text(encoding='utf-8')).get('ok'):
         raise RuntimeError('Autoteste do executável falhou.')
+    # Optional external compatibility: bundled for manual use, never applied by installer.
+    henriko_dir = ROOT/'compatibility/henriko-5.0a-ptbr-v1.3.0'
+    henriko_pack = henriko_dir/'pack.json'
+    henriko_guide = henriko_dir/'README.md'
+    if not henriko_pack.is_file() or not henriko_guide.is_file():
+        raise RuntimeError('Compatibilidade Henriko 5.0a ausente; ZIP nao sera criado.')
+    henriko_data = json.loads(henriko_pack.read_text(encoding='utf-8'))
+    if not isinstance(henriko_data, dict) or not isinstance(henriko_data.get('textures'), dict):
+        raise RuntimeError('pack.json Henriko invalido; ZIP nao sera criado.')
     variants = ['Windows-x64'] if sys.platform == 'win32' else ['Linux-x86_64-AppImage', 'Linux-x86_64-Flatpak']
     for variant in variants:
         archive = output/f'OoT3D_PTBR_TriAevum_v{VERSION}_{variant}.zip'
@@ -125,8 +134,11 @@ def main():
             z.write(binary, binary.name)
             z.write(ROOT/'installer/LEIA-ME_v1.3.0.txt', 'LEIA-ME.txt')
             z.write(ROOT/'installer/CREDITOS.txt', 'CREDITOS.txt')
+            z.write(henriko_pack, 'Henriko-5.0a-PTBR/pack.json')
+            z.write(henriko_guide, 'Henriko-5.0a-PTBR/LEIA-ME.txt')
         with zipfile.ZipFile(archive) as z:
-            if set(z.namelist()) != {binary.name, 'LEIA-ME.txt', 'CREDITOS.txt'} or z.testzip():
+            if set(z.namelist()) != {binary.name, 'LEIA-ME.txt', 'CREDITOS.txt',
+                                     'Henriko-5.0a-PTBR/pack.json', 'Henriko-5.0a-PTBR/LEIA-ME.txt'} or z.testzip():
                 raise RuntimeError('Conteúdo inesperado ou corrompido no ZIP de distribuição.')
         sha = hashlib.sha256(archive.read_bytes()).hexdigest()
         (output/(archive.name+'.sha256')).write_text(sha+'  '+archive.name+'\n', encoding='utf-8')

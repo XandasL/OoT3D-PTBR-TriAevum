@@ -25,10 +25,19 @@ de instalar esta versão. Não instale por cima de dados modificados.
 Texturas HD são opcionais e instaladas pelo próprio usuário no TriAevum.
 Para Henriko, use o pack original no diretório load de texturas do TriAevum
 e ative o carregamento de texturas personalizadas nas configurações do jogo.
-Para o Henriko original 5.0a, o download opcional de compatibilidade da release
-contém um pack.json com 71 aliases. Preserve o pack.json anterior, copie o novo
-para a raiz do pack (ao lado de UI) e selecione essa raiz no TriAevum,
-terminando em user/load/textures/0004000000033500. Reabra o jogo.
+COMPATIBILIDADE OPCIONAL COM HENRIKO ORIGINAL 5.0a
+Este mesmo ZIP inclui Henriko-5.0a-PTBR/pack.json (71 aliases de hashes)
+e Henriko-5.0a-PTBR/LEIA-ME.txt, sem incluir imagens do Henriko.
+O arquivo nao e instalado automaticamente. Para usar:
+1. Feche o jogo e faca backup do pack.json atual do Henriko 5.0a.
+2. Se o pack for o Henriko original 5.0a, copie o pack.json incluido para
+   a raiz desse pack, ao lado das pastas UI e ENVIRONMENT.
+3. No TriAevum, selecione essa mesma raiz como diretorio de texturas,
+   e nao a pasta user acima dela; ative as texturas personalizadas.
+4. Reabra o jogo. Para desfazer, restaure o pack.json do backup.
+Se o seu pack.json ja foi personalizado, nao o sobrescreva diretamente:
+mescle os aliases com cuidado ou mantenha seu arquivo atual.
+Esse recurso e especifico do pack Henriko original 5.0a fornecido na validacao.
 Este instalador não procura, copia, combina nem modifica packs de texturas.
 Sem pack HD, as texturas nativas continuam traduzidas. A tradução de texturas
 não é automaticamente transferida para arquivos de packs HD de terceiros.
