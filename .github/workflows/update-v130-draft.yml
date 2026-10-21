@@ -50,7 +50,7 @@ jobs:
           test "$is_pre" = true
           test "$tag" = "1.3.0"
           gh release upload "1.3.0" output/*.zip --clobber --repo "$GITHUB_REPOSITORY"
-          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/418966092" -F "body=@output/release-notes.md" -f draft=true -f prerelease=true > /dev/null
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/418966092" -F "body=@output/release-notes.md" -F draft=true -F prerelease=true > /dev/null
           obsolete="$(gh api "repos/${GITHUB_REPOSITORY}/releases/418966092/assets" --jq '.[] | select(.name == "OoT3D_PTBR_TriAevum_v1.3.0_Compatibilidade-Henriko.zip") | .id')"
           if [ -n "$obsolete" ]; then
             gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/$obsolete"
