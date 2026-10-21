@@ -126,9 +126,8 @@ def prepared_resources(native):
     return {x['target'].lower(): parser.prepare_payload(x) for x in parser.collect_v4_items()}
 
 
-def make_font(native, cell=128):
-    if cell not in (64, 128):
-        raise ValueError('Resolução da fonte HD inválida.')
+def make_font(native):
+    """Install only HD64; the verified HD128 bitmap is a source asset, never an output."""
     assets = HERE / 'font-hd-128'
     contract = json.loads((assets / 'manifest.json').read_text(encoding='utf-8'))
     atlas = (assets / 'atlas.a4').read_bytes()
@@ -139,11 +138,13 @@ def make_font(native, cell=128):
             or digest(native[16:end]) != contract['directory_sha256']
             or digest(atlas) != contract['atlas_sha256']):
         raise RuntimeError('Fonte 128 ou fonte original incompatível.')
-    if cell == 64:
-        atlas = module('font_atlas_downsample').half_a4_atlas(atlas, contract['glyphs'])
+    # Validate the approved source, then produce the only supported HD output.
+    source_coverage = native[:13] + bytes((128, 128, 2)) + native[16:end] + atlas
+    if digest(source_coverage) != contract['coverage_sha256']:
+        raise RuntimeError('Cobertura de origem da fonte inválida.')
+    atlas = module('font_atlas_downsample').half_a4_atlas(atlas, contract['glyphs'])
+    cell = 64
     coverage = native[:13] + bytes((cell, cell, 2)) + native[16:end] + atlas
-    if cell == 128 and digest(coverage) != contract['coverage_sha256']:
-        raise RuntimeError('Cobertura da fonte 128 inválida.')
     nh, ch = digest(native), digest(coverage)
     manifest = {'format': 'oot3d_qbf_coverage_v1', 'runtime_enabled': True,
                 'minimum_output_height': 480, 'status': 'native_atlas_coverage_ready',
@@ -219,9 +220,9 @@ def set_font_mode(mode):
               'target_mode': mode, 'transaction_id': uuid.uuid4().hex, 'launch_sha256': sha256_file(LAUNCH)}
     journal = transactions.write_journal(BASE, record)
     result = fonts.choose(font_path(), 'hd' if mode == 'hd64' else mode,
-                          (lambda: make_font(native, 64 if mode == 'hd64' else 128)) if mode != 'original' else None)
+                          (lambda: make_font(native)) if mode != 'original' else None)
     transactions.complete_journal(journal)
-    print('[OK] Fonte ' + ('HD 64 experimental' if mode == 'hd64' else 'HD 128' if mode == 'hd' else 'original') + '; textos PT-BR preservados.')
+    print('[OK] Fonte ' + ('HD 64' if mode != 'original' else 'original') + '; textos PT-BR preservados.')
     return result
 
 
@@ -250,7 +251,7 @@ def install():
         raise RuntimeError('A instalação precisa usar a base original beta.1.1 validada.')
     native = read_resource(clean, 'message/eu/ltn16.qbf')
     resources = prepared_resources(native)
-    hd = make_font(native, 64 if FONT_MODE_OPTION == 'hd64' else 128) if FONT_MODE_OPTION != 'original' else None
+    hd = make_font(native) if FONT_MODE_OPTION != 'original' else None
     pack = font_path()
     if fonts.read_state(pack) is not None:
         raise RuntimeError('Há uma fonte gerenciada por outra instalação; restaure-a antes de continuar.')
@@ -388,7 +389,8 @@ def recover():
         fonts.recover(font_path())
         native=read_resource(locate_runtime()[2],'message/eu/ltn16.qbf')
         mode=record['target_mode']
-        fonts.choose(font_path(),mode,(lambda:make_font(native)) if mode=='hd' else None)
+        fonts.choose(font_path(), 'hd' if mode in ('hd', 'hd64') else mode,
+                     (lambda: make_font(native)) if mode in ('hd', 'hd64') else None)
         finish_transaction(record)
         return 'Troca de fonte recuperada.'
     backup=BASE/'TriAevum.launch.json.antes_ptbr_textos'
@@ -439,7 +441,8 @@ def recover():
             raise transactions.PendingTransaction('Recibo alterado por terceiros.')
         fonts.recover(font_path())
         native=read_resource(folder/'romfs.bin','message/eu/ltn16.qbf');mode=record['font_mode']
-        fonts.choose(font_path(),mode,(lambda:make_font(native)) if mode=='hd' else None)
+        fonts.choose(font_path(), 'hd' if mode in ('hd', 'hd64') else mode,
+                     (lambda: make_font(native)) if mode in ('hd', 'hd64') else None)
         if sha256_file(LAUNCH) not in {original_hash,expected}:
             raise transactions.PendingTransaction('Perfil alterado durante recuperação.')
         if sha256_file(LAUNCH)!=expected:write(LAUNCH,encoded(launch))

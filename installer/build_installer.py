@@ -99,7 +99,7 @@ def main():
     contract = json.loads((font_assets/'manifest.json').read_text(encoding='utf-8'))
     if (contract.get('cell') != 128 or
         hashlib.sha256((font_assets/'atlas.a4').read_bytes()).hexdigest() != contract['atlas_sha256']):
-        raise RuntimeError('Build bloqueada: cobertura HD 128 inválida.')
+        raise RuntimeError('Build bloqueada: fonte de origem da cobertura HD 64 inválida.')
     machine = platform.machine().lower()
     if struct.calcsize('P') != 8 or machine not in ('amd64', 'x86_64') or sys.platform not in ('win32', 'linux'):
         raise RuntimeError('Build destinado a Windows/Linux x64.')

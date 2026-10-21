@@ -8,7 +8,7 @@ Linux: pacote disponível para testes; validação no jogo pendente.
 
 Escolha a fonte:
 • Original: não instala nossa cobertura HD e preserva fontes de terceiros.
-• HD 128: usa a fonte desenvolvida para este projeto, com as métricas originais.
+• HD 64: usa a fonte otimizada aprovada no teste de fluidez, com métricas originais.
 A escolha pode ser alterada depois sem reinstalar a tradução.
 
 Windows: abra o instalador .exe. Linux: conceda permissão de execução ao
@@ -51,29 +51,16 @@ Os journals concluídos ficam em data/mods/ptbr-recovery para auditoria.
 Os testes simulam interrupções de processo; não certificam perda física de
 energia, falhas do disco ou durabilidade de hardware no Windows.
 
-TESTE CONTROLADO DA FONTE HD 128 — rodada de 21/10/2026
-Esta compilação é destinada a comparar a fonte original e a fonte HD 128,
-sem alterar o TriAevum.exe. Não é uma correção de desempenho certificada.
-Use somente uma cópia descartável da instalação beta.1.1 já preparada.
 
-1. No instalador, escolha Original, aplique e jogue a mesma introdução
-   com diálogos. Anote engasgos no áudio, imagem e duração aproximada.
-2. Feche o jogo. No mesmo instalador, escolha HD 128 e aplique.
-3. Repita a sequência com o mesmo save/cena e configurações gráficas,
-   sem alterar o pacote de texturas; anote as diferenças.
-4. Informe quais falas engasgaram e se a fonte HD ficou legível.
-5. Se houver problema, volte para Original pelo instalador.
+FONTE HD 64 — PERFIL PADRÃO HD
+A cobertura HD 64 apresentou áudio sem engasgos no teste informado pelo usuário.
+Apenas as opções Original e HD 64 aparecem no instalador.
+A cobertura HD 128 não é mais instalada; o seu bitmap validado é utilizado
+somente como insumo interno para gerar glifos HD 64, preservando a forma das
+letras, índices, caracteres e métricas originais.
 
-Preserve os relatórios e recibos de instalação. Não substitua executáveis,
-QBFs nativos, saves, ROM ou recursos do TriAevum manualmente.
-
-PERFIL EXPERIMENTAL DE FLUIDEZ — FONTE HD 64
-O instalador oferece agora três opções: Original, HD 128 (preservada) e
-HD 64 experimental. A opção HD 64 é gerada a partir da cobertura aprovada
-HD 128 usando média de 2x2 amostras A4. Cada glifo ocupa 1/4 dos pixels,
-sem alterar o diretório, os códigos ou as métricas nativas da fonte.
-A redução pode afetar a nitidez em telas grandes: compare visual e áudio
-na mesma cena antes de escolher qual fonte manter. Não há garantia de que
-isso eliminará os engasgos; este é um teste de redução de carga do atlas.
-Para trocar de variante, feche o jogo e reaplique apenas a fonte pelo
-instalador, mantendo backups e recibos gerados automaticamente.
+Para atualizar uma instalação experimental com a fonte HD 128:
+feche o jogo, abra este instalador, selecione HD 64 e clique em
+Instalar / aplicar fonte. A tradução permanece instalada e o gerenciador
+preserva seus backups e recibos. Reabra o jogo e confirme áudio e nitidez.
+O TriAevum.exe original não é alterado.

@@ -55,6 +55,16 @@ class V130TranslationContractTests(unittest.TestCase):
         self.assertEqual(resources["actor/link/face.ctxb"], b"textura PTBR")
         self.assertEqual(resources["menu/02_eu_english/item_0.ctxb"], b"espelho PTBR")
 
+    def test_only_hd64_is_offered_by_gui_and_generated_by_core(self):
+        gui = (ROOT / 'installer/OoT3D_PTBR_TriAevum_v1.3.0.py').read_text(encoding='utf-8')
+        core = CORE.read_text(encoding='utf-8')
+        self.assertIn('text="Fonte HD 64"', gui)
+        self.assertNotIn('text="Fonte HD 128"', gui)
+        self.assertIn("'font_modes': ['original', 'hd64']", gui)
+        self.assertIn("cell = 64", core)
+        self.assertIn("half_a4_atlas", core)
+        self.assertNotIn("make_font(native, 128)", core)
+
     def test_installer_does_not_manage_hd_texture_packs(self):
         code = CORE.read_text(encoding="utf-8")
         # The installer must not perform pack-copying or graphics-setting edits.

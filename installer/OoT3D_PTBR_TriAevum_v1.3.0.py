@@ -194,14 +194,10 @@ class App(tk.Tk):
             font_select, text="Original do jogo (sem substituição HD)",
             variable=self.font_mode_var, value="original")
         self.original_font_radio.grid(row=0, column=0, sticky="w", padx=(4, 14))
-        self.hd_font_radio = ttk.Radiobutton(
-            font_select, text="Fonte HD 128",
-            variable=self.font_mode_var, value="hd")
-        self.hd_font_radio.grid(row=0, column=1, sticky="w")
         self.hd64_font_radio = ttk.Radiobutton(
-            font_select, text="Fonte HD 64 (teste de fluidez)",
+            font_select, text="Fonte HD 64",
             variable=self.font_mode_var, value="hd64")
-        self.hd64_font_radio.grid(row=0, column=2, sticky="w", padx=(14, 0))
+        self.hd64_font_radio.grid(row=0, column=1, sticky="w")
 
         status_frame = ttk.LabelFrame(self, text="Status", padding=(12, 8))
         status_frame.grid(row=2, column=0, sticky="ew", padx=18, pady=(2, 8))
@@ -414,7 +410,6 @@ class App(tk.Tk):
         self.restore_btn.configure(state=state)
         self.status_btn.configure(state=state)
         self.original_font_radio.configure(state=state)
-        self.hd_font_radio.configure(state=state)
         self.hd64_font_radio.configure(state=state)
 
     def install_translation(self):
@@ -429,12 +424,10 @@ class App(tk.Tk):
             return
 
         self.selected_font_mode = self.font_mode_var.get()
-        if self.selected_font_mode not in ("original", "hd", "hd64"):
+        if self.selected_font_mode not in ("original", "hd64"):
             messagebox.showerror("Fonte", "Selecione uma opção de fonte válida.")
             return
-        chosen = ("Original do jogo" if self.selected_font_mode == "original"
-                  else "Fonte HD 64 experimental" if self.selected_font_mode == "hd64"
-                  else "Fonte HD 128")
+        chosen = "Original do jogo" if self.selected_font_mode == "original" else "Fonte HD 64"
         if not messagebox.askyesno(
             "Tradução e fonte PT-BR",
             "Se a tradução já estiver instalada, apenas a fonte será alterada.\n"
@@ -679,19 +672,17 @@ def bundle_self_test(report):
     assets = bundled_dir() / "font-hd-128"
     contract = json.loads((assets / "manifest.json").read_text())
     if hashlib.sha256((assets / "atlas.a4").read_bytes()).hexdigest() != contract['atlas_sha256']:
-        raise RuntimeError("Fonte HD 128 inválida.")
+        raise RuntimeError("Arquivo de origem da fonte HD inválido.")
     window = App()
     window.withdraw()
     window.update_idletasks()
     if window.font_mode_var.get() != 'original' or hasattr(window, 'hd_install_btn') or hasattr(window, 'recovery_btn'):
         raise RuntimeError('Interface original/HD incorreta.')
-    if window.hd_font_radio.cget('value') != 'hd':
-        raise RuntimeError('Opção de fonte HD ausente.')
     if window.hd64_font_radio.cget('value') != 'hd64':
         raise RuntimeError('Opção HD 64 experimental ausente.')
     window.destroy()
     result = {'ok': True, 'tk_verified': True, 'version': APP_VERSION,
-              'font_modes': ['original', 'hd', 'hd64'], 'hd_cells': [64, 128],
+              'font_modes': ['original', 'hd64'], 'hd_cells': [64],
               'texture_installer': False, 'native_game_font_embedded': False, 'automatic_recovery': callable(getattr(core, 'apply_translation', None))}
     Path(report).write_text(json.dumps(result, indent=2), encoding='utf-8')
 
