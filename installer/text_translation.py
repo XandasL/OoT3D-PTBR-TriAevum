@@ -140,8 +140,7 @@ def make_font(native, cell=128):
             or digest(atlas) != contract['atlas_sha256']):
         raise RuntimeError('Fonte 128 ou fonte original incompatível.')
     if cell == 64:
-        from font_atlas_downsample import half_a4_atlas
-        atlas = half_a4_atlas(atlas, contract['glyphs'])
+        atlas = module('font_atlas_downsample').half_a4_atlas(atlas, contract['glyphs'])
     coverage = native[:13] + bytes((cell, cell, 2)) + native[16:end] + atlas
     if cell == 128 and digest(coverage) != contract['coverage_sha256']:
         raise RuntimeError('Cobertura da fonte 128 inválida.')
