@@ -1,0 +1,113 @@
+name: HD128 experimental TriAevum Windows runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - test/hd128-decoder-performance
+    paths:
+      - runtime-patches/font-performance/**
+      - .github/workflows/hd128-runtime-windows.yml
+
+permissions:
+  contents: read
+
+jobs:
+  experimental-windows-runtime:
+    runs-on: windows-2022
+    timeout-minutes: 180
+    steps:
+      - name: Checkout isolated performance experiment
+        uses: actions/checkout@v4
+      - name: Checkout TriAevum beta.1.1 (unchanged upstream)
+        uses: actions/checkout@v4
+        with:
+          repository: coccofresco/TriAevum
+          ref: v0.8.0-beta.1.1
+          path: triaevum
+          submodules: recursive
+      - name: Record upstream and source hashes
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git -C triaevum rev-parse HEAD | Tee-Object -FilePath upstream-commit.txt
+          Get-FileHash runtime-patches/font-performance/pica_texture_decode.cpp -Algorithm SHA256 |
+            Format-List | Out-File decoder-source-hash.txt
+      - name: Apply only the A4 decoder optimization
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $p = 'triaevum/runtime/three_ds_recomp/src/fast/oot3d/pica_texture_decode.cpp'
+          Copy-Item runtime-patches/font-performance/pica_texture_decode.cpp $p -Force
+          git -C triaevum diff --check
+          $changed = @(git -C triaevum diff --name-only)
+          if ($changed.Count -ne 1 -or $changed[0] -ne 'runtime/three_ds_recomp/src/fast/oot3d/pica_texture_decode.cpp') {
+            throw "Unexpected modifications to TriAevum source: $changed"
+          }
+      - name: Configure decoder equivalence test
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $target = 'triaevum/runtime/three_ds_recomp/src/fast/oot3d/pica_texture_decode.reference.cpp'
+          Copy-Item runtime-patches/font-performance/pica_texture_decode.reference.cpp $target -Force
+          cmake -S runtime-patches/font-performance/tests -B build/decoder-equivalence -G "Visual Studio 17 2022" -A x64 "-DRUNTIME_SOURCE=$((Resolve-Path triaevum).Path)"
+          if ($LASTEXITCODE) { throw 'Decoder test configuration failed' }
+          cmake --build build/decoder-equivalence --config Release --parallel 2
+          if ($LASTEXITCODE) { throw 'Decoder test build failed' }
+          ctest --test-dir build/decoder-equivalence -C Release --output-on-failure -V
+          if ($LASTEXITCODE) { throw 'Decoder equivalence failed' }
+          Remove-Item $target -Force
+      - name: Configure native TriAevum with official direct-AOT stub
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cmake -S triaevum -B build/triaevum-hd128 -G "Visual Studio 17 2022" -A x64 -DOOT3D_DIRECT_AOT_PLUGIN=ON -DOOT3D_REBUILD_WHOLE_AOT=OFF -DOOT3D_REGENERATE_WHOLE_AOT=OFF -DOOT3D_WHOLE_AOT_PRODUCT_MODE=OFF -DTRIAEVUM_DEVELOPER_TOOLS=OFF -DOOT3D_FAST_DEV_LINK=ON -DCMAKE_CONFIGURATION_TYPES=Release -DAUTOMATE_VCPKG_UPDATE=OFF
+          if ($LASTEXITCODE) { throw 'TriAevum configuration failed' }
+      - name: Compile experimental runtime and official stub
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cmake --build build/triaevum-hd128 --config Release --target triaevum_public_runtime --parallel 2
+          if ($LASTEXITCODE) { throw 'TriAevum experimental build failed' }
+      - name: Package only built executable and adjacent runtime dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = (Resolve-Path build/triaevum-hd128).Path
+          $exes = @(Get-ChildItem $root -Recurse -File -Filter TriAevum.exe)
+          if ($exes.Count -ne 1) { throw "Expected one TriAevum.exe, found $($exes.Count)" }
+          $stage = 'out/HD128-A4-experimental-Windows'
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item $exes[0].FullName "$stage/TriAevum.exe"
+          # Copy direct build outputs only; never package ROMs, saves, or title plugin content.
+          Get-ChildItem $exes[0].DirectoryName -File -Include '*.dll' -ErrorAction SilentlyContinue |
+            ForEach-Object { Copy-Item $_.FullName $stage }
+          @'
+          EXPERIMENTAL: TriAevum v0.8.0-beta.1.1 with A4 decoder optimization only.
+          This is NOT the PT-BR installer or a public TriAevum release.
+          Back up the original runtime and test ONLY on a disposable copy of your TriAevum profile.
+          The game title/plugin and all other required runtime files must come from your own installation.
+          The change is not yet validated against audio stuttering during the intro.
+          '@ | Set-Content -Encoding UTF8 "$stage/LEIA-ME-EXPERIMENTAL.txt"
+          Get-FileHash "$stage/TriAevum.exe" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  TriAevum.exe" } |
+            Set-Content -Encoding ascii "$stage/SHA256SUMS.txt"
+          Compress-Archive -Path "$stage/*" -DestinationPath 'out/HD128-A4-experimental-Windows.zip' -Force
+      - name: Upload experimental runnable build (never create release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: HD128-A4-TriAevum-Windows-experimental
+          path: out/HD128-A4-experimental-Windows.zip
+          retention-days: 7
+          if-no-files-found: error
+      - name: Upload build logs and hashes for failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HD128-A4-build-diagnostics
+          path: |
+            upstream-commit.txt
+            decoder-source-hash.txt
+            build/triaevum-hd128/CMakeCache.txt
+          retention-days: 7
+          if-no-files-found: ignore
