@@ -6,7 +6,7 @@ payload = Path(os.environ['OOT3D_PAYLOAD_ROOT']).resolve()
 a = Analysis(
     [str(root / 'OoT3D_PTBR_TriAevum_v1.3.0.py')], pathex=[str(root)], binaries=[],
     datas=[(str(root / name), '.') for name in (
-        'text_translation.py', 'font_mode.py', 'transaction_guard.py',
+        'text_translation.py', 'font_mode.py', 'font_atlas_downsample.py', 'transaction_guard.py',
         'Instalador_Traducao_PTBR_OoT3D_V4_compat_test.py', 'payload-manifest.json', 'LEIA-ME_v1.3.0.txt')]
         + [(str(root / 'font-hd-128'), 'font-hd-128'),
            (str(payload), 'TraducaoCompleta/citra/romfs')],
