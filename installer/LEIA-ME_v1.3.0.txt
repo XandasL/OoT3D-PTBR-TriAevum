@@ -50,3 +50,19 @@ revisão manual: não apague backups para forçar a instalação.
 Os journals concluídos ficam em data/mods/ptbr-recovery para auditoria.
 Os testes simulam interrupções de processo; não certificam perda física de
 energia, falhas do disco ou durabilidade de hardware no Windows.
+
+TESTE CONTROLADO DA FONTE HD 128 — rodada de 21/10/2026
+Esta compilação é destinada a comparar a fonte original e a fonte HD 128,
+sem alterar o TriAevum.exe. Não é uma correção de desempenho certificada.
+Use somente uma cópia descartável da instalação beta.1.1 já preparada.
+
+1. No instalador, escolha Original, aplique e jogue a mesma introdução
+   com diálogos. Anote engasgos no áudio, imagem e duração aproximada.
+2. Feche o jogo. No mesmo instalador, escolha HD 128 e aplique.
+3. Repita a sequência com o mesmo save/cena e configurações gráficas,
+   sem alterar o pacote de texturas; anote as diferenças.
+4. Informe quais falas engasgaram e se a fonte HD ficou legível.
+5. Se houver problema, volte para Original pelo instalador.
+
+Preserve os relatórios e recibos de instalação. Não substitua executáveis,
+QBFs nativos, saves, ROM ou recursos do TriAevum manualmente.
