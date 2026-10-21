@@ -1,0 +1,58 @@
+name: Update v1.3.0 draft assets (no publication)
+on:
+  push:
+    branches: [feat/v1.3.0-full-ptbr-native-textures]
+    paths:
+      - '.github/workflows/update-v130-draft.yml'
+      - 'installer/RELEASE_NOTES_v1.3.0.md'
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: v130-draft-assets
+  cancel-in-progress: false
+jobs:
+  stage-draft:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify tested build and download its exact artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" = "feat/v1.3.0-full-ptbr-native-textures"
+          status="$(gh api repos/${GITHUB_REPOSITORY}/actions/runs/39640033781 --jq '.conclusion')"
+          sha="$(gh api repos/${GITHUB_REPOSITORY}/actions/runs/39640033781 --jq '.head_sha')"
+          test "$status" = success
+          test "$sha" = 86e8150cb43fc8fa3ff5c66fbff6ecfa0d1323f1
+          mkdir -p incoming output
+          gh run download 39640033781 --repo "$GITHUB_REPOSITORY" --dir incoming
+      - name: Validate all packages and generate release description with hashes
+        run: python .github/scripts/stage_v130_draft.py
+      - name: Update only existing draft; replace tested ZIPs; remove obsolete standalone Henriko ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$(gh api repos/${GITHUB_REPOSITORY}/releases/418966092 --jq '.id')"
+          is_draft="$(gh api repos/${GITHUB_REPOSITORY}/releases/418966092 --jq '.draft')"
+          is_pre="$(gh api repos/${GITHUB_REPOSITORY}/releases/418966092 --jq '.prerelease')"
+          tag="$(gh api repos/${GITHUB_REPOSITORY}/releases/418966092 --jq '.tag_name')"
+          test "$id" = "418966092"
+          test "$is_draft" = true
+          test "$is_pre" = true
+          test "$tag" = "1.3.0"
+          gh release upload "1.3.0" output/*.zip --clobber --repo "$GITHUB_REPOSITORY"
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/releases/418966092" -F "body=@output/release-notes.md" -f draft=true -f prerelease=true > /dev/null
+          obsolete="$(gh api "repos/${GITHUB_REPOSITORY}/releases/418966092/assets" --jq '.[] | select(.name == "OoT3D_PTBR_TriAevum_v1.3.0_Compatibilidade-Henriko.zip") | .id')"
+          if [ -n "$obsolete" ]; then
+            gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/assets/$obsolete"
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/releases/418966092" --jq '{tag_name, draft, prerelease, assets: [.assets[].name]}'
