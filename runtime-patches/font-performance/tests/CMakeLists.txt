@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 20)
 if(NOT DEFINED RUNTIME_SOURCE)
   message(FATAL_ERROR "RUNTIME_SOURCE must name the isolated beta.1.1 source directory")
 endif()
+# Normalize Windows backslashes before interpolating into generated CMake targets.
+file(TO_CMAKE_PATH "${RUNTIME_SOURCE}" RUNTIME_SOURCE)
 set(DECODER ${RUNTIME_SOURCE}/runtime/three_ds_recomp/src/fast/oot3d/pica_texture_decode.cpp)
 add_library(reference OBJECT ${RUNTIME_SOURCE}/runtime/three_ds_recomp/src/fast/oot3d/pica_texture_decode.reference.cpp)
 target_compile_definitions(reference PRIVATE Oot3d=ReferenceOot3d)
