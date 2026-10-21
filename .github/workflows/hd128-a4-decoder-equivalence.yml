@@ -1,0 +1,43 @@
+name: HD128 A4 decoder equivalence (isolated)
+
+on:
+  push:
+    branches:
+      - test/hd128-decoder-performance
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decoder-equivalence:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-22.04]
+    steps:
+      - name: Checkout translation project experiment
+        uses: actions/checkout@v4
+      - name: Checkout upstream TriAevum beta.1.1
+        uses: actions/checkout@v4
+        with:
+          repository: coccofresco/TriAevum
+          ref: v0.8.0-beta.1.1
+          path: triaevum
+      - name: Stage original and optimized decoder only
+        shell: bash
+        run: |
+          set -euo pipefail
+          path="triaevum/runtime/three_ds_recomp/src/fast/oot3d"
+          cp runtime-patches/font-performance/pica_texture_decode.reference.cpp "$path/pica_texture_decode.reference.cpp"
+          cp runtime-patches/font-performance/pica_texture_decode.cpp "$path/pica_texture_decode.cpp"
+      - name: Configure standalone C++20 test
+        shell: bash
+        run: cmake -S runtime-patches/font-performance/tests -B build/a4-decoder -DCMAKE_BUILD_TYPE=Release -DRUNTIME_SOURCE="$GITHUB_WORKSPACE/triaevum"
+      - name: Build equivalence test (no runtime executable)
+        shell: bash
+        run: cmake --build build/a4-decoder --config Release --parallel 2
+      - name: Compare 33 cases and benchmark
+        shell: bash
+        run: ctest --test-dir build/a4-decoder -C Release --output-on-failure -V
