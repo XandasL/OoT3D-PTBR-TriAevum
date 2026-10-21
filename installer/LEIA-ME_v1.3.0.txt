@@ -66,3 +66,14 @@ Use somente uma cópia descartável da instalação beta.1.1 já preparada.
 
 Preserve os relatórios e recibos de instalação. Não substitua executáveis,
 QBFs nativos, saves, ROM ou recursos do TriAevum manualmente.
+
+PERFIL EXPERIMENTAL DE FLUIDEZ — FONTE HD 64
+O instalador oferece agora três opções: Original, HD 128 (preservada) e
+HD 64 experimental. A opção HD 64 é gerada a partir da cobertura aprovada
+HD 128 usando média de 2x2 amostras A4. Cada glifo ocupa 1/4 dos pixels,
+sem alterar o diretório, os códigos ou as métricas nativas da fonte.
+A redução pode afetar a nitidez em telas grandes: compare visual e áudio
+na mesma cena antes de escolher qual fonte manter. Não há garantia de que
+isso eliminará os engasgos; este é um teste de redução de carga do atlas.
+Para trocar de variante, feche o jogo e reaplique apenas a fonte pelo
+instalador, mantendo backups e recibos gerados automaticamente.
