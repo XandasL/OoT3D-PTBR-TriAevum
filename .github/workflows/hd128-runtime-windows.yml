@@ -57,6 +57,18 @@ jobs:
           ctest --test-dir build/decoder-equivalence -C Release --output-on-failure -V
           if ($LASTEXITCODE) { throw 'Decoder equivalence failed' }
           Remove-Item $target -Force
+      - name: Supply Vulkan headers and loader in disposable checkout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $cmake = 'triaevum/CMakeLists.txt'
+          $source = Get-Content $cmake -Raw
+          $original = 'spdlog libogg libvorbis opus opusfile)'
+          if (-not $source.Contains($original)) { throw 'Upstream vcpkg dependencies changed; refusing blind edit' }
+          $updated = $source.Replace($original, 'spdlog libogg libvorbis opus opusfile vulkan-headers vulkan-loader)')
+          if ($updated -eq $source) { throw 'Vulkan dependency injection failed' }
+          [System.IO.File]::WriteAllText((Resolve-Path $cmake), $updated)
+          Write-Host 'Vulkan headers/loader added to isolated vcpkg dependency list (not committed upstream).'
       - name: Configure native TriAevum with official direct-AOT stub
         shell: pwsh
         run: |
