@@ -1,10 +1,24 @@
+## Novo gate de teste (27/10/2026) — validação somente de leitura
+
+A rotina de conversão `ptbr_qm_beta12.py` agora implementa os **2510 registros**, cópia dos slots EUR e normalização de aliases UTF-8, aceitando apenas o arquivo QM original de SHA-256 aprovado. O gerador preserva o arquivo QBF nativo da ROM e confirma que os primeiros 1608 bytes (métricas/diretório) coincidem com o payload aprovado. Foram adicionados testes sintéticos `test_ptbr_qm_beta12.py`.
+
+O primeiro passo é executar, na raiz do projeto:
+
+```powershell
+py -3 experiments\\test_ptbr_qm_beta12.py
+```
+
+Depois, com um checkout do código-fonte TriAevum exatamente em `v0.8.0-beta.1.2`, rode o gerador com `--check-only` apontando para o RomFS validado, o manifesto e a tradução local. Esse modo confere os **126 destinos**, confirma o SHA-256 da base e executa a conversão do QM em pasta temporária; **não cria arquivo O3RO, não edita o perfil de execução e não modifica a instalação**.
+
+Somente após o resultado `overlay_targets_found: 126` / `native_font_preserved: true` será permitido criar um arquivo O3RO experimental fora da pasta do jogo. Isso ainda não resolve TopScreen, HD64, compatibilidade com outros mods nem ativação no Forge. Os testes ainda não foram executados pelo autor para esta alteração.
+
 ## Base local validada pelo autor — 27/10/2026
 
 O teste no Windows beta.1.2 encontrou `romfs_service_offset=0`, `romfs_service_size=473522176`, arquivo local `romfs.bin` com **473522176 bytes** e **SHA-256 `dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56`**. Esse hash coincide com o contrato beta conhecido, e o script experimental agora recusa bases de tamanho/hash diferente. O autor também confirmou os **112 arquivos da tradução, todos com SHA-256 íntegro** via `ptbr_romfs_overlay_probe.py --payload ... --json`. A geração de O3RO continua bloqueada até conversão QM e testes do TopScreen.
 
 ## Bloqueio de segurança antes do teste em jogo (27/10/2026)
 
-A auditoria identificou que o V4 não apenas remapeia o arquivo `message/us/us.qm`: ele reescreve os **2510 registros QM** com os slots EUR e normaliza caracteres PT-BR conforme o contrato de origem. O gerador inicial beta.1.2 ainda não implementa a conversão; ele agora **interrompe explicitamente** com `NotImplementedError` antes de gerar qualquer O3RO. Portanto, por enquanto execute apenas a sonda de leitura e o teste de hashes. **Não tente usar esse gerador como mod.**
+A auditoria identificou que o V4 converte os **2510 registros QM** e normaliza os aliases PT-BR. A conversão foi implementada em módulo experimental com validação por hash, mas **a execução no jogo ainda não foi validada**. Priorize o teste sintético e o modo `--check-only`; não instale um overlay não testado.
 
 # Experimento isolado — tradução PT-BR como mod RomFS nativo (O3RO)
 
