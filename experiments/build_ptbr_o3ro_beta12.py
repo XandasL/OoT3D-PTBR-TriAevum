@@ -120,6 +120,13 @@ def main() -> None:
 
     upstream = import_upstream(source_root)
     replacements = verified_files(payload)
+    # The original installer rewrites all 2510 QM records (USA slots -> EUR).
+    # Mapping the filename alone would silently break Brazilian Portuguese dialogue.
+    # Fail closed until this conversion and its compatibility tests are ported.
+    raise NotImplementedError(
+        "Blocked: message/eu/eu.qm requires validated USA->EUR record conversion "
+        "and TopScreen checks before generating a complete O3RO mod."
+    )
     offset, size = upstream.romfs_service_view(process_manifest)
     # Reject targets missing from this exact game ROMFS before creating output.
     with romfs.open("rb") as stream:
