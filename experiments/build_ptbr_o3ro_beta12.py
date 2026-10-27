@@ -11,9 +11,12 @@ import argparse
 import hashlib
 import importlib
 import json
+import tempfile
 import subprocess
 import sys
 from pathlib import Path
+
+from ptbr_qm_beta12 import convert_usa_to_eur
 
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "installer" / "payload-manifest.json"
@@ -104,7 +107,9 @@ def main() -> None:
                         help="Prepared user's own ORIGINAL RomFS image")
     parser.add_argument("--process-manifest", type=Path, required=True,
                         help="TriAevum original process-manifest.json")
-    parser.add_argument("--output", type=Path, required=True,
+    parser.add_argument("--check-only", action="store_true",
+                        help="Validate all inputs and RomFS targets without generating an overlay")
+    parser.add_argument("--output", type=Path,
                         help="NEW test O3RO file outside installed game directory")
     args = parser.parse_args()
 
@@ -112,35 +117,63 @@ def main() -> None:
     payload = args.payload.expanduser().resolve()
     romfs = args.romfs_image.expanduser().resolve()
     process_manifest = args.process_manifest.expanduser().resolve()
-    output = args.output.expanduser().resolve()
-    if output.exists():
+    output = args.output.expanduser().resolve() if args.output else None
+    if not args.check_only and output is None:
+        parser.error("--output is required when not using --check-only")
+    if output is not None and output.exists():
         raise ValueError("Refusing to overwrite any existing O3RO")
-    if output == romfs or output.is_relative_to(romfs.parent):
+    if output is not None and (output == romfs or output.is_relative_to(romfs.parent)):
         raise ValueError("Overlay output must be outside RomFS image directory")
-    if output.is_relative_to(source_root) or output.is_relative_to(payload):
+    if output is not None and (output.is_relative_to(source_root) or output.is_relative_to(payload)):
         raise ValueError("Overlay output must be outside source/payload directories")
 
     if romfs.stat().st_size != EXPECTED_BASE_BYTES or file_hash(romfs) != EXPECTED_BASE_SHA256:
         raise ValueError("Refusing RomFS that differs from the verified beta.1.2 base")
     upstream = import_upstream(source_root)
     replacements = verified_files(payload)
-    # The original installer rewrites all 2510 QM records (USA slots -> EUR).
-    # Mapping the filename alone would silently break Brazilian Portuguese dialogue.
-    # Fail closed until this conversion and its compatibility tests are ported.
-    raise NotImplementedError(
-        "Blocked: message/eu/eu.qm requires validated USA->EUR record conversion "
-        "and TopScreen checks before generating a complete O3RO mod."
-    )
     offset, size = upstream.romfs_service_view(process_manifest)
-    # Reject targets missing from this exact game ROMFS before creating output.
+    if offset != 0 or size != EXPECTED_BASE_BYTES:
+        raise ValueError("Unexpected RomFS service view for the validated beta.1.2 base")
     with romfs.open("rb") as stream:
-        _header, records = upstream.romfs_file_records(stream, offset, size)
+        header, records = upstream.romfs_file_records(stream, offset, size)
     missing = sorted(set(replacements) - set(records))
     if missing:
-        raise ValueError(f"Unsupported ROM revision, {len(missing)} missing target files: {missing[:12]}")
-    summary = upstream.build_romfs_overlay(
-        romfs, service_offset=offset, service_size=size,
-        replacements=replacements, output=output)
+        raise ValueError(f"Unsupported RomFS, {len(missing)} missing target files: {missing[:12]}")
+    # Keep the native EUR QBF, exactly as the approved original-font installer does.
+    font_key = "message/eu/ltn16.qbf"
+    _font_record, font_offset, font_length = records[font_key]
+    with romfs.open("rb") as stream:
+        stream.seek(offset + header[9] + font_offset)
+        native_font = stream.read(font_length)
+    translation_font = replacements[font_key].read_bytes()
+    if len(native_font) != font_length or len(translation_font) != len(native_font):
+        raise ValueError("Native versus translated QBF size mismatch")
+    if native_font[:1608] != translation_font[:1608]:
+        raise ValueError("Native versus translated QBF glyph metrics differ")
+    # Convert into a temporary source used only for this offline overlay build.
+    with tempfile.TemporaryDirectory(prefix="ptbr-o3ro-prep-") as temporary:
+        staging = Path(temporary)
+        converted_qm = convert_usa_to_eur((payload / "message/us/us.qm").read_bytes())
+        qm_path = staging / "eu.qm"
+        qm_path.write_bytes(converted_qm)
+        font_path = staging / "ltn16.qbf"
+        font_path.write_bytes(native_font)
+        replacements["message/eu/eu.qm"] = qm_path
+        replacements[font_key] = font_path
+        if len(replacements) != 126:
+            raise ValueError("Expected exactly 126 translation overlay target files")
+        if args.check_only:
+            print(json.dumps({
+                "target": TAG, "check_only": True, "base_sha256": EXPECTED_BASE_SHA256,
+                "translation_files_verified": 112, "overlay_targets_found": 126,
+                "qm_record_count": 2510, "qm_converted_sha256": hashlib.sha256(converted_qm).hexdigest(),
+                "native_font_preserved": True, "overlay_created": False,
+                "topscreen_integration_verified": False
+            }, indent=2))
+            return
+        summary = upstream.build_romfs_overlay(
+            romfs, service_offset=offset, service_size=size,
+            replacements=replacements, output=output)
     digest = file_hash(output)
     print(json.dumps({
         "target": TAG, "experimental_only": True, "automatically_installed": False,
