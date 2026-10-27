@@ -1,3 +1,7 @@
+## Base local validada pelo autor — 27/10/2026
+
+O teste no Windows beta.1.2 encontrou `romfs_service_offset=0`, `romfs_service_size=473522176`, arquivo local `romfs.bin` com **473522176 bytes** e **SHA-256 `dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56`**. Esse hash coincide com o contrato beta conhecido, e o script experimental agora recusa bases de tamanho/hash diferente. O autor também confirmou os **112 arquivos da tradução, todos com SHA-256 íntegro** via `ptbr_romfs_overlay_probe.py --payload ... --json`. A geração de O3RO continua bloqueada até conversão QM e testes do TopScreen.
+
 ## Bloqueio de segurança antes do teste em jogo (27/10/2026)
 
 A auditoria identificou que o V4 não apenas remapeia o arquivo `message/us/us.qm`: ele reescreve os **2510 registros QM** com os slots EUR e normaliza caracteres PT-BR conforme o contrato de origem. O gerador inicial beta.1.2 ainda não implementa a conversão; ele agora **interrompe explicitamente** com `NotImplementedError` antes de gerar qualquer O3RO. Portanto, por enquanto execute apenas a sonda de leitura e o teste de hashes. **Não tente usar esse gerador como mod.**
