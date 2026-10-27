@@ -38,7 +38,8 @@ def audit(manifest: dict[str, str], payload: Path | None) -> dict:
             if not candidate.is_file() or candidate.is_symlink():
                 missing.append(name)
                 continue
-            digest = hashlib.file_digest(candidate.open("rb"), "sha256").hexdigest()
+            with candidate.open("rb") as handle:
+                digest = hashlib.file_digest(handle, "sha256").hexdigest()
             if digest != expected.lower():
                 mismatch.append(name)
             else:
