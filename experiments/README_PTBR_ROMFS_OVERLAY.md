@@ -1,3 +1,15 @@
+## Primeiro teste dentro do jogo — retorno do autor (27/10/2026)
+
+O autor conseguiu carregar a tradução como O3RO com o TriAevum v0.8.0-beta.1.2. Capturas mostram a seleção de arquivos com `Selecione um arquivo.` e `Novo Jogo` em português, e a Floresta Kokiri renderizada com HUD/minimapa. O autor confirmou menus e diálogos traduzidos, com pontuação correta. **Isto é validação manual inicial, não homologação completa do conteúdo.**
+
+Observações para triagem:
+- A seleção de arquivos aparece concentrada na região esquerda da janela; não há evidência suficiente para atribuir esse layout à tradução.
+- A instalação foi feita sem selecionar opções HD explícitas, mas o perfil inspecionado continha `--topscreen-texture-overrides`, `--topscreen-ui-atlas-hd` e `--ui-texture-pack` (`vanilla_ui_hud-3.2`). Portanto o runtime estava de fato carregando texturas de interface HD de forma independente do O3RO PT-BR.
+- `--romfs-overlay` não existia antes do teste e foi adicionado manualmente para esta validação.
+- Não foram reportados problemas de texto neste teste; sem afirmar que todas as cenas/itens da tradução já foram cobertos.
+
+Próximos testes isolados: comparar screenshot da tela de seleção com overlay ligado/desligado mantendo todas as outras flags; consultar log para presença de mod ativo; inspecionar textos de inventário/pausa e cenas diferentes; verificar O3TU hash-gate do `menu_top` e fonte HD64 de forma independente. O Forge ainda não oferece ativação nativa de um mod PT-BR catalogado; alterações manuais no perfil podem ser sobrescritas em uma nova preparação.
+
 ## Novo gate de teste (27/10/2026) — validação somente de leitura
 
 A rotina de conversão `ptbr_qm_beta12.py` agora implementa os **2510 registros**, cópia dos slots EUR e normalização de aliases UTF-8, aceitando apenas o arquivo QM original de SHA-256 aprovado. O gerador preserva o arquivo QBF nativo da ROM e confirma que os primeiros 1608 bytes (métricas/diretório) coincidem com o payload aprovado. Foram adicionados testes sintéticos `test_ptbr_qm_beta12.py`.
