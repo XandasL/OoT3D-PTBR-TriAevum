@@ -18,6 +18,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "installer" / "payload-manifest.json"
 TAG = "v0.8.0-beta.1.2"
+EXPECTED_BASE_SHA256 = "dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56"
+EXPECTED_BASE_BYTES = 473522176
 EU_MIRRORS = (
     "hud_all00.ctxb", "hud_menu_title00.ctxb", "menu_equip_parts00.ctxb",
     "menu_file_select_parts00.ctxb", "menu_file_select_parts01.ctxb",
@@ -118,6 +120,8 @@ def main() -> None:
     if output.is_relative_to(source_root) or output.is_relative_to(payload):
         raise ValueError("Overlay output must be outside source/payload directories")
 
+    if romfs.stat().st_size != EXPECTED_BASE_BYTES or file_hash(romfs) != EXPECTED_BASE_SHA256:
+        raise ValueError("Refusing RomFS that differs from the verified beta.1.2 base")
     upstream = import_upstream(source_root)
     replacements = verified_files(payload)
     # The original installer rewrites all 2510 QM records (USA slots -> EUR).
