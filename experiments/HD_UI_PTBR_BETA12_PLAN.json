@@ -1,0 +1,94 @@
+{
+  "format": "oot3d_ptbr_hd_localization_plan_v1",
+  "target": "TriAevum v0.8.0-beta.1.2",
+  "status": "metadata-only; author permission for derived HD artworks pending",
+  "principle": "one installer; O3RO textual translation plus automatically managed HD UI; no redistribution of modified source art until permission",
+  "original_source": "OoT3D Vanilla UI/HUD 3.2",
+  "atlas": {
+    "path": "common/UI/tex1_512x256_1FAF9B5B2ADF6038_13_mip0.png",
+    "dimensions": [
+      4096,
+      2048
+    ],
+    "source_sha256": "78b23fe8fe73d480e9386fd06bb365e038a1a8ffefe910ceaf579997e5b85b0d",
+    "regions": [
+      {
+        "id": "top_mod_options",
+        "original": "Mod Options",
+        "target": "Opções do Mod",
+        "provisional_text_bbox_px": [
+          3150,
+          73,
+          3920,
+          202
+        ],
+        "role": "text-with-shadow; not whole wood plaque",
+        "approval": "coordinate requires pixel-level review before editing",
+        "exclude": [
+          "wood frame",
+          "screws",
+          "neighboring UI icons",
+          "transparent area"
+        ]
+      }
+    ]
+  },
+  "prioritized_asset_ids": [
+    {
+      "id": "71EC8EF34C17BF8F",
+      "priority": 1,
+      "usage": "file selection / button labels",
+      "verify_runtime_use": true
+    },
+    {
+      "id": "C0F1BD5D88603724",
+      "priority": 1,
+      "usage": "file selection variant / button labels",
+      "verify_runtime_use": true
+    },
+    {
+      "id": "D6B04AFDACA985EF",
+      "priority": 1,
+      "usage": "options / save choices",
+      "verify_runtime_use": true
+    },
+    {
+      "id": "1B1E40F8F6E53947",
+      "priority": 1,
+      "usage": "pause menu labels",
+      "verify_runtime_use": true
+    },
+    {
+      "id": "164411C4E5F37729",
+      "priority": 1,
+      "usage": "EUR English-specific inventory",
+      "verify_runtime_use": true
+    },
+    {
+      "id": "8E797095DBD2BD5F",
+      "priority": 1,
+      "usage": "dungeon map names",
+      "verify_runtime_use": true
+    },
+    {
+      "id": "EF60A5ECFCD8F99D",
+      "priority": 1,
+      "usage": "Hyrule map names",
+      "verify_runtime_use": true
+    }
+  ],
+  "non_goals": [
+    "change TopScreen O3TU profile manually",
+    "replace Forge source.json or import receipts",
+    "publish modified third-party PNG files without authorization",
+    "alter TriAevum.exe",
+    "force users to manually install a second texture pack"
+  ],
+  "gates": [
+    "explicit modification and redistribution permission or legitimately independent licensed art",
+    "pixel-size and alpha validation",
+    "source texture id matching and load precedence",
+    "test with O3RO enabled and disabled",
+    "atomic rollback and license notices"
+  ]
+}
