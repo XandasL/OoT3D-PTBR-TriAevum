@@ -1,3 +1,7 @@
+## Bloqueio de segurança antes do teste em jogo (27/10/2026)
+
+A auditoria identificou que o V4 não apenas remapeia o arquivo `message/us/us.qm`: ele reescreve os **2510 registros QM** com os slots EUR e normaliza caracteres PT-BR conforme o contrato de origem. O gerador inicial beta.1.2 ainda não implementa a conversão; ele agora **interrompe explicitamente** com `NotImplementedError` antes de gerar qualquer O3RO. Portanto, por enquanto execute apenas a sonda de leitura e o teste de hashes. **Não tente usar esse gerador como mod.**
+
 # Experimento isolado — tradução PT-BR como mod RomFS nativo (O3RO)
 
 **Estado: EXPERIMENTO DE GERADOR O3RO PARA beta.1.2; NÃO É INSTALADOR FINAL OU MOD PRONTO PARA DISTRIBUIÇÃO.**
