@@ -1,3 +1,9 @@
+## Variante compatível com texturas HD — 28/10/2026
+
+O gerador agora aceita `--preserve-hd-textures`. Com essa opção, todos os 35 destinos `.ctxb` (14 menu USA, 14 espelhos EUR, 7 misc) são removidos da tabela de substituições do O3RO **após** a verificação SHA-256 dos 112 arquivos de origem. O resultado esperado é um O3RO com **91 substituições**. Os CTXB da RomFS original permanecem intactos, permitindo que o carregador Azahar do TriAevum procure os hashes nativos e sobreponha os PNGs HD externos.
+
+Gerar em outro nome e local com os mesmos argumentos usuais, acrescidos de `--preserve-hd-textures`; executar primeiro `--check-only`. A opção não edita o O3RO de 126 registros já validado pelo autor e não instala PNGs. O teste funcional real precisa conferir se todos os elementos traduzidos anteriormente em CTXB estão cobertos pelos PNGs PT-BR entregues (incluindo as variantes de idioma). O carregador HD e TopScreen permanecem mecanismos separados. Nenhuma afirmação de compatibilidade total com outros mods é feita.
+
 ## Primeiro teste dentro do jogo — retorno do autor (27/10/2026)
 
 O autor conseguiu carregar a tradução como O3RO com o TriAevum v0.8.0-beta.1.2. Capturas mostram a seleção de arquivos com `Selecione um arquivo.` e `Novo Jogo` em português, e a Floresta Kokiri renderizada com HUD/minimapa. O autor confirmou menus e diálogos traduzidos, com pontuação correta. **Isto é validação manual inicial, não homologação completa do conteúdo.**
