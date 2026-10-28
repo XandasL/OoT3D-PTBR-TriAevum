@@ -107,6 +107,8 @@ def main() -> None:
                         help="Prepared user's own ORIGINAL RomFS image")
     parser.add_argument("--process-manifest", type=Path, required=True,
                         help="TriAevum original process-manifest.json")
+    parser.add_argument("--preserve-hd-menu", action="store_true",
+                        help="Exclude all 14 USA and 14 EUR menu CTXB replacements; retain original menu textures for HD packs")
     parser.add_argument("--check-only", action="store_true",
                         help="Validate all inputs and RomFS targets without generating an overlay")
     parser.add_argument("--output", type=Path,
@@ -131,6 +133,20 @@ def main() -> None:
         raise ValueError("Refusing RomFS that differs from the verified beta.1.2 base")
     upstream = import_upstream(source_root)
     replacements = verified_files(payload)
+    excluded_menu = []
+    if args.preserve_hd_menu:
+        excluded_menu = sorted(name for name in replacements
+                               if name.startswith(("menu/01_US_ENGLISH/", "menu/02_EU_ENGLISH/"))
+                               and name.endswith(".ctxb"))
+        expected = {f"menu/{language}/{name}" for name in EU_MIRRORS
+                    for language in ("01_US_ENGLISH", "02_EU_ENGLISH")}
+        if set(excluded_menu) != expected:
+            raise ValueError("Unexpected menu CTXB set; refuse unsafe selective exclusion")
+        for name in excluded_menu:
+            del replacements[name]
+    expected_targets = 98 if args.preserve_hd_menu else 126
+    if len(replacements) != expected_targets:
+        raise ValueError("Unexpected O3RO target count")
     offset, size = upstream.romfs_service_view(process_manifest)
     if offset != 0 or size != EXPECTED_BASE_BYTES:
         raise ValueError("Unexpected RomFS service view for the validated beta.1.2 base")
@@ -160,12 +176,13 @@ def main() -> None:
         font_path.write_bytes(native_font)
         replacements["message/eu/eu.qm"] = qm_path
         replacements[font_key] = font_path
-        if len(replacements) != 126:
-            raise ValueError("Expected exactly 126 translation overlay target files")
+        if len(replacements) != expected_targets:
+            raise ValueError(f"Expected exactly {expected_targets} translation overlay targets")
         if args.check_only:
             print(json.dumps({
                 "target": TAG, "check_only": True, "base_sha256": EXPECTED_BASE_SHA256,
-                "translation_files_verified": 112, "overlay_targets_found": 126,
+                "translation_files_verified": 112, "overlay_targets_found": expected_targets,
+                "menu_ctxb_excluded": excluded_menu, "preserve_hd_menu": args.preserve_hd_menu,
                 "qm_record_count": 2510, "qm_converted_sha256": hashlib.sha256(converted_qm).hexdigest(),
                 "native_font_preserved": True, "overlay_created": False,
                 "topscreen_integration_verified": False
@@ -177,7 +194,8 @@ def main() -> None:
     digest = file_hash(output)
     print(json.dumps({
         "target": TAG, "experimental_only": True, "automatically_installed": False,
-        "source_files": 112, "replacement_records": 126,
+        "source_files": 112, "replacement_records": expected_targets,
+        "menu_ctxb_excluded": excluded_menu, "preserve_hd_menu": args.preserve_hd_menu,
         "overlay_path": str(output), "overlay_sha256": digest, "summary": summary,
         "limitations": [
             "NOT yet integrated with Forge's catalogued mods",
