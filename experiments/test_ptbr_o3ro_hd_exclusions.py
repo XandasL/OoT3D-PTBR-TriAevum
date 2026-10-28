@@ -10,7 +10,7 @@ class HdExclusionTests(unittest.TestCase):
                  for lang in ("01_US_ENGLISH", "02_EU_ENGLISH")
                  for filename in EU_MIRRORS}
         paths.update({name: Path("placeholder") for name in HD_EXCLUDED_LOGOS})
-        paths.update({f"misc/us/english/{name}.ctxb": Path("placeholder")
+        paths.update({f"misc/eu/english/{name}.ctxb": Path("placeholder")
                       for name in ("challenge00", "guideline_parts00",
                                    "hint_movie_parts01", "ura")})
         return paths
@@ -21,10 +21,10 @@ class HdExclusionTests(unittest.TestCase):
         self.assertEqual(len(excluded), 31)
         self.assertEqual(len(source) - len(excluded), 4)
         self.assertTrue(all(name not in excluded for name in (
-            "misc/us/english/challenge00.ctxb",
-            "misc/us/english/guideline_parts00.ctxb",
-            "misc/us/english/hint_movie_parts01.ctxb",
-            "misc/us/english/ura.ctxb")))
+            "misc/eu/english/challenge00.ctxb",
+            "misc/eu/english/guideline_parts00.ctxb",
+            "misc/eu/english/hint_movie_parts01.ctxb",
+            "misc/eu/english/ura.ctxb")))
 
     def test_missing_logo_fails_closed(self):
         source = self.sample()
