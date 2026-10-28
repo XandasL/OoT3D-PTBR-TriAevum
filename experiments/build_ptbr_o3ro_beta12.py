@@ -82,8 +82,8 @@ def verified_files(payload: Path) -> dict[str, Path]:
 # Do not exclude other misc CTXB files: they may contain untranslated content.
 HD_EXCLUDED_LOGOS = (
     "misc/logo00.ctxb",
-    "misc/us/english/menu_title_logo.ctxb",
-    "misc/us/english/menu_title_logo_ura.ctxb",
+    "misc/eu/english/menu_title_logo.ctxb",
+    "misc/eu/english/menu_title_logo_ura.ctxb",
 )
 
 
