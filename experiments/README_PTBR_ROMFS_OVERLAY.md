@@ -1,6 +1,10 @@
+## Política HD revisada — 28/10/2026 (preferência do autor)
+
+A variante `--preserve-hd-textures` exclui agora **31** destinos: os 14 CTXB de menu USA, os 14 espelhos EUR e os três logotipos `misc/logo00.ctxb`, `misc/us/english/menu_title_logo.ctxb` e `misc/us/english/menu_title_logo_ura.ctxb`. Os **quatro outros CTXB misc são mantidos** porque não são logotipos identificados e podem ter traduções exclusivas. Resultado: **95 substituições O3RO**. Os logotipos originais do jogo são a preferência do autor; a criação de uma versão HD PT-BR futura é opcional. A exclusão é fail-closed e coberta por testes de seleção de destinos; ainda requer teste no jogo. A variante padrão permanece com 126 substituições.
+
 ## Variante compatível com texturas HD — 28/10/2026
 
-O gerador agora aceita `--preserve-hd-textures`. Com essa opção, todos os 35 destinos `.ctxb` (14 menu USA, 14 espelhos EUR, 7 misc) são removidos da tabela de substituições do O3RO **após** a verificação SHA-256 dos 112 arquivos de origem. O resultado esperado é um O3RO com **91 substituições**. Os CTXB da RomFS original permanecem intactos, permitindo que o carregador Azahar do TriAevum procure os hashes nativos e sobreponha os PNGs HD externos.
+Histórico da proposta anterior (substituído pela política de 31 destinos acima): inicialmente cogitou-se remover todos os CTXB **após** a verificação SHA-256 dos 112 arquivos de origem. O resultado daquela proposta antiga seria um O3RO com **91 substituições**, mas ela não é mais adotada. Os CTXB da RomFS original permanecem intactos, permitindo que o carregador Azahar do TriAevum procure os hashes nativos e sobreponha os PNGs HD externos.
 
 Gerar em outro nome e local com os mesmos argumentos usuais, acrescidos de `--preserve-hd-textures`; executar primeiro `--check-only`. A opção não edita o O3RO de 126 registros já validado pelo autor e não instala PNGs. O teste funcional real precisa conferir se todos os elementos traduzidos anteriormente em CTXB estão cobertos pelos PNGs PT-BR entregues (incluindo as variantes de idioma). O carregador HD e TopScreen permanecem mecanismos separados. Nenhuma afirmação de compatibilidade total com outros mods é feita.
 
