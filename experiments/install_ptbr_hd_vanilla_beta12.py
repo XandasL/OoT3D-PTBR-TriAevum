@@ -46,6 +46,8 @@ def parse_zip(path: Path) -> dict[str, bytes]:
     content = {}
     size = 0
     with zipfile.ZipFile(path) as archive:
+        if archive.testzip() is not None:
+            raise ValueError("ZIP CRC mismatch")
         for member in archive.infolist():
             if member.is_dir():
                 continue
@@ -70,6 +72,16 @@ def parse_zip(path: Path) -> dict[str, bytes]:
             content[name] = data
     if not content:
         raise ValueError("No PNG files found in supplied ZIP")
+    if any(not (n.startswith("VanillaUI/") or n == "TopScreen/ui_atlas_hd.png") for n in content):
+        raise ValueError("Unexpected ZIP layout: expected VanillaUI/ and TopScreen/ui_atlas_hd.png")
+    if len([n for n in content if n.startswith("VanillaUI/")]) != 20:
+        raise ValueError("Expected the 20 verified VanillaUI images from the author ZIP")
+    atlas = content.get("TopScreen/ui_atlas_hd.png")
+    if atlas is None or png_dimensions(atlas) != (4096, 2048):
+        raise ValueError("Required 4096x2048 TopScreen atlas missing")
+    vanilla_atlas = content.get("VanillaUI/" + ATLAS)
+    if vanilla_atlas != atlas:
+        raise ValueError("TopScreen atlas and VanillaUI atlas differ; refuse implicit substitution")
     return content
 
 
@@ -145,6 +157,8 @@ def run_install(runtime: Path, zip_path: Path, dry_run: bool) -> None:
     modified: dict[Path, bytes] = {}
     source_names: dict[str, str] = {}
     for name, data in pngs.items():
+        if name == "TopScreen/ui_atlas_hd.png":
+            continue  # Same verified bytes as the VanillaUI atlas; not a second texture-pack target.
         target = find_targets(base, name, candidates)[0]
         if target in modified:
             raise ValueError(f"Multiple source files target {target.relative_to(base)}")
@@ -153,6 +167,8 @@ def run_install(runtime: Path, zip_path: Path, dry_run: bool) -> None:
             raise ValueError(f"PNG dimensions changed: {name}: {png_dimensions(original)} -> {png_dimensions(data)}")
         modified[target] = data
         source_names[target.relative_to(base).as_posix()] = name
+    if len(modified) != 20:
+        raise ValueError(f"Expected 20 unique Vanilla destinations, found {len(modified)}")
     original_profile = profile_path.read_bytes()
     profile = load_profile(profile_path)
     args = profile["arguments"]
@@ -175,6 +191,7 @@ def run_install(runtime: Path, zip_path: Path, dry_run: bool) -> None:
     print(json.dumps({"mode": "dry-run" if dry_run else "install", **audit}, ensure_ascii=False, indent=2))
     if dry_run:
         return
+    custom.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix="ptbr-hd-stage-", dir=custom.parent))
     try:
         shutil.copytree(base, stage, dirs_exist_ok=True)
