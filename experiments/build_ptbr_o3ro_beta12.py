@@ -107,8 +107,8 @@ def main() -> None:
                         help="Prepared user's own ORIGINAL RomFS image")
     parser.add_argument("--process-manifest", type=Path, required=True,
                         help="TriAevum original process-manifest.json")
-    parser.add_argument("--preserve-hd-menu", action="store_true",
-                        help="Exclude all 14 USA and 14 EUR menu CTXB replacements; retain original menu textures for HD packs")
+    parser.add_argument("--preserve-hd-textures", action="store_true",
+                        help="Exclude all translated CTXB files from O3RO so external HD texture packs own these graphics")
     parser.add_argument("--check-only", action="store_true",
                         help="Validate all inputs and RomFS targets without generating an overlay")
     parser.add_argument("--output", type=Path,
@@ -133,18 +133,15 @@ def main() -> None:
         raise ValueError("Refusing RomFS that differs from the verified beta.1.2 base")
     upstream = import_upstream(source_root)
     replacements = verified_files(payload)
-    excluded_menu = []
-    if args.preserve_hd_menu:
-        excluded_menu = sorted(name for name in replacements
-                               if name.startswith(("menu/01_US_ENGLISH/", "menu/02_EU_ENGLISH/"))
-                               and name.endswith(".ctxb"))
-        expected = {f"menu/{language}/{name}" for name in EU_MIRRORS
-                    for language in ("01_US_ENGLISH", "02_EU_ENGLISH")}
-        if set(excluded_menu) != expected:
-            raise ValueError("Unexpected menu CTXB set; refuse unsafe selective exclusion")
-        for name in excluded_menu:
+    excluded_ctxb = []
+    if args.preserve_hd_textures:
+        excluded_ctxb = sorted(name for name in replacements if name.endswith(".ctxb"))
+        # 14 translated US menu textures, 14 EUR mirrors, 7 other translated graphics.
+        if len(excluded_ctxb) != 35:
+            raise ValueError(f"Unexpected CTXB set ({len(excluded_ctxb)}); refuse incomplete exclusion")
+        for name in excluded_ctxb:
             del replacements[name]
-    expected_targets = 98 if args.preserve_hd_menu else 126
+    expected_targets = 91 if args.preserve_hd_textures else 126
     if len(replacements) != expected_targets:
         raise ValueError("Unexpected O3RO target count")
     offset, size = upstream.romfs_service_view(process_manifest)
@@ -182,7 +179,7 @@ def main() -> None:
             print(json.dumps({
                 "target": TAG, "check_only": True, "base_sha256": EXPECTED_BASE_SHA256,
                 "translation_files_verified": 112, "overlay_targets_found": expected_targets,
-                "menu_ctxb_excluded": excluded_menu, "preserve_hd_menu": args.preserve_hd_menu,
+                "ctxb_excluded": excluded_ctxb, "preserve_hd_textures": args.preserve_hd_textures,
                 "qm_record_count": 2510, "qm_converted_sha256": hashlib.sha256(converted_qm).hexdigest(),
                 "native_font_preserved": True, "overlay_created": False,
                 "topscreen_integration_verified": False
@@ -195,7 +192,7 @@ def main() -> None:
     print(json.dumps({
         "target": TAG, "experimental_only": True, "automatically_installed": False,
         "source_files": 112, "replacement_records": expected_targets,
-        "menu_ctxb_excluded": excluded_menu, "preserve_hd_menu": args.preserve_hd_menu,
+        "ctxb_excluded": excluded_ctxb, "preserve_hd_textures": args.preserve_hd_textures,
         "overlay_path": str(output), "overlay_sha256": digest, "summary": summary,
         "limitations": [
             "NOT yet integrated with Forge's catalogued mods",
