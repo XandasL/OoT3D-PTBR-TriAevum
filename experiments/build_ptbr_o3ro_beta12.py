@@ -78,6 +78,32 @@ def verified_files(payload: Path) -> dict[str, Path]:
     return replacements
 
 
+# The original title artwork stays native, alongside the HD menu artwork.
+# Do not exclude other misc CTXB files: they may contain untranslated content.
+HD_EXCLUDED_LOGOS = (
+    "misc/logo00.ctxb",
+    "misc/us/english/menu_title_logo.ctxb",
+    "misc/us/english/menu_title_logo_ura.ctxb",
+)
+
+
+def hd_exclusion_paths(replacements: dict[str, Path]) -> list[str]:
+    expected_menu = {f"menu/{language}/{name}"
+                     for language in ("01_US_ENGLISH", "02_EU_ENGLISH")
+                     for name in EU_MIRRORS}
+    expected = expected_menu | set(HD_EXCLUDED_LOGOS)
+    if not expected <= replacements.keys():
+        raise ValueError("Missing expected HD-menu or logo targets; refusing partial exclusion")
+    actual_menu = {name for name in replacements
+                   if name.startswith(("menu/01_US_ENGLISH/", "menu/02_EU_ENGLISH/"))
+                   and name.endswith(".ctxb")}
+    if actual_menu != expected_menu:
+        raise ValueError("Unexpected menu CTXB set; refusing an unsafe O3RO variant")
+    if len(expected) != 31:
+        raise ValueError("Unexpected HD exclusion count")
+    return sorted(expected)
+
+
 def import_upstream(source_root: Path):
     # Require the exact upstream release tag; do not silently run newer code.
     try:
@@ -108,7 +134,7 @@ def main() -> None:
     parser.add_argument("--process-manifest", type=Path, required=True,
                         help="TriAevum original process-manifest.json")
     parser.add_argument("--preserve-hd-textures", action="store_true",
-                        help="Exclude all translated CTXB files from O3RO so external HD texture packs own these graphics")
+                        help="Exclude 28 menu CTXB targets and 3 logos while retaining other translated misc graphics")
     parser.add_argument("--check-only", action="store_true",
                         help="Validate all inputs and RomFS targets without generating an overlay")
     parser.add_argument("--output", type=Path,
@@ -135,13 +161,11 @@ def main() -> None:
     replacements = verified_files(payload)
     excluded_ctxb = []
     if args.preserve_hd_textures:
-        excluded_ctxb = sorted(name for name in replacements if name.endswith(".ctxb"))
-        # 14 translated US menu textures, 14 EUR mirrors, 7 other translated graphics.
-        if len(excluded_ctxb) != 35:
-            raise ValueError(f"Unexpected CTXB set ({len(excluded_ctxb)}); refuse incomplete exclusion")
+        excluded_ctxb = hd_exclusion_paths(replacements)
+        # 28 menu CTXB destinations and 3 logo CTXB destinations only.
         for name in excluded_ctxb:
             del replacements[name]
-    expected_targets = 91 if args.preserve_hd_textures else 126
+    expected_targets = 95 if args.preserve_hd_textures else 126
     if len(replacements) != expected_targets:
         raise ValueError("Unexpected O3RO target count")
     offset, size = upstream.romfs_service_view(process_manifest)
