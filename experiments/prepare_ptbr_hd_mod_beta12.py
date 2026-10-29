@@ -106,7 +106,7 @@ def main():
     parser.add_argument("--mapping", type=Path, help="Optional JSON: PNG basename -> relative Vanilla path")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    mapping = json.loads(args.mapping.read_text(encoding="utf-8")) if args.mapping else {}
+    mapping = json.loads(args.mapping.read_text(encoding="utf-8-sig")) if args.mapping else {}
     if not isinstance(mapping, dict) or not all(isinstance(k, str) and isinstance(v, str)
                                                 for k, v in mapping.items()):
         raise ValueError("Mapping must be a JSON object of strings")
