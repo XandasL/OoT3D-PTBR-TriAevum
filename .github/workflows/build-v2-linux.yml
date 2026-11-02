@@ -27,14 +27,32 @@ jobs:
         run: |
           python -m unittest discover -s experiments/portable-v2-clean -p "test_*.py" -v
           bash -n experiments/portable-v2-clean/Ativar-PTBR-Linux.sh
-      - name: Obter ZIP completo da draft existente sem publicar O3RO avulso
+      - name: Obter ZIP completo da Draft Release pela API
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p incoming
-          gh release download 2.0 --repo "$GITHUB_REPOSITORY" --pattern "OoT3D-PTBR-v2.0-Beta.zip" --dir incoming
-          test -s incoming/OoT3D-PTBR-v2.0-Beta.zip
+          # gh release download nao enxerga drafts; listar releases pela API e localizar o asset.
+          asset_id="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq '.[] | select(.draft == true and .tag_name == "2.0") | .assets[] | select(.name == "OoT3D-PTBR-v2.0-Beta.zip") | .id' | head -n 1)"
+          if [[ ! "$asset_id" =~ ^[0-9]+$ ]]; then
+            echo "::error::O ZIP completo nao foi encontrado na draft 2.0."
+            exit 1
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+            -H "Accept: application/octet-stream" \
+            > incoming/OoT3D-PTBR-v2.0-Beta.zip
+          python - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import Path
+          source = Path("incoming/OoT3D-PTBR-v2.0-Beta.zip")
+          with ZipFile(source) as z:
+              if z.testzip() is not None:
+                  raise ValueError("ZIP de entrada corrompido")
+          print("Draft asset OK:", source.stat().st_size, "bytes")
+          PY
       - name: Gerar ZIPs Linux com O3RO validado
         shell: bash
         run: |
