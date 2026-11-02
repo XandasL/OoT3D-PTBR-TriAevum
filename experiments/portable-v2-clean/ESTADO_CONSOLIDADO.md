@@ -37,7 +37,7 @@ O arquivo também documenta a autorização recebida do responsável pela tradu�
 - RomFS base verificada: SHA-256 `dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56`.
 - Pacote portátil fonte: `experiments/portable-v2-clean/`.
 - Ativador configura `--romfs-overlay` em `data/TriAevum.launch.json`, preservando opções gráficas do Forge; executar novamente `Prepare and install` pode sobrescrever o perfil e exigir nova ativação.
-- Arquivos do ZIP local testado inicialmente: `Ativar-PTBR.cmd`, `Ativar-PTBR.ps1`, `LEIA-ME.txt`, `data/mods/OoT3D-PTBR/classico.o3ro`. O autor substituiu esse plano por créditos embutidos em `LEIA-ME.txt`, sem arquivo independente.
+- Arquivos do ZIP local testado inicialmente: `Ativar-PTBR.cmd`, `Ativar-PTBR.ps1`, `LEIA-ME.txt`, `data/mods/OoT3D-PTBR/OoT3D-PTBR.o3ro`. O autor substituiu esse plano por créditos embutidos em `LEIA-ME.txt`, sem arquivo independente.
 - Os 20 PNGs HD modificados e o atlas TopScreen não estão nas árvores atuais auditadas das 9 branches nem nas tags de código 1.2.0/1.2.1/1.3.0. Esse resultado **não é uma auditoria completa de todos os commits e arquivos ZIP das releases antigas**.
 - O O3RO clássico contém payload de substituições RomFS e **não é apenas um manifesto de alterações**, mas não incorpora a RomFS integral. Esse fato técnico não altera o registro da autorização dos tradutores.
 - A `main` e releases anteriores devem ficar intactas enquanto a versão experimental não for finalizada.
