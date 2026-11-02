@@ -1,6 +1,12 @@
 name: v2 PT-BR limpa - fontes portateis (sem O3RO)
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - experiment/native-romfs-overlay-ptbr
+    paths:
+      - experiments/portable-v2-clean/**
+      - .github/workflows/build-v2-clean-portable.yml
 permissions:
   contents: read
 jobs:
