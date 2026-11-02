@@ -1,0 +1,22 @@
+OoT3D PT-BR v2 - CLASSICA (TriAevum beta.1.2)
+
+Para testes locais: prepare o jogo no TriAevum Forge, extraia este ZIP
+na raiz do TriAevum, execute Ativar-PTBR.cmd e inicie o jogo.
+
+O mod contem apenas a traducao classica (126 substituicoes O3RO).
+NAO inclui texturas HD ChubbyCubby, Vanilla UI/HUD, SingleScreen,
+TopScreen ou o antigo overlay de Navi.
+
+Caso mantenha o pacote HD original selecionado no Forge, algumas
+imagens HD poderao permanecer em ingles. Para o visual classico
+completo, prepare o TriAevum sem texturas HD.
+
+Executar novamente 'Prepare and install' no Forge pode reescrever o
+perfil e exigir nova ativacao do mod.
+
+O O3RO foi validado para a base de TriAevum v0.8.0-beta.1.2.
+Nao use overlays em outras bases de RomFS sem verificacao propria.
+
+Este pacote local NAO esta autorizado automaticamente para
+redistribuicao publica: revisar direitos dos recursos do jogo presentes
+no O3RO antes da publicacao.
