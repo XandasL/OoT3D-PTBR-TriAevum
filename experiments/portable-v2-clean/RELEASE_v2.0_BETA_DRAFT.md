@@ -1,35 +1,40 @@
 # Tradução PT-BR v2.0 Beta — TriAevum v0.8.0-beta.1.2
 
-Tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D**, incluindo diálogos, menus e texturas nativas traduzidas.
+Tradução brasileira de **The Legend of Zelda: Ocarina of Time 3D**, com diálogos, menus e texturas originais traduzidos. Esta versão utiliza o sistema de mods O3RO do TriAevum e preserva os arquivos originais do jogo.
 
-A v2.0 utiliza o sistema de mods O3RO do TriAevum, sem modificar os arquivos originais do jogo.
+## 📦 Downloads
 
-## Download e compatibilidade
+| Plataforma | Arquivo |
+| --- | --- |
+| Windows x64 | `OoT3D_PTBR_TriAevum_v2.0_Windows-x64.zip` |
+| Linux x86_64 — AppImage | `OoT3D_PTBR_TriAevum_v2.0_Linux-x86_64-AppImage.zip` |
+| Linux x86_64 — Flatpak | `OoT3D_PTBR_TriAevum_v2.0_Linux-x86_64-Flatpak.zip` |
 
-- **Windows:** `OoT3D-PTBR-v2.0-Beta.zip` — testado pelo autor.
-- **Linux (AppImage e Flatpak):** pacotes experimentais, ainda não testados dentro do jogo.
+**Compatibilidade:** TriAevum **v0.8.0-beta.1.2**. A versão Windows foi testada pelo autor; as versões Linux são experimentais e ainda não foram validadas dentro do jogo.
 
-**Requer TriAevum v0.8.0-beta.1.2.** A compatibilidade com outras versões não foi verificada.
+## 🛠️ Instalação
 
-## Instalação
+1. Prepare o jogo no **TriAevum Forge**, feche o jogo e o Forge.
+2. Extraia o ZIP correspondente à sua plataforma na pasta preparada pelo TriAevum, mantendo a estrutura dos arquivos.
+3. Ative a tradução conforme seu sistema:
+   - **Windows:** execute `Ativar-PTBR.cmd`.
+   - **Linux (AppImage ou Flatpak):** abra um terminal na pasta onde extraiu o ZIP e execute `bash Ativar-PTBR-Linux.sh`. O ativador Bash requer o utilitário `jq` instalado no sistema.
+4. Inicie o TriAevum normalmente.
 
-1. Prepare o jogo pelo TriAevum Forge e feche o jogo e o Forge.
-2. Extraia o ZIP na pasta do TriAevum, mantendo a estrutura dos arquivos.
-3. **Windows:** execute `Ativar-PTBR.cmd`. **Linux:** execute `bash Ativar-PTBR-Linux.sh` no terminal. No Linux, é necessário ter `jq` instalado.
-4. Inicie o jogo normalmente.
+**Linux:** os arquivos são pacotes de tradução para instalações do TriAevum em AppImage ou Flatpak; não são aplicativos `.AppImage` ou `.flatpak`. Caso a pasta do perfil esteja em outro local, consulte o `LEIA-ME-LINUX.txt` incluído no pacote.
 
-O ativador cria uma cópia de segurança do perfil de inicialização. Caso o Forge prepare novamente o jogo e redefina esse perfil, execute o ativador outra vez.
+O ativador mantém uma cópia de segurança do perfil de inicialização. Se o Forge recriar esse perfil, talvez seja necessário executar o ativador novamente.
 
-## Observações
+## ⚠️ Observações
 
-A tradução foi validada com as texturas originais. **O funcionamento de pacotes de texturas HD ou personalizadas não é garantido**, especialmente em menus e elementos da interface.
+A tradução foi validada com as texturas originais. **A compatibilidade com pacotes de texturas HD ou personalizadas não é garantida**, especialmente em menus e elementos da interface.
 
-O pacote não inclui o jogo nem o TriAevum. Consulte o `LEIA-ME.txt` para mais informações e créditos.
+Os pacotes não incluem o jogo nem o executável do TriAevum.
 
-## Créditos
+## 🇧🇷 Créditos
 
-**Tradução original:** Projeto Zelda Brasil – Heroes of Time; Catatau Game Dev e Traduções; Elite dos Quatro Traduções; JumpManClub Brasil Traduções; TRADU-ROMS.
+**Tradução PT-BR original:** Projeto Zelda Brasil – Heroes of Time; Catatau Game Dev e Traduções; Elite dos Quatro Traduções; JumpManClub Brasil Traduções; TRADU-ROMS.
 
-**Adaptação para TriAevum:** XandasL.
+**Port e adaptação para TriAevum:** XandasL.
 
-Tradução distribuída com autorização de seus responsáveis e os devidos créditos. Projeto de fãs, sem vínculo oficial com a Nintendo.
+A tradução é distribuída com autorização de seus responsáveis, mantendo os devidos créditos. Projeto de fãs, sem afiliação oficial com a Nintendo.
