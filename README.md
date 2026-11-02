@@ -2,7 +2,7 @@
 
 Adaptação para **TriAevum** da tradução brasileira de *The Legend of Zelda: Ocarina of Time 3D*, com diálogos, menus e texturas nativas traduzidas.
 
-> **Próxima versão: v2.0 Beta — TriAevum v0.8.0-beta.1.2 (Windows).** O pacote portátil já foi testado pelo autor e está em preparação para publicação. **Última release publicada: [v1.3.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.3.0).** Não confunda esta versão em desenvolvimento com um download já publicado.
+> **Versão atual: [v2.0 Beta](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/2.0)** — compatível com **TriAevum v0.8.0-beta.1.2**. Windows x64 testado pelo autor; Linux x86_64 experimental, ainda sem validação dentro do jogo.
 
 ## 🇧🇷 Sobre a tradução
 
@@ -11,31 +11,41 @@ O projeto adapta uma tradução PT-BR existente, com autorização de seus respo
 ## ✨ v2.0 Beta — o que muda
 
 - **Mod O3RO completo:** 126 substituições, incluindo os recursos gráficos nativos traduzidos.
-- **Instalação simples:** ZIP portátil com `Ativar-PTBR.cmd` e `Ativar-PTBR.ps1`, sem instalador executável próprio.
+- **Instalação portátil:** ativadores para Windows (CMD/PowerShell) e Linux (Bash), sem modificar o executável do TriAevum.
 - **Arquivos originais preservados:** o mod utiliza um overlay virtual; não modifica o executável do TriAevum nem a RomFS original.
 - **Integridade e backup:** verificação SHA-256 do O3RO e cópia de segurança do perfil de inicialização antes da alteração.
 - **Créditos no pacote:** o `LEIA-ME.txt` contém os créditos e as informações de autorização da tradução.
 
 O pacote da v2.0 Beta não inclui imagens HD, atlas TopScreen ou recursos de terceiros. **A compatibilidade com pacotes de texturas personalizadas não é garantida**, pois algumas substituições podem deixar de carregar quando seus hashes diferem dos recursos nativos traduzidos.
 
-## 📥 Download e compatibilidade
+## 📥 Downloads da v2.0 Beta
 
-| Versão | TriAevum | Situação |
-| --- | --- | --- |
-| **v2.0 Beta** | **v0.8.0-beta.1.2 (Windows)** | Candidata testada; publicação pendente |
-| [v1.3.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.3.0) | v0.8.0-beta.1.1 | Release anterior |
-| [v1.2.1](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.1) | v0.8.0-beta.1c | Release anterior |
-| [v1.2.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.0) | v0.8.0-beta.1 | Release anterior |
-| [v1.1.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.1.0) | v0.8.0-beta.1 | Release anterior |
-| [v1.0.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/v1.0.0) | v0.6.0-alpha.2c | Release anterior |
+| Plataforma | Arquivo |
+| --- | --- |
+| **Windows x64 — testado** | [OoT3D_PTBR_TriAevum_v2.0_Windows-x64.zip](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/2.0/OoT3D_PTBR_TriAevum_v2.0_Windows-x64.zip) |
+| **Linux x86_64 — experimental** | [OoT3D_PTBR_TriAevum_v2.0_Linux-x86_64.zip](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/download/2.0/OoT3D_PTBR_TriAevum_v2.0_Linux-x86_64.zip) |
 
-Não utilize os arquivos ou instaladores de uma versão com outra base do TriAevum sem verificar a compatibilidade. As versões antigas possuem métodos de instalação diferentes e continuam disponíveis em suas próprias páginas.
+O pacote Linux é único para instalações do TriAevum via **AppImage ou Flatpak**. Não é um aplicativo independente. O ativador Linux requer Bash, `jq` e `sha256sum`; não requer Python.
 
-## 🛠️ Instalação da v2.0 Beta (após disponibilização)
+[Consulte a release v2.0 Beta e as observações de compatibilidade.](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/2.0)
+
+### Versões anteriores
+
+| Release | TriAevum |
+| --- | --- |
+| [v1.3.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.3.0) | v0.8.0-beta.1.1 |
+| [v1.2.1](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.1) | v0.8.0-beta.1c |
+| [v1.2.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.2.0) | v0.8.0-beta.1 |
+| [v1.1.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/1.1.0) | v0.8.0-beta.1 |
+| [v1.0.0](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/v1.0.0) | v0.6.0-alpha.2c |
+
+Utilize o pacote correspondente à sua versão do TriAevum. As releases anteriores continuam disponíveis com seus próprios métodos de instalação.
+
+## 🛠️ Instalação da v2.0 Beta
 
 1. Prepare o jogo pelo **TriAevum Forge v0.8.0-beta.1.2** e feche o jogo e o Forge.
-2. Extraia `OoT3D-PTBR-v2.0-Beta.zip` na pasta raiz da instalação, preservando as subpastas.
-3. Execute `Ativar-PTBR.cmd`.
+2. Extraia o ZIP de seu sistema na pasta preparada pelo TriAevum, preservando as subpastas.
+3. **Windows:** execute `Ativar-PTBR.cmd`. **Linux:** abra o terminal na pasta de extração e execute `bash Ativar-PTBR-Linux.sh` (requer `jq` instalado).
 4. Inicie o TriAevum normalmente.
 
 O ativador verifica `data/mods/OoT3D-PTBR/OoT3D-PTBR.o3ro` e modifica somente `data/TriAevum.launch.json` para configurar `--romfs-overlay`. Antes disso, cria um backup do perfil quando ainda não existe. Não altera saves, o executável ou a RomFS original.
@@ -73,6 +83,3 @@ Este projeto não disponibiliza o jogo completo, uma ROM original ou uma cópia 
 
 Projeto de fãs, sem afiliação oficial com a Nintendo. *The Legend of Zelda* e demais propriedades relacionadas pertencem aos respectivos titulares.
 
-## 📌 Desenvolvimento
-
-A preparação da v2.0 Beta está na branch [`experiment/native-romfs-overlay-ptbr`](https://github.com/XandasL/OoT3D-PTBR-TriAevum/tree/experiment/native-romfs-overlay-ptbr). As notas da candidata estão em [RELEASE_v2.0_BETA_DRAFT.md](https://github.com/XandasL/OoT3D-PTBR-TriAevum/blob/experiment/native-romfs-overlay-ptbr/experiments/portable-v2-clean/RELEASE_v2.0_BETA_DRAFT.md) e os arquivos-fonte permanecem na branch experimental.
