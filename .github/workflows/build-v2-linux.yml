@@ -1,0 +1,50 @@
+name: v2 PT-BR - Linux AppImage e Flatpak (experimental)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - experiment/native-romfs-overlay-ptbr
+    paths:
+      - experiments/portable-v2-clean/ativar_ptbr_linux.py
+      - experiments/portable-v2-clean/Ativar-PTBR-Linux.sh
+      - experiments/portable-v2-clean/build_linux_packages.py
+      - experiments/portable-v2-clean/test_linux_packages.py
+      - .github/workflows/build-v2-linux.yml
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verificar scripts e testes Linux
+        run: |
+          python -m unittest discover -s experiments/portable-v2-clean -p "test_*.py" -v
+          bash -n experiments/portable-v2-clean/Ativar-PTBR-Linux.sh
+      - name: Obter ZIP completo da draft existente sem publicar O3RO avulso
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir -p incoming
+          gh release download 2.0 --repo "$GITHUB_REPOSITORY" --pattern "OoT3D-PTBR-v2.0-Beta.zip" --dir incoming
+          test -s incoming/OoT3D-PTBR-v2.0-Beta.zip
+      - name: Gerar ZIPs Linux com O3RO validado
+        shell: bash
+        run: |
+          python experiments/portable-v2-clean/build_linux_packages.py \
+            --entrada incoming/OoT3D-PTBR-v2.0-Beta.zip --saida dist
+          sha256sum dist/*.zip > dist/SHA256SUMS.txt
+      - name: Arquivos Linux para teste (nao publica release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: OoT3D-PTBR-v2-Linux-Experimental
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
