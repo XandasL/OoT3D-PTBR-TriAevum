@@ -14,7 +14,7 @@ From this folder:
 py -3 .\gerar_zip_local.py --classico "E:\path\ptbr-classico-beta12.o3ro" --saida "E:\path\OoT3D-PTBR-v2-LIMPA-TESTE.zip"
 ```
 
-The local overlay SHA-256 must be `4b2dc3e7734518200f8bf5483f74f16353da939b3914ab3986f1e20968eed9e3`. The ZIP contains exactly four entries: `Ativar-PTBR.cmd`, `Ativar-PTBR.ps1`, `LEIA-ME.txt` and `data/mods/OoT3D-PTBR/classico.o3ro`. The binary overlay and modified HD images are **not** committed to GitHub.
+The local overlay SHA-256 must be `4b2dc3e7734518200f8bf5483f74f16353da939b3914ab3986f1e20968eed9e3`. The ZIP contains exactly four entries: `Ativar-PTBR.cmd`, `Ativar-PTBR.ps1`, `LEIA-ME.txt` and `data/mods/OoT3D-PTBR/OoT3D-PTBR.o3ro`. The binary overlay and modified HD images are **not** committed to GitHub.
 
 ## Installation (local compatible beta.1.2 setup)
 
