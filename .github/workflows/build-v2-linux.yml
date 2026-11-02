@@ -1,15 +1,6 @@
 name: v2 PT-BR - Linux AppImage e Flatpak (experimental)
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - experiment/native-romfs-overlay-ptbr
-    paths:
-      - experiments/portable-v2-clean/ativar_ptbr_linux.py
-      - experiments/portable-v2-clean/Ativar-PTBR-Linux.sh
-      - experiments/portable-v2-clean/build_linux_packages.py
-      - experiments/portable-v2-clean/test_linux_packages.py
-      - .github/workflows/build-v2-linux.yml
 permissions:
   contents: read
 jobs:
@@ -29,16 +20,20 @@ jobs:
           bash -n experiments/portable-v2-clean/Ativar-PTBR-Linux.sh
       - name: Obter ZIP completo da Draft Release pela API
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.V2_RELEASE_READ_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p incoming
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::Configure o segredo V2_RELEASE_READ_TOKEN com acesso de leitura a Contents deste repositorio para acessar a draft privada."
+            exit 1
+          fi
           # gh release download nao enxerga drafts; listar releases pela API e localizar o asset.
           asset_id="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
             --jq '.[] | select(.draft == true and .tag_name == "2.0") | .assets[] | select(.name == "OoT3D-PTBR-v2.0-Beta.zip") | .id' | head -n 1)"
           if [[ ! "$asset_id" =~ ^[0-9]+$ ]]; then
-            echo "::error::O ZIP completo nao foi encontrado na draft 2.0."
+            echo "::error::O ZIP completo nao foi encontrado na draft 2.0; confira a permissao do token para visualizar releases em rascunho."
             exit 1
           fi
           gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
