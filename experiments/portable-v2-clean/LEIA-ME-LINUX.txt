@@ -1,0 +1,26 @@
+OoT3D PT-BR v2.0 Beta — Linux AppImage / Flatpak (EXPERIMENTAL)
+
+O ativador Linux utiliza Bash, jq e sha256sum. Nao requer Python.
+O comando jq precisa estar instalado no sistema (por exemplo,
+"sudo apt install jq" em distribuicoes baseadas em Debian/Ubuntu).
+
+1. Prepare o jogo com TriAevum Forge v0.8.0-beta.1.2.
+2. Feche o jogo e o Forge.
+3. Extraia o ZIP completo na pasta da instalacao preparada pelo Forge,
+   onde existe data/TriAevum.launch.json.
+4. Abra um terminal nessa pasta e execute:
+   bash Ativar-PTBR-Linux.sh
+
+Se a pasta de dados estiver em outro local, informe-a como argumento:
+   bash Ativar-PTBR-Linux.sh "/caminho/da/instalacao"
+
+O ativador cria um backup do perfil (sem sobrescrever o anterior),
+verifica o SHA-256 do O3RO e insere --romfs-overlay no perfil.
+Ele nao modifica o executavel, a RomFS, os saves nem os packs HD.
+O mod nao e garantidamente compativel com texturas personalizadas.
+
+ATENCAO: Linux ainda nao foi validado dentro do jogo. Estes ZIPs sao
+pacotes para instalacoes AppImage/Flatpak, nao arquivos .AppImage ou .flatpak.
+Caso o Forge recrie o perfil, execute novamente o ativador.
+
+Leia tambem LEIA-ME.txt para os creditos e avisos completos.
