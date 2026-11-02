@@ -25,9 +25,13 @@ Prepare a legitimate game through Forge; extract the local ZIP to the TriAevum r
 - [x] Classic O3RO with 126 records tested in-game without HD.
 - [x] Classic-only ZIP and activator reported working by the author.
 - [x] Source tree excludes redistributed HD PNGs and SingleScreen artwork.
-- [ ] Verify redistribution permissions for **all game-derived contents embedded in the classic O3RO**. Removing HD PNGs does not grant rights to redistribute the O3RO.
-- [ ] Review dependencies and original translation source licenses.
-- [ ] Reconfirm version compatibility in a clean beta.1.2 environment before publishing.
+- [x] Original translators' permission is documented in `installer/CREDITOS.txt`, with attribution required; the port author has independently reconfirmed authorization.
+- [ ] Include the existing translator credits **inside** the final portable ZIP, not only as a repository reference.
+- [ ] Perform a scoped final publication review of the O3RO's game-derived content, distinct from the translators' permission; do not conflate this with the excluded third-party HD textures.
+- [x] Classic translation and clean portable ZIP tested by the author on beta.1.2.
+- [ ] Run final packager tests after the credits are added.
 - [ ] Publish only when permissions and final artifact audit are complete.
 
 No changes to `main` or historical releases.
+
+For a nonredundant status and decision record, see [ESTADO_CONSOLIDADO.md](ESTADO_CONSOLIDADO.md).
