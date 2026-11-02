@@ -1,5 +1,13 @@
+# OoT3D PT-BR - ativador portatil (codigo-fonte aberto).
+# Faz apenas operacoes locais: valida a integridade do O3RO, cria um backup
+# do perfil de inicializacao e configura --romfs-overlay no arquivo JSON.
+# Nao altera TriAevum.exe, a RomFS original, saves ou packs de texturas.
+# Nao baixa arquivos, nao acessa a rede e nao instala servicos.
+# Execute com o jogo e o Forge fechados.
+
 $ErrorActionPreference = 'Stop'
 try {
+    Write-Host "Verificando arquivos locais da traducao..."
     $runtime = (Resolve-Path -LiteralPath $PSScriptRoot -ErrorAction Stop).ProviderPath
     $profile = Join-Path $runtime 'data\TriAevum.launch.json'
     $overlay = Join-Path $runtime 'data\mods\OoT3D-PTBR\OoT3D-PTBR.o3ro'
@@ -25,8 +33,14 @@ try {
     $json = $obj | ConvertTo-Json -Depth 100
     $check = $json | ConvertFrom-Json
     if (@($check.arguments).Count -ne $argsList.Count) { throw 'Falha na validacao JSON.' }
-    $backup = "$profile.backup-antes-ptbr-classico.json"
-    if (!(Test-Path -LiteralPath $backup)) { Copy-Item -LiteralPath $profile -Destination $backup -ErrorAction Stop }
+    # Um backup anterior nunca e sobrescrito. Mantemos backups historicos intactos.
+    $backup = "$profile.backup-antes-ptbr.json"
+    if (!(Test-Path -LiteralPath $backup)) {
+        Copy-Item -LiteralPath $profile -Destination $backup -ErrorAction Stop
+        Write-Host "Backup do perfil criado: $backup"
+    } else {
+        Write-Host "Backup existente preservado: $backup"
+    }
     $tmp = "$profile.$([guid]::NewGuid().ToString('N')).tmp"
     $transaction = "$profile.$([guid]::NewGuid().ToString('N')).transaction.bak"
     try {
@@ -35,8 +49,8 @@ try {
     } finally {
         Remove-Item -LiteralPath $tmp,$transaction -Force -ErrorAction SilentlyContinue
     }
-    Write-Host 'Traducao PT-BR classica ativada.' -ForegroundColor Green
-    Write-Host 'Texturas HD do Forge foram mantidas como estavam (nao sao traduzidas por este pacote).'
+    Write-Host 'Traducao PT-BR ativada com sucesso.' -ForegroundColor Green
+    Write-Host 'O executavel, a RomFS e os packs de texturas nao foram alterados.'
 } catch {
     Write-Host "ERRO: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
