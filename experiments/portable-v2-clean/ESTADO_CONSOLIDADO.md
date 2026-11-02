@@ -28,7 +28,7 @@ Fonte canônica: `installer/CREDITOS.txt`.
 - TRADU-ROMS
 - XandasL — port e adaptação para TriAevum
 
-O arquivo também documenta a autorização recebida do responsável pela tradução e os agradecimentos. **Créditos já integrados à embalagem atualizada:** `experiments/portable-v2-clean/CREDITOS.txt` está entre os cinco membros esperados pelo gerador. Preservar os nomes e a autorização documentada. Não renomear colaboradores.
+O arquivo também documenta a autorização recebida do responsável pela tradução e os agradecimentos. **Créditos integrados ao LEIA-ME revisado pelo autor:** o ZIP final utiliza quatro arquivos; a seção de créditos e a autorização estão dentro de `LEIA-ME.txt`, sem arquivo de créditos redundante. Não renomear colaboradores.
 
 ## Artefatos, provas e caminhos técnicos
 
@@ -37,15 +37,15 @@ O arquivo também documenta a autorização recebida do responsável pela tradu�
 - RomFS base verificada: SHA-256 `dae620379c805e96a6187c212dc2b177cf5fdb0c184d526a06ebaeeaa481aa56`.
 - Pacote portátil fonte: `experiments/portable-v2-clean/`.
 - Ativador configura `--romfs-overlay` em `data/TriAevum.launch.json`, preservando opções gráficas do Forge; executar novamente `Prepare and install` pode sobrescrever o perfil e exigir nova ativação.
-- Arquivos do ZIP local testado inicialmente: `Ativar-PTBR.cmd`, `Ativar-PTBR.ps1`, `LEIA-ME.txt`, `data/mods/OoT3D-PTBR/classico.o3ro`. A revisão posterior do gerador acrescentou `CREDITOS.txt`, necessitando validação do ZIP atualizado.
+- Arquivos do ZIP local testado inicialmente: `Ativar-PTBR.cmd`, `Ativar-PTBR.ps1`, `LEIA-ME.txt`, `data/mods/OoT3D-PTBR/classico.o3ro`. O autor substituiu esse plano por créditos embutidos em `LEIA-ME.txt`, sem arquivo independente.
 - Os 20 PNGs HD modificados e o atlas TopScreen não estão nas árvores atuais auditadas das 9 branches nem nas tags de código 1.2.0/1.2.1/1.3.0. Esse resultado **não é uma auditoria completa de todos os commits e arquivos ZIP das releases antigas**.
 - O O3RO clássico contém payload de substituições RomFS e **não é apenas um manifesto de alterações**, mas não incorpora a RomFS integral. Esse fato técnico não altera o registro da autorização dos tradutores.
 - A `main` e releases anteriores devem ficar intactas enquanto a versão experimental não for finalizada.
 
 ## Pendências reais — não confundir com decisões resolvidas
 
-- **Créditos na distribuição final:** arquivo `CREDITOS.txt` incluído nos fontes e exigido pelo gerador; conferir sua presença no ZIP construído.
-- **Verificação final da embalagem atualizada:** executar testes do gerador com os cinco membros e um teste funcional apenas se houver modificação relevante do ativador ou do conteúdo.
+- **Créditos na distribuição final:** créditos incorporados diretamente no `LEIA-ME.txt` pelo autor; conferir presença da seção no ZIP construído.
+- **Verificação final da embalagem atualizada:** executar testes do gerador com os quatro membros e um teste funcional apenas se houver modificação relevante do ativador ou do conteúdo.
 - **Delimitação de direitos:** autorização documentada dos tradutores cobre suas próprias contribuições; eventuais direitos dos titulares do jogo são um assunto distinto. Não reabrir discussão abstrata a cada passo; realizar uma revisão de publicação proporcional ao conteúdo final.
 - **Compatibilidade:** restringir a beta.1.2; não insinuar certificação para versões futuras.
 - **Histórico:** remover a imagem Navi do estado atual não apaga seus blobs de commits/tags antigos; não afirmar exclusão retroativa.
