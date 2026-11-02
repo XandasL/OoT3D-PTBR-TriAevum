@@ -4,7 +4,7 @@
 
 ## Scope
 
-Only the classic O3RO (126 replacement records). No modified ChubbyCubby Vanilla UI/HUD, SingleScreen/TopScreen atlas, or legacy Navi overlay. Forge's graphics settings remain unchanged; a user-enabled original HD pack may still show English graphics.
+Only the classic O3RO (126 replacement records). No modified ChubbyCubby Vanilla UI/HUD, SingleScreen/TopScreen atlas, or legacy Navi overlay. Forge's graphics settings remain unchanged. **Custom/HD texture pack compatibility is currently limited and is NOT guaranteed:** the complete PT-BR overlay can change texture hashes, preventing replacements of HUD, menus or other graphics. Use the native classic appearance for the expected full translation. No alias mapping, HD workaround, or truncated 95-record O3RO will ship in v2.
 
 ## Local packaging
 
