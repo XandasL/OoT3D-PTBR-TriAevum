@@ -3,6 +3,8 @@ OoT3D PT-BR v2 - CLASSICA (TriAevum beta.1.2)
 Para testes locais: prepare o jogo no TriAevum Forge, extraia este ZIP
 na raiz do TriAevum, execute Ativar-PTBR.cmd e inicie o jogo.
 
+Creditos completos: leia CREDITOS.txt, incluido no pacote.
+
 O mod contem apenas a traducao classica (126 substituicoes O3RO).
 NAO inclui texturas HD ChubbyCubby, Vanilla UI/HUD, SingleScreen,
 TopScreen ou o antigo overlay de Navi.
