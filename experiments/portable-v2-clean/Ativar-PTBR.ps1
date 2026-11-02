@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 try {
     $runtime = (Resolve-Path -LiteralPath $PSScriptRoot -ErrorAction Stop).ProviderPath
     $profile = Join-Path $runtime 'data\TriAevum.launch.json'
-    $overlay = Join-Path $runtime 'data\mods\OoT3D-PTBR\classico.o3ro'
+    $overlay = Join-Path $runtime 'data\mods\OoT3D-PTBR\OoT3D-PTBR.o3ro'
     $expected = '4B2DC3E7734518200F8BF5483F74F16353DA939B3914AB3986F1E20968EED9E3'
     if (!(Test-Path -LiteralPath $profile -PathType Leaf)) { throw "Perfil do Forge nao encontrado: $profile" }
     if (!(Test-Path -LiteralPath $overlay -PathType Leaf)) { throw "Arquivo de traducao nao encontrado: $overlay" }
