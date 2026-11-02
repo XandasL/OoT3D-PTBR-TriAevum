@@ -1,0 +1,51 @@
+name: v2 PT-BR limpa - fontes portateis (sem O3RO)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-and-package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Testar gerador com O3RO ficticio
+        run: python -m unittest discover -s experiments/portable-v2-clean -p "test_*.py" -v
+      - name: Verificar e empacotar somente os fontes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile, ZIP_DEFLATED
+          import hashlib
+          root = Path("experiments/portable-v2-clean")
+          members = ("Ativar-PTBR.cmd", "Ativar-PTBR.ps1", "LEIA-ME.txt",
+                     "CREDITOS.txt", "gerar_zip_local.py", "README.md",
+                     "ESTADO_CONSOLIDADO.md", "test_gerar_zip_local.py")
+          for name in members:
+              if not (root / name).is_file():
+                  raise SystemExit(f"Faltando arquivo: {name}")
+          out = Path("dist/OoT3D-PTBR-v2-LIMPA-FONTES.zip")
+          out.parent.mkdir(parents=True, exist_ok=True)
+          with ZipFile(out, "w", ZIP_DEFLATED) as z:
+              for name in members:
+                  z.write(root / name, name)
+          with ZipFile(out) as z:
+              if set(z.namelist()) != set(members):
+                  raise SystemExit("Membros inesperados")
+              if any(name.lower().endswith((".png", ".ctxb", ".o3ro")) for name in z.namelist()):
+                  raise SystemExit("Recurso binario proibido no pacote de fontes")
+          print(out, hashlib.sha256(out.read_bytes()).hexdigest())
+          PY
+      - name: Disponibilizar ZIP dos fontes como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: OoT3D-PTBR-v2-LIMPA-FONTES
+          path: dist/OoT3D-PTBR-v2-LIMPA-FONTES.zip
+          if-no-files-found: error
+          retention-days: 14
