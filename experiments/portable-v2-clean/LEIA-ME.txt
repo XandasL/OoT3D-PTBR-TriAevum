@@ -1,34 +1,47 @@
-OoT3D PT-BR v2 - CLASSICA (TriAevum beta.1.2)
+OoT3D PT-BR v2 - CLÁSSICA (TriAevum beta.1.2)
 
-Para testes locais: prepare o jogo no TriAevum Forge, extraia este ZIP
+Instalação: prepare o jogo no TriAevum Forge, extraia este ZIP
 na raiz do TriAevum, execute Ativar-PTBR.cmd e inicie o jogo.
 
-Creditos completos: leia CREDITOS.txt, incluido no pacote.
-
-O mod contem apenas a traducao classica (126 substituicoes O3RO).
-NAO inclui texturas HD ChubbyCubby, Vanilla UI/HUD, SingleScreen,
+O mod contem apenas a tradução clássica (126 substituições O3RO).
+NÃO inclui texturas HD Vanilla UI/HUD, SingleScreen,
 TopScreen ou o antigo overlay de Navi.
 
 COMPATIBILIDADE COM TEXTURAS PERSONALIZADAS:
-O uso de packs de texturas HD/customizadas NAO e garantido nesta v2.
-O overlay da traducao modifica texturas nativas e pode mudar seus
-hashes, impedindo substituicoes do HUD, menus e outras imagens.
-Para obter a interface PT-BR classica completa, use o TriAevum sem
-packs de texturas personalizados. O ativador nao modifica esses packs.
+O uso de packs de texturas HD/customizadas NÃO é garantido nesta versão.
+O overlay da tradução modifica texturas nativas e pode mudar seus
+hashes, impedindo substituições do HUD, menus e outras imagens.
+Para obter a interface PT-BR clássica completa, use o TriAevum sem
+packs de texturas personalizados. O ativador não modifica esses packs.
 
-Executar novamente 'Prepare and install' no Forge pode reescrever o
-perfil e exigir nova ativacao do mod.
+Executar novamente "Prepare and install" no Forge pode reescrever o
+perfil e exigir nova ativação do mod.
 
 O O3RO foi validado para a base de TriAevum v0.8.0-beta.1.2.
-Nao use overlays em outras bases de RomFS sem verificacao propria.
+Não use overlays em outras bases de RomFS sem verificação própria.
 
-CREDITOS DA TRADUCAO ORIGINAL:
-Consulte installer/CREDITOS.txt no repositorio oficial:
-https://github.com/XandasL/OoT3D-PTBR-TriAevum
+CRÉDITOS — TRADUÇÃO PT-BR
+The Legend of Zelda: Ocarina of Time 3D
 
-Os creditos de packs HD externos presentes nos arquivos historicos
-nao indicam que tais packs sejam distribuidos nesta v2 limpa.
+TRADUÇÃO PT-BR ORIGINAL
+Projeto Zelda Brasil – Heroes of Time
+Catatau Game Dev e Traduções
+Elite dos Quatro Traduções
+JumpManClub Brasil Traduções
+TRADU-ROMS
 
-Este pacote local NAO esta autorizado automaticamente para
-redistribuicao publica: revisar direitos dos recursos do jogo presentes
-no O3RO antes da publicacao.
+PORT PARA TRIAEVUM
+XandasL — port para TriAevum, adaptação e empacotamento do instalador.
+
+AGRADECIMENTOS
+A todas as pessoas e equipes envolvidas na tradução brasileira original e aos
+desenvolvedores e colaboradores do TriAevum.
+
+AUTORIZAÇÃO
+O port e a distribuição da tradução completa são realizados com autorização do
+responsável pela tradução, condicionados à manutenção dos devidos créditos dentro
+e fora do jogo.
+
+Este projeto é um projeto de fãs e não possui afiliação oficial com a Nintendo.
+The Legend of Zelda e demais propriedades relacionadas pertencem aos seus
+respectivos detentores.
