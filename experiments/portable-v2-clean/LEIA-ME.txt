@@ -17,6 +17,13 @@ perfil e exigir nova ativacao do mod.
 O O3RO foi validado para a base de TriAevum v0.8.0-beta.1.2.
 Nao use overlays em outras bases de RomFS sem verificacao propria.
 
+CREDITOS DA TRADUCAO ORIGINAL:
+Consulte installer/CREDITOS.txt no repositorio oficial:
+https://github.com/XandasL/OoT3D-PTBR-TriAevum
+
+Os creditos de packs HD externos presentes nos arquivos historicos
+nao indicam que tais packs sejam distribuidos nesta v2 limpa.
+
 Este pacote local NAO esta autorizado automaticamente para
 redistribuicao publica: revisar direitos dos recursos do jogo presentes
 no O3RO antes da publicacao.
