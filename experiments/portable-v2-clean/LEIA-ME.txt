@@ -9,9 +9,12 @@ O mod contem apenas a traducao classica (126 substituicoes O3RO).
 NAO inclui texturas HD ChubbyCubby, Vanilla UI/HUD, SingleScreen,
 TopScreen ou o antigo overlay de Navi.
 
-Caso mantenha o pacote HD original selecionado no Forge, algumas
-imagens HD poderao permanecer em ingles. Para o visual classico
-completo, prepare o TriAevum sem texturas HD.
+COMPATIBILIDADE COM TEXTURAS PERSONALIZADAS:
+O uso de packs de texturas HD/customizadas NAO e garantido nesta v2.
+O overlay da traducao modifica texturas nativas e pode mudar seus
+hashes, impedindo substituicoes do HUD, menus e outras imagens.
+Para obter a interface PT-BR classica completa, use o TriAevum sem
+packs de texturas personalizados. O ativador nao modifica esses packs.
 
 Executar novamente 'Prepare and install' no Forge pode reescrever o
 perfil e exigir nova ativacao do mod.
