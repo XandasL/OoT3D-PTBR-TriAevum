@@ -7,7 +7,7 @@ from pathlib import Path
 
 EXPECTED = "4b2dc3e7734518200f8bf5483f74f16353da939b3914ab3986f1e20968eed9e3"
 ROOT = Path(__file__).resolve().parent
-MEMBERS = ("Ativar-PTBR.cmd", "Ativar-PTBR.ps1", "LEIA-ME.txt", "CREDITOS.txt",
+MEMBERS = ("Ativar-PTBR.cmd", "Ativar-PTBR.ps1", "LEIA-ME.txt",
            "data/mods/OoT3D-PTBR/classico.o3ro")
 
 def generate(classico: Path, output: Path) -> None:
