@@ -13,7 +13,7 @@ def fake_qm():
     size = qm.TABLE_END
     data = bytearray(size)
     import struct
-    struct.pack_into("<4sIII", data, 0, b"QM\\0\\0", 4, qm.RECORD_COUNT, 0)
+    struct.pack_into("<4sIII", data, 0, b"QM\0\0", 4, qm.RECORD_COUNT, 0)
     for i in range(qm.RECORD_COUNT):
         struct.pack_into("<4I", data, 16 + i * 96, i + 1, 0, 2, 3)
     return data
@@ -41,7 +41,7 @@ class UniversalQmTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "in-game-tested"):
                 qm.build_universal_qm(bytes(eur), bytes(source))
             expected = bytearray(eur)
-            expected.extend(b"\\0" * (-len(expected) % 4))
+            expected.extend(b"\0" * (-len(expected) % 4))
             offset = len(expected)
             expected.extend(portuguese_text)
             for i in (0, 1):
