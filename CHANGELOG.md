@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.0.1 — 2026-11-13
+
+- Corrigidos problemas de texturas deslocadas e crash ao sair de uma área do Castelo de Ganon.
+- Reconstruídos **9 arquivos ZAR** de cena a partir de recursos originais, reutilizando exclusivamente as texturas de nome PT-BR.
+- Preservados os **76 arquivos de cena** e os **126 recursos** da tradução, sem remoções.
+- Auditoria estática de 76 ZAR e 152 texturas CTXB internas; dados de cena não traduzidos preservados.
+- Validação prática da correção no local onde ocorria o problema; outras cenas e o Linux ainda não foram retestados integralmente.
+- Acrescentadas ferramentas Python reproduzíveis de reconstrução, comparação e validação, sem redistribuir ROMs nem recursos protegidos no código-fonte.
+- Pacote publicado: [v3.0.1](https://github.com/XandasL/OoT3D-PTBR-TriAevum/releases/tag/v3.0.1).
+
 ## v3.0 — 2026-11-13
 
 - Migração para **Echoes of Time (TriAevum v0.8.0-beta.2)** e seu sistema nativo **Custom RomFS**.
