@@ -48,3 +48,13 @@ Os testes são sintéticos e não incluem dados protegidos do jogo.
 Os instaladores de v1.x e os ativadores/O3RO de v2.0 continuam sendo componentes **legados**, mantidos para referência. Eles **não são necessários na v3.0**. Use a documentação da release correspondente caso precise recompilar uma versão anterior.
 
 **Observação:** os recursos de tradução são distribuídos no ZIP da release, separadamente do código-fonte gerado automaticamente pelo GitHub.
+
+## Montar o ZIP completo com os mesmos 126 recursos
+
+Com o `LEIA-ME.txt` da v3.0 disponível localmente, você também pode gerar um novo pacote completo:
+
+```powershell
+python tools/assemble_v3_package.py --ptbr-v2-zip "OoT3D-PTBR-Custom-RomFS-TriAevum-beta2.zip" --eur-romfs-zip "RomFS_Extraida_EUR.zip" --readme "LEIA-ME.txt" --output "OoT3D_PTBR_TriAevum_v3.0_rebuild.zip"
+```
+
+O script reutiliza os outros 125 recursos validados e substitui somente o `eu.qm` e o LEIA-ME. A saída é verificada automaticamente. Como a compressão e os metadados do ZIP podem variar, um pacote reconstruído **não necessariamente terá o mesmo hash do ZIP publicado**, mesmo que seus arquivos internos sejam idênticos.
