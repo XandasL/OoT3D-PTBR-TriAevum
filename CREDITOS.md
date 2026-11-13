@@ -1,6 +1,6 @@
 # Créditos
 
-## The Legend of Zelda: Ocarina of Time 3D — Tradução PT-BR para TriAevum
+## The Legend of Zelda: Ocarina of Time 3D — Tradução PT-BR para Echoes of Time (TriAevum)
 
 Este projeto é um **port para TriAevum de uma tradução brasileira já existente de The Legend of Zelda: Ocarina of Time 3D**.
 
@@ -18,30 +18,31 @@ Conforme os créditos fornecidos para esta distribuição:
 
 ## 🔧 Port para TriAevum
 
-O trabalho deste repositório inclui a adaptação técnica necessária para que a tradução funcione corretamente na estrutura de recursos utilizada pelo TriAevum, incluindo:
+O trabalho deste repositório inclui a adaptação técnica necessária para que a tradução funcione corretamente no Echoes of Time (TriAevum), incluindo:
 
-- adaptação dos arquivos de mensagens para o layout USA → EUR utilizado pelo runtime;
+- adaptação dos arquivos de mensagens para o layout do runtime, com compatibilidade USA e EUR na v3.0;
 - adaptação dos recursos de menu para o slot europeu utilizado em execução;
 - instalação dos recursos gráficos e demais arquivos da tradução;
-- compatibilidade com o sistema TopScreen / Single Screen;
+- integração com os sistemas utilizados pelas diferentes versões do TriAevum, incluindo Custom RomFS na v3.0;
 - preservação dos recursos e créditos presentes na tradução original;
-- desenvolvimento de instalador com validação, backup e restauração.
+- desenvolvimento dos instaladores e ativadores utilizados nas versões anteriores;
+- empacotamento da v3.0 para instalação nativa via Custom RomFS, sem ativador externo.
 
 ### Responsável pelo port
 
-- **XandasL** — port para TriAevum, adaptação e empacotamento do instalador.
+- **XandasL** — port para Echoes of Time (TriAevum), adaptação e empacotamento da tradução.
 
 ## ❤️ Agradecimentos
 
 Agradecimentos a todas as pessoas e equipes que participaram da tradução brasileira original e tornaram possível jogar Ocarina of Time 3D em português.
 
-Agradecimentos também aos desenvolvedores e colaboradores do **TriAevum**, cujo trabalho tornou possível executar e adaptar Ocarina of Time 3D através deste projeto.
+Agradecimentos também aos desenvolvedores e colaboradores do **Echoes of Time (TriAevum)**, cujo trabalho tornou possível executar e adaptar Ocarina of Time 3D através deste projeto.
 
 ## 📜 Autorização e preservação dos créditos
 
 O port e a distribuição da tradução completa são realizados com autorização do responsável pela tradução, condicionados à manutenção dos devidos créditos **dentro e fora do jogo**.
 
-Por esse motivo, este arquivo faz parte da documentação do projeto e os créditos também devem permanecer acessíveis no instalador e nos demais locais aplicáveis.
+Por esse motivo, este arquivo faz parte da documentação do projeto e os créditos também devem permanecer acessíveis no pacote de distribuição e nos demais locais aplicáveis.
 
 ## ⚠️ Direitos sobre o jogo
 
