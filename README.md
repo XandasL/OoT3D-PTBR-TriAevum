@@ -55,6 +55,16 @@ O pacote não distribui a ROM, o jogo completo, executáveis do TriAevum ou text
 - **EUR:** a mesma tradução v3.0 testada no jogo.
 - **Linux:** formato compartilhado com Windows; funcionamento da v3.0 ainda não verificado diretamente no Linux.
 
+## 🧰 Código-fonte e manutenção da v3.0
+
+A v3.0 utiliza o **Custom RomFS** integrado ao Forge. O código de manutenção atual encontra-se em [`tools/`](tools/README.md), com:
+
+- reconstrução verificável do arquivo de mensagens USA/EUR (`build_v3_universal_qm.py`);
+- geração do ZIP de distribuição a partir dos recursos previamente validados (`assemble_v3_package.py`);
+- verificação de estrutura, integridade e hashes (`verify_v3_package.py`).
+
+Os instaladores anteriores em `installer/` são mantidos como **histórico de versões anteriores** e não são utilizados na v3.0. Os arquivos da tradução permanecem distribuídos no ZIP da release, e não como ROM completa no repositório.
+
 ## ❤️ Créditos e autorização
 
 **Tradução PT-BR original:**
