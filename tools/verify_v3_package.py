@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only structural checks for the user-distributed v3.0 ZIP."""
+"""Read-only structural checks for the user-distributed v3.0/v3.0.1 ZIPs."""
 from __future__ import annotations
 
 import argparse
@@ -13,13 +13,14 @@ ROOT = "data/mods/custom-romfs/"
 EXPECTED_COUNTS = {".zar": 88, ".ctxb": 35, ".qm": 1, ".qbf": 1, ".bcsar": 1}
 EXPECTED_QM = "2c01f578280f331befa6683eb2c18e27c8538b80df9536344c4c9cacc7c8866d"
 KNOWN_V3_ZIP = "5db68dd5ce2d4633028ccbe63e0487446c5dccfe39bd4f27081e450796aece23"
+KNOWN_V301_ZIP = "51504ee8bc49f327087c36abbbc17d1dfe60ff410fda088b8e29cf0b0a03fe17"
 
 
 def verify(path, *, check_release_hash=False):
     if check_release_hash:
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        if digest != KNOWN_V3_ZIP:
-            raise ValueError(f"ZIP hash does not match tested v3.0: {digest}")
+        if digest not in (KNOWN_V3_ZIP, KNOWN_V301_ZIP):
+            raise ValueError(f"ZIP hash does not match tested v3.0 or v3.0.1: {digest}")
     with ZipFile(path) as archive:
         if archive.testzip() is not None:
             raise ValueError("Corrupted archive")
