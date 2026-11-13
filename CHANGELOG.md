@@ -1,5 +1,26 @@
 # Changelog
 
+## v3.0 — 2026-11-13
+
+- Migração para **Echoes of Time (TriAevum v0.8.0-beta.2)** e seu sistema nativo **Custom RomFS**.
+- Pacote único de tradução para ROMs **USA e EUR**, ambas testadas com sucesso.
+- Distribuição unificada para Windows e Linux, sem instaladores, ativadores ou O3RO pré-compilado.
+- Mantidos os **126 recursos** da tradução clássica PT-BR, com arquivo de mensagens adaptado para ambas as regiões.
+- Preservação da ROM original, executável do TriAevum e créditos da tradução.
+- Compatibilidade com texturas HD/personalizadas ainda sujeita a diferenças de hashes das texturas nativas.
+
+## v2.0 Beta — 2026-11-02
+
+- Transição para mod O3RO com 126 substituições e preservação da RomFS original.
+- Pacotes com ativadores para Windows e Linux para configuração do overlay.
+- Compatibilidade com TriAevum v0.8.0-beta.1.2.
+
+## v1.3.0 — 2026-10-21
+
+- Tradução clássica com 112 recursos de origem e 14 espelhos de menus EUR.
+- Otimização e opção de fonte HD 64, preservando opção de fonte original.
+- Pacotes para Windows e Linux e compatibilidade opcional com pack Henriko 5.0a.
+
 ## v1.2.1 — 2026-10-15
 
 - Compatibilidade com os caminhos `${runtime_dir}` dos novos perfis Forge.
@@ -7,7 +28,6 @@
 - Mantidas as 71 correspondências HD, a correção da Navi e a fonte com acentos PT-BR.
 - Instalação e restauração da tradução verificadas numa cópia isolada da nova base.
 - Pacotes simplificados e fontes correspondentes separados; releases anteriores preservadas.
-
 
 ## v1.0 — 2026-09-17
 
