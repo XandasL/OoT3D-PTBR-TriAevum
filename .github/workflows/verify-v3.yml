@@ -1,0 +1,29 @@
+name: v3.0 source checks
+
+on:
+  push:
+    paths:
+      - "tools/**"
+      - "tests/test_v3_*.py"
+      - ".github/workflows/verify-v3.yml"
+  pull_request:
+    paths:
+      - "tools/**"
+      - "tests/test_v3_*.py"
+      - ".github/workflows/verify-v3.yml"
+  workflow_dispatch:
+
+jobs:
+  v3-universal-qm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test universal QM conversion (synthetic data)
+        run: python -m unittest discover -s tests -p "test_v3_*.py" -v
+      - name: Validate Python syntax
+        run: python -m py_compile tools/build_v3_universal_qm.py tools/verify_v3_package.py
