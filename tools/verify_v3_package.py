@@ -27,7 +27,7 @@ def verify(path, *, check_release_hash=False):
         names = [i.filename for i in members]
         if len(names) != len(set(names)):
             raise ValueError("Duplicate ZIP entry")
-        if any(n.startswith("/") or "\\\\" in n or ".." in PurePosixPath(n).parts
+        if any(n.startswith("/") or "\\" in n or ".." in PurePosixPath(n).parts
                for n in names):
             raise ValueError("Unsafe ZIP path")
         expected_meta = {ROOT + "triaevum-custom-romfs.json", "LEIA-ME.txt"}
