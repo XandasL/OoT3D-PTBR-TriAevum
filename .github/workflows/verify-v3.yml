@@ -1,4 +1,4 @@
-name: v3.0 source checks
+name: v3.x source checks
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Test universal QM conversion (synthetic data)
+      - name: Test universal QM and scene ZAR reconstruction (synthetic data)
         run: python -m unittest discover -s tests -p "test_v3_*.py" -v
       - name: Validate Python syntax
-        run: python -m py_compile tools/build_v3_universal_qm.py tools/verify_v3_package.py
+        run: python -m py_compile tools/build_v3_universal_qm.py tools/verify_v3_package.py tools/assemble_v3_package.py tools/rebuild_v301_scenes.py tools/audit_v301_scenes.py
